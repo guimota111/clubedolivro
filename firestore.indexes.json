@@ -1,0 +1,13 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "progresso",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "livroId", "order": "ASCENDING" },
+        { "fieldPath": "atualizadoEm", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

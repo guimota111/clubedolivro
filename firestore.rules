@@ -1,0 +1,48 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Perfis dos membros. Sem autenticação, então validamos apenas o formato.
+    match /users/{userId} {
+      allow read: if true;
+      allow create: if request.resource.data.nome is string
+                    && request.resource.data.nome.size() > 0
+                    && request.resource.data.nome.size() < 60
+                    && request.resource.data.avatarUrl is string;
+      allow update: if request.resource.data.nome is string
+                    && request.resource.data.nome.size() > 0
+                    && request.resource.data.nome.size() < 60;
+    }
+
+    // Livro atual do clube. Qualquer membro pode cadastrar/encerrar.
+    match /livroAtual/{livroId} {
+      allow read: if true;
+      allow write: if request.resource.data.titulo is string
+                   && request.resource.data.titulo.size() > 0
+                   && request.resource.data.totalPaginas is number
+                   && request.resource.data.totalPaginas > 0;
+      allow delete: if true;
+    }
+
+    // Progresso de leitura. ID composto userId_livroId.
+    match /progresso/{progressoId} {
+      allow read: if true;
+      allow write: if request.resource.data.paginaAtual is number
+                   && request.resource.data.paginaAtual >= 0;
+    }
+
+    // Mural de recados. Criação apenas; sem edição/exclusão por enquanto.
+    match /mural/{mensagemId} {
+      allow read: if true;
+      allow create: if request.resource.data.texto is string
+                    && request.resource.data.texto.size() > 0
+                    && request.resource.data.texto.size() < 1000;
+    }
+
+    // Histórico de livros encerrados.
+    match /historicoLivros/{livroId} {
+      allow read: if true;
+      allow write: if true;
+    }
+  }
+}

@@ -1,0 +1,815 @@
+/* ======================================================================
+   Layout e componentes específicos do Clube do Livro
+   ====================================================================== */
+
+.app {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.container {
+  width: 100%;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 0 1.1rem;
+}
+
+/* ---------- Cabeçalho ---------- */
+
+.cabecalho {
+  padding: 1.6rem 0 0.6rem;
+  text-align: center;
+  position: relative;
+}
+
+.cabecalho .titulo-clube {
+  font-family: var(--fonte-titulo);
+  font-size: clamp(2rem, 6vw, 3.2rem);
+  font-weight: 800;
+  color: var(--dourado-claro);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.02em;
+  line-height: 1.05;
+  margin: 0;
+}
+
+.cabecalho .subtitulo-clube {
+  font-family: var(--fonte-display);
+  font-style: italic;
+  font-size: clamp(1rem, 2.6vw, 1.25rem);
+  color: var(--papel-suave);
+  margin-top: 0.2rem;
+}
+
+.divisoria {
+  color: var(--dourado);
+  width: min(280px, 70%);
+  height: 16px;
+  margin: 0.8rem auto 0.2rem;
+  opacity: 0.85;
+}
+
+.barra-usuario {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  margin-top: 0.6rem;
+  font-family: var(--fonte-display);
+  color: var(--papel-suave);
+}
+
+.barra-usuario .mini-avatar {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--dourado);
+  box-shadow: 0 0 0 1px var(--madeira-escura);
+}
+
+/* ---------- Layout de conteúdo ---------- */
+
+.conteudo {
+  flex: 1;
+  padding: 1rem 0 6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.6rem;
+}
+
+.secao-titulo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  font-family: var(--fonte-titulo);
+  font-size: 1.5rem;
+  color: var(--dourado-claro);
+  margin-bottom: 1rem;
+}
+
+.secao-titulo svg {
+  color: var(--dourado);
+}
+
+/* ---------- Card do livro atual ---------- */
+
+.livro-atual {
+  display: flex;
+  gap: 1.4rem;
+  align-items: center;
+}
+
+.livro-atual .capa {
+  width: 120px;
+  min-width: 120px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid rgba(201, 162, 39, 0.5);
+  box-shadow: 0 6px 18px var(--sombra);
+  background: var(--couro);
+}
+
+.livro-atual .capa-vazia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--papel-tenue);
+}
+
+.livro-atual .info h3 {
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  margin-bottom: 0.15rem;
+  color: var(--papel);
+}
+
+.livro-atual .info .autor {
+  font-family: var(--fonte-display);
+  font-style: italic;
+  font-size: 1.15rem;
+  color: var(--papel-suave);
+}
+
+.livro-atual .info .paginas {
+  margin-top: 0.5rem;
+  color: var(--dourado-claro);
+  font-family: var(--fonte-display);
+  letter-spacing: 0.03em;
+}
+
+.sem-livro {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+
+.sem-livro p {
+  color: var(--papel-suave);
+  margin-bottom: 1.1rem;
+  font-family: var(--fonte-display);
+  font-size: 1.15rem;
+}
+
+/* ---------- A Estante ---------- */
+
+.estante {
+  --altura-livro: 210px;
+}
+
+.prateleira {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: clamp(0.6rem, 2.5vw, 1.6rem);
+  flex-wrap: wrap;
+  padding: 1rem 0.6rem 0;
+}
+
+/* A "madeira" da prateleira embaixo dos livros. */
+.prateleira::after {
+  content: '';
+  position: absolute;
+  left: -1rem;
+  right: -1rem;
+  bottom: -14px;
+  height: 16px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #4a3320, #2c1d12);
+  box-shadow: 0 8px 16px var(--sombra), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* ---------- Livro de cada membro (termômetro) ---------- */
+
+.membro-livro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: clamp(96px, 22vw, 130px);
+  transition: transform var(--transicao);
+}
+
+.membro-livro .avatar-marcador {
+  position: relative;
+  width: 54px;
+  height: 54px;
+  margin-bottom: -6px;
+  z-index: 2;
+}
+
+.membro-livro .avatar-marcador img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--dourado);
+  box-shadow: 0 3px 8px var(--sombra);
+}
+
+.membro-livro .avatar-placeholder {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--madeira-clara);
+  border: 2px solid var(--dourado);
+  color: var(--dourado-claro);
+  font-family: var(--fonte-titulo);
+  font-size: 1.3rem;
+}
+
+/* Coroa do 1º lugar. */
+.membro-livro .coroa {
+  position: absolute;
+  top: -20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--dourado-brilho);
+  filter: drop-shadow(0 0 6px rgba(244, 217, 123, 0.7));
+  z-index: 3;
+}
+
+.livro-vasilha {
+  position: relative;
+  width: 100%;
+  height: var(--altura-livro, 210px);
+  border-radius: 4px 6px 6px 4px;
+  /* Capa/lombada do livro. */
+  background:
+    linear-gradient(90deg, rgba(0, 0, 0, 0.35) 0 6px, transparent 6px),
+    linear-gradient(180deg, #3a2618, #2a1a10);
+  border: 1px solid rgba(0, 0, 0, 0.5);
+  box-shadow: 0 6px 14px var(--sombra), inset 0 0 0 1px rgba(201, 162, 39, 0.18);
+  overflow: hidden;
+}
+
+/* Lombada / nervuras do livro. */
+.livro-vasilha .lombada {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.55), transparent);
+  z-index: 2;
+}
+
+/* Preenchimento dourado de baixo para cima (o "termômetro").
+   A altura vem da variável --pct definida inline no componente. */
+.livro-vasilha .preenchimento {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--pct, 0%);
+  background: linear-gradient(180deg, var(--dourado-brilho), var(--dourado) 60%, #a9841c);
+  box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.25);
+  transition: height var(--transicao);
+  z-index: 1;
+}
+
+/* Linha de brilho no topo do líquido dourado. */
+.livro-vasilha .preenchimento::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--dourado-brilho);
+  box-shadow: 0 0 8px rgba(244, 217, 123, 0.8);
+}
+
+/* Rótulo de porcentagem no meio da lombada. */
+.livro-vasilha .rotulo-pct {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  font-family: var(--fonte-titulo);
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--papel);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.8);
+  pointer-events: none;
+}
+
+/* Destaque do 1º lugar. */
+.membro-livro.lider .livro-vasilha {
+  border-color: var(--dourado);
+  box-shadow:
+    0 0 22px rgba(224, 185, 77, 0.45),
+    0 6px 14px var(--sombra),
+    inset 0 0 0 2px rgba(224, 185, 77, 0.4);
+}
+
+.membro-livro.lider .avatar-marcador img,
+.membro-livro.lider .avatar-placeholder {
+  border-color: var(--dourado-brilho);
+  box-shadow: 0 0 14px rgba(244, 217, 123, 0.6);
+}
+
+.membro-livro .nome-membro {
+  font-family: var(--fonte-display);
+  font-size: 1.05rem;
+  color: var(--papel);
+  text-align: center;
+  line-height: 1.2;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.membro-livro .pagina-membro {
+  font-size: 0.8rem;
+  color: var(--papel-tenue);
+  text-align: center;
+}
+
+.membro-livro.eu .nome-membro::after {
+  content: ' (você)';
+  color: var(--dourado-claro);
+  font-style: italic;
+  font-size: 0.85em;
+}
+
+.estante-vazia {
+  text-align: center;
+  color: var(--papel-tenue);
+  font-family: var(--fonte-display);
+  font-style: italic;
+  padding: 2rem 1rem;
+}
+
+/* ---------- Botão flutuante de progresso ---------- */
+
+.fab-progresso {
+  position: fixed;
+  right: max(1rem, env(safe-area-inset-right));
+  bottom: max(1.1rem, env(safe-area-inset-bottom));
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85em 1.3em;
+  font-size: 1.02rem;
+  font-weight: 600;
+  border-radius: 999px;
+  border: 1px solid var(--dourado);
+  color: var(--madeira-escura);
+  background: linear-gradient(180deg, var(--dourado-claro), var(--dourado));
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  transition: box-shadow var(--transicao), transform var(--transicao);
+}
+
+.fab-progresso:hover {
+  box-shadow: 0 0 22px rgba(224, 185, 77, 0.6), 0 6px 20px rgba(0, 0, 0, 0.55);
+  transform: translateY(-2px);
+}
+
+/* ---------- Modal ---------- */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(10, 6, 3, 0.72);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.1rem;
+  animation: fade 240ms ease;
+}
+
+.modal {
+  width: 100%;
+  max-width: 460px;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: subir 300ms cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+
+.modal .modal-topo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.modal .modal-topo h2 {
+  font-size: 1.6rem;
+  margin: 0;
+  color: var(--dourado-claro);
+}
+
+.modal .fechar {
+  background: none;
+  border: none;
+  color: var(--papel-tenue);
+  font-size: 1.6rem;
+  line-height: 1;
+  padding: 0.1rem 0.4rem;
+  border-radius: 6px;
+  transition: color var(--transicao);
+}
+
+.modal .fechar:hover {
+  color: var(--dourado-claro);
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes subir {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.98);
+  }
+}
+
+/* ---------- Preview de avatar (cadastro) ---------- */
+
+.avatar-preview-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 1.2rem;
+}
+
+.avatar-preview {
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  object-fit: cover;
+  /* Moldura dourada estilo retrato de biblioteca. */
+  border: 4px solid var(--dourado);
+  box-shadow:
+    0 0 0 2px var(--madeira-escura),
+    0 0 0 6px rgba(201, 162, 39, 0.35),
+    0 8px 22px var(--sombra);
+  background: var(--madeira-clara);
+}
+
+.avatar-preview.vazio {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--papel-tenue);
+  font-family: var(--fonte-display);
+  font-size: 0.95rem;
+  text-align: center;
+  padding: 1rem;
+}
+
+.upload-label {
+  cursor: pointer;
+  display: inline-flex;
+}
+
+input[type='file'].escondido {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---------- Cadastro (tela inicial) ---------- */
+
+.tela-cadastro {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.4rem;
+}
+
+.cartao-cadastro {
+  width: 100%;
+  max-width: 440px;
+}
+
+.cartao-cadastro .brasao {
+  text-align: center;
+  margin-bottom: 1rem;
+  color: var(--dourado);
+}
+
+/* ---------- Mural de recados ---------- */
+
+.mural-lista {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.1rem;
+  margin-top: 1.2rem;
+}
+
+.recado {
+  position: relative;
+  padding: 1.1rem 1.1rem 1rem;
+  border-radius: 3px;
+  background:
+    linear-gradient(180deg, #f3ead1, #e7d9b6);
+  color: #2b1d13;
+  box-shadow: 0 6px 16px var(--sombra);
+  transform: rotate(-0.6deg);
+  transition: transform var(--transicao);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.recado:nth-child(even) {
+  transform: rotate(0.8deg);
+  background: linear-gradient(180deg, #efe6cd, #e2d3ad);
+}
+
+.recado:hover {
+  transform: rotate(0deg) translateY(-2px);
+}
+
+.recado .texto {
+  font-family: var(--fonte-corpo);
+  font-size: 1.02rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.recado .assinatura {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 0.9rem;
+  padding-top: 0.7rem;
+  border-top: 1px dashed rgba(43, 29, 19, 0.3);
+}
+
+.recado .assinatura img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid #8a6d2e;
+}
+
+.recado .assinatura .quem {
+  font-family: var(--fonte-titulo);
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #3a2818;
+}
+
+.recado .assinatura .quando {
+  margin-left: auto;
+  font-size: 0.78rem;
+  color: #6b5836;
+  font-style: italic;
+}
+
+.mural-vazio {
+  text-align: center;
+  color: var(--papel-tenue);
+  font-family: var(--fonte-display);
+  font-style: italic;
+  padding: 1.5rem;
+}
+
+.mural-form {
+  margin-top: 0.4rem;
+}
+
+.mural-form .linha {
+  display: flex;
+  gap: 0.7rem;
+  align-items: flex-end;
+}
+
+.mural-form textarea {
+  flex: 1;
+}
+
+/* ---------- Histórico ---------- */
+
+.historico-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  margin-top: 1rem;
+}
+
+.historico-item {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.historico-item .capinha {
+  width: 46px;
+  min-width: 46px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 3px;
+  border: 1px solid rgba(201, 162, 39, 0.4);
+  background: var(--couro);
+}
+
+.historico-item .dados h4 {
+  font-family: var(--fonte-titulo);
+  font-size: 1.1rem;
+  margin: 0;
+  color: var(--papel);
+}
+
+.historico-item .dados .meta {
+  font-size: 0.88rem;
+  color: var(--papel-tenue);
+  font-style: italic;
+}
+
+.historico-item .vencedor {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--dourado-claro);
+  font-family: var(--fonte-display);
+  white-space: nowrap;
+}
+
+.historico-item .vencedor img {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--dourado);
+}
+
+/* ---------- Rodapé ---------- */
+
+.rodape {
+  text-align: center;
+  padding: 1.4rem 1rem 2rem;
+  color: var(--papel-tenue);
+  font-family: var(--fonte-display);
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+.aviso {
+  font-size: 0.82rem;
+  color: var(--papel-tenue);
+  background: rgba(92, 26, 26, 0.22);
+  border: 1px solid rgba(92, 26, 26, 0.5);
+  border-radius: 6px;
+  padding: 0.7rem 0.9rem;
+  margin-top: 0.8rem;
+}
+
+.erro {
+  color: #f0b8b8;
+  background: rgba(92, 26, 26, 0.3);
+  border: 1px solid var(--bordo-claro);
+  border-radius: 6px;
+  padding: 0.6rem 0.85rem;
+  margin: 0.6rem 0;
+  font-size: 0.92rem;
+}
+
+/* ---------- Carregando ---------- */
+
+.carregando-tela {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  color: var(--dourado);
+}
+
+.vela-piscando {
+  animation: tremeluzir 2.4s ease-in-out infinite;
+}
+
+@keyframes tremeluzir {
+  0%,
+  100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 6px rgba(244, 217, 123, 0.6));
+  }
+  45% {
+    opacity: 0.75;
+    filter: drop-shadow(0 0 3px rgba(244, 217, 123, 0.3));
+  }
+  70% {
+    opacity: 0.9;
+  }
+}
+
+/* ---------- Responsivo ---------- */
+
+@media (max-width: 620px) {
+  .livro-atual {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .livro-atual .info .paginas {
+    justify-content: center;
+  }
+
+  /* A estante vira uma lista vertical rolável no celular. */
+  .estante {
+    --altura-livro: 64px;
+  }
+
+  .prateleira {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.8rem;
+    padding-bottom: 0;
+  }
+
+  .prateleira::after {
+    display: none;
+  }
+
+  .membro-livro {
+    flex-direction: row;
+    align-items: center;
+    width: 100%;
+    gap: 0.8rem;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(201, 162, 39, 0.2);
+    border-radius: var(--raio);
+    padding: 0.6rem 0.8rem;
+  }
+
+  .membro-livro .avatar-marcador {
+    margin-bottom: 0;
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+  }
+
+  .membro-livro .coroa {
+    top: -14px;
+  }
+
+  .livro-vasilha {
+    flex: 1;
+    height: var(--altura-livro);
+    border-radius: 4px;
+  }
+
+  /* No celular o preenchimento vira horizontal (esquerda -> direita). */
+  .livro-vasilha .preenchimento {
+    top: 0;
+    right: auto;
+    height: 100%;
+    width: var(--pct, 0%);
+    transition: width var(--transicao);
+  }
+
+  .livro-vasilha .preenchimento::before {
+    top: 0;
+    bottom: 0;
+    left: auto;
+    right: 0;
+    width: 3px;
+    height: auto;
+  }
+
+  .membro-livro .textos-membro {
+    min-width: 92px;
+    text-align: right;
+  }
+
+  .membro-livro .nome-membro,
+  .membro-livro .pagina-membro {
+    text-align: right;
+  }
+}
+
+@media (min-width: 621px) {
+  .membro-livro .textos-membro {
+    display: contents;
+  }
+}
