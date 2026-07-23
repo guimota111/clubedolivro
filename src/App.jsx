@@ -12,6 +12,7 @@ import Mural from './components/Mural'
 import Historico from './components/Historico'
 import CadastrarLivroModal from './components/CadastrarLivroModal'
 import EditarLivroModal from './components/EditarLivroModal'
+import EditarPerfilModal from './components/EditarPerfilModal'
 import AtualizarProgressoModal from './components/AtualizarProgressoModal'
 import {
   IconeVela,
@@ -79,6 +80,7 @@ export default function App() {
 function ClubeLogado({ userId, usuario, onTrocar }) {
   const [modalLivro, setModalLivro] = useState(false)
   const [modalEditar, setModalEditar] = useState(false)
+  const [modalPerfil, setModalPerfil] = useState(false)
   const [modalProgresso, setModalProgresso] = useState(false)
 
   const { membros } = useMembros()
@@ -96,6 +98,10 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
 
   const minhaPagina = livro ? porUsuario[userId] || 0 : 0
 
+  // Usa o doc ao vivo (onSnapshot) como fonte do perfil, com fallback para o
+  // que foi carregado no início — assim edições de nome/foto aparecem na hora.
+  const meuPerfil = membrosPorId[userId] || usuario
+
   return (
     <div className="app">
       <header className="cabecalho">
@@ -105,8 +111,8 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
           <DivisoriaOrnamentada className="divisoria" />
 
           <div className="barra-usuario">
-            {usuario.avatarUrl ? (
-              <img className="mini-avatar" src={usuario.avatarUrl} alt={usuario.nome} />
+            {meuPerfil.avatarUrl ? (
+              <img className="mini-avatar" src={meuPerfil.avatarUrl} alt={meuPerfil.nome} />
             ) : (
               <span
                 className="mini-avatar"
@@ -118,14 +124,18 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
                   color: 'var(--dourado-claro)',
                 }}
               >
-                {inicial(usuario.nome)}
+                {inicial(meuPerfil.nome)}
               </span>
             )}
             <span>
-              Bem-vindo(a), <strong>{usuario.nome}</strong>
+              Bem-vindo(a), <strong>{meuPerfil.nome}</strong>
             </span>
+            <button className="btn-texto" onClick={() => setModalPerfil(true)}>
+              Editar perfil
+            </button>
+            <span className="texto-tenue" aria-hidden="true">·</span>
             <button className="btn-texto" onClick={onTrocar}>
-              Não é você? Trocar de usuário
+              Não é você? Trocar
             </button>
           </div>
         </div>
@@ -190,6 +200,14 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
 
       {modalEditar && livro && (
         <EditarLivroModal livro={livro} onFechar={() => setModalEditar(false)} />
+      )}
+
+      {modalPerfil && (
+        <EditarPerfilModal
+          userId={userId}
+          perfil={meuPerfil}
+          onFechar={() => setModalPerfil(false)}
+        />
       )}
 
       {modalProgresso && livro && (

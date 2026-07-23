@@ -324,6 +324,9 @@
   color: var(--papel);
   text-align: center;
   line-height: 1.2;
+  /* Trava em uma linha: nomes longos são truncados com reticências,
+     mantendo todas as colunas (e portanto as barras) com a mesma altura. */
+  width: 100%;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -774,7 +777,8 @@ input[type='file'].escondido {
   }
 
   .livro-vasilha {
-    flex: 1;
+    flex: 1 1 0;
+    min-width: 0;
     height: var(--altura-livro);
     border-radius: 4px;
   }
@@ -797,14 +801,23 @@ input[type='file'].escondido {
     height: auto;
   }
 
+  /* Coluna de texto com largura FIXA: assim todas as barras (flex:1)
+     recebem exatamente o mesmo espaço, independentemente do tamanho do nome. */
   .membro-livro .textos-membro {
-    min-width: 92px;
+    flex: 0 0 100px;
+    width: 100px;
+    max-width: 100px;
     text-align: right;
   }
 
   .membro-livro .nome-membro,
   .membro-livro .pagina-membro {
     text-align: right;
+  }
+
+  .membro-livro .pagina-membro {
+    font-size: 0.75rem;
+    line-height: 1.25;
   }
 }
 
