@@ -11,6 +11,7 @@ import Estante from './components/Estante'
 import Mural from './components/Mural'
 import Historico from './components/Historico'
 import CadastrarLivroModal from './components/CadastrarLivroModal'
+import EditarLivroModal from './components/EditarLivroModal'
 import AtualizarProgressoModal from './components/AtualizarProgressoModal'
 import {
   IconeVela,
@@ -77,6 +78,7 @@ export default function App() {
 // Vista principal, já com identidade definida.
 function ClubeLogado({ userId, usuario, onTrocar }) {
   const [modalLivro, setModalLivro] = useState(false)
+  const [modalEditar, setModalEditar] = useState(false)
   const [modalProgresso, setModalProgresso] = useState(false)
 
   const { membros } = useMembros()
@@ -130,7 +132,11 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
       </header>
 
       <main className="conteudo container">
-        <LivroAtualCard livro={livro} aoAbrirCadastro={() => setModalLivro(true)} />
+        <LivroAtualCard
+          livro={livro}
+          aoAbrirCadastro={() => setModalLivro(true)}
+          aoEditar={() => setModalEditar(true)}
+        />
 
         {livro && (
           <section>
@@ -180,6 +186,10 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
           temLivroAtual={!!livro}
           onFechar={() => setModalLivro(false)}
         />
+      )}
+
+      {modalEditar && livro && (
+        <EditarLivroModal livro={livro} onFechar={() => setModalEditar(false)} />
       )}
 
       {modalProgresso && livro && (

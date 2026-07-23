@@ -50,6 +50,12 @@ export async function cadastrarLivro({ titulo, autor, totalPaginas, capaUrl }) {
   return ref.id
 }
 
+// Edita os dados do livro atual SEM encerrá-lo nem zerar o progresso.
+// Útil para corrigir título, autor, total de páginas ou capa.
+export async function atualizarLivro(livroId, dados) {
+  await updateDoc(doc(db, 'livroAtual', livroId), dados)
+}
+
 // Marca o livro ativo como encerrado e o copia para o histórico com o vencedor.
 export async function encerrarLivroAtivo() {
   const ativoQuery = query(

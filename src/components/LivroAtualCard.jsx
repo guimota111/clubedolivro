@@ -1,7 +1,7 @@
-import { IconeLivro, IconeLivroAberto } from './Icones'
+import { IconeLivro, IconeLivroAberto, IconePena } from './Icones'
 
 // Card do livro atual em destaque no topo — ou convite para cadastrar um.
-export default function LivroAtualCard({ livro, aoAbrirCadastro }) {
+export default function LivroAtualCard({ livro, aoAbrirCadastro, aoEditar }) {
   if (!livro) {
     return (
       <section className="painel sem-livro">
@@ -36,6 +36,16 @@ export default function LivroAtualCard({ livro, aoAbrirCadastro }) {
           <IconeLivro size={16} />
           {livro.totalPaginas} páginas
         </div>
+        {aoEditar && (
+          <button
+            className="btn-texto"
+            onClick={aoEditar}
+            style={{ marginTop: '0.6rem', display: 'inline-flex', alignItems: 'center', gap: '0.35em' }}
+          >
+            <IconePena size={14} />
+            Corrigir dados do livro
+          </button>
+        )}
       </div>
     </section>
   )
