@@ -20,6 +20,12 @@ export async function buscarUsuario(userId) {
   return snap.exists() ? { id: snap.id, ...snap.data() } : null
 }
 
+// Lista todos os membros já cadastrados (para entrar em outro dispositivo).
+export async function listarUsuarios() {
+  const snaps = await getDocs(collection(db, 'users'))
+  return snaps.docs.map((d) => ({ id: d.id, ...d.data() }))
+}
+
 export async function criarUsuario(userId, { nome, avatarUrl }) {
   await setDoc(doc(db, 'users', userId), {
     nome,

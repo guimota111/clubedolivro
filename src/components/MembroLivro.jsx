@@ -1,8 +1,10 @@
 import { IconeCoroa } from './Icones'
 import { inicial } from '../lib/formato'
+import { useVerFoto } from './FotoContext'
 
 // Um "livro-termômetro" que representa o progresso de um membro.
 export default function MembroLivro({ membro, pct, paginaAtual, totalPaginas, lider, souEu }) {
+  const verFoto = useVerFoto()
   return (
     <div className={`membro-livro${lider ? ' lider' : ''}${souEu ? ' eu' : ''}`}>
       <div className="avatar-marcador">
@@ -10,7 +12,12 @@ export default function MembroLivro({ membro, pct, paginaAtual, totalPaginas, li
           <IconeCoroa size={26} className="coroa" aria-label="1º lugar" />
         )}
         {membro.avatarUrl ? (
-          <img src={membro.avatarUrl} alt={membro.nome} />
+          <img
+            src={membro.avatarUrl}
+            alt={membro.nome}
+            className="avatar-clicavel"
+            onClick={() => verFoto(membro.avatarUrl, membro.nome)}
+          />
         ) : (
           <div className="avatar-placeholder">{inicial(membro.nome)}</div>
         )}

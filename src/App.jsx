@@ -14,6 +14,7 @@ import CadastrarLivroModal from './components/CadastrarLivroModal'
 import EditarLivroModal from './components/EditarLivroModal'
 import EditarPerfilModal from './components/EditarPerfilModal'
 import AtualizarProgressoModal from './components/AtualizarProgressoModal'
+import { FotoProvider, useVerFoto } from './components/FotoContext'
 import {
   IconeVela,
   IconeMarcador,
@@ -73,7 +74,11 @@ export default function App() {
     return <Cadastro userId={userId} aoConcluir={aoCadastrar} />
   }
 
-  return <ClubeLogado userId={userId} usuario={usuario} onTrocar={trocarUsuario} />
+  return (
+    <FotoProvider>
+      <ClubeLogado userId={userId} usuario={usuario} onTrocar={trocarUsuario} />
+    </FotoProvider>
+  )
 }
 
 // Vista principal, já com identidade definida.
@@ -82,6 +87,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
   const [modalEditar, setModalEditar] = useState(false)
   const [modalPerfil, setModalPerfil] = useState(false)
   const [modalProgresso, setModalProgresso] = useState(false)
+  const verFoto = useVerFoto()
 
   const { membros } = useMembros()
   const { livro } = useLivroAtual()
@@ -112,7 +118,12 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
 
           <div className="barra-usuario">
             {meuPerfil.avatarUrl ? (
-              <img className="mini-avatar" src={meuPerfil.avatarUrl} alt={meuPerfil.nome} />
+              <img
+                className="mini-avatar avatar-clicavel"
+                src={meuPerfil.avatarUrl}
+                alt={meuPerfil.nome}
+                onClick={() => verFoto(meuPerfil.avatarUrl, meuPerfil.nome)}
+              />
             ) : (
               <span
                 className="mini-avatar"

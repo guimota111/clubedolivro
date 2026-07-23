@@ -40,6 +40,16 @@ export function obterUserId() {
   }
 }
 
+// Define explicitamente o userId (usado ao entrar como um membro já existente,
+// por exemplo em outro dispositivo).
+export function definirUserId(id) {
+  try {
+    localStorage.setItem(STORAGE_KEY, id)
+  } catch {
+    // ignora
+  }
+}
+
 // Limpa a identidade local — volta para o cadastro.
 export function limparIdentidade() {
   try {

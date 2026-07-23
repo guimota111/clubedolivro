@@ -2,9 +2,11 @@ import { useState } from 'react'
 import { publicarRecado } from '../lib/db'
 import { formatarData, inicial } from '../lib/formato'
 import { IconePena, DivisoriaOrnamentada } from './Icones'
+import { useVerFoto } from './FotoContext'
 
 // Mural de recados: post-its que qualquer membro pode deixar.
 export default function Mural({ recados, membrosPorId, userId }) {
+  const verFoto = useVerFoto()
   const [texto, setTexto] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState('')
@@ -68,7 +70,12 @@ export default function Mural({ recados, membrosPorId, userId }) {
                 <div className="texto">{r.texto}</div>
                 <div className="assinatura">
                   {autor?.avatarUrl ? (
-                    <img src={autor.avatarUrl} alt="" />
+                    <img
+                      src={autor.avatarUrl}
+                      alt={autor.nome || ''}
+                      className="avatar-clicavel"
+                      onClick={() => verFoto(autor.avatarUrl, autor.nome)}
+                    />
                   ) : (
                     <span
                       style={{

@@ -3,9 +3,11 @@ import { collection, query, orderBy, onSnapshot } from 'firebase/firestore'
 import { db } from '../firebase'
 import { formatarData, inicial } from '../lib/formato'
 import { IconeLivro, IconeCoroa } from './Icones'
+import { useVerFoto } from './FotoContext'
 
 // Histórico dos livros já lidos, com o vencedor de cada rodada.
 export default function Historico({ membrosPorId }) {
+  const verFoto = useVerFoto()
   const [itens, setItens] = useState([])
 
   useEffect(() => {
@@ -51,7 +53,12 @@ export default function Historico({ membrosPorId }) {
                 <div className="vencedor" title={`Venceu: ${vencedor.nome}`}>
                   <IconeCoroa size={18} />
                   {vencedor.avatarUrl ? (
-                    <img src={vencedor.avatarUrl} alt={vencedor.nome} />
+                    <img
+                      src={vencedor.avatarUrl}
+                      alt={vencedor.nome}
+                      className="avatar-clicavel"
+                      onClick={() => verFoto(vencedor.avatarUrl, vencedor.nome)}
+                    />
                   ) : (
                     <span
                       style={{
