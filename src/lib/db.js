@@ -40,7 +40,7 @@ export async function atualizarUsuario(userId, dados) {
 
 // ---------- Livro atual ----------
 
-export async function cadastrarLivro({ titulo, autor, totalPaginas, capaUrl }) {
+export async function cadastrarLivro({ titulo, autor, capaUrl }) {
   // Encerra o livro ativo anterior (arquiva no histórico) antes de criar o novo.
   await encerrarLivroAtivo()
 
@@ -48,7 +48,6 @@ export async function cadastrarLivro({ titulo, autor, totalPaginas, capaUrl }) {
   await setDoc(ref, {
     titulo,
     autor: autor || '',
-    totalPaginas,
     capaUrl: capaUrl || '',
     iniciadoEm: serverTimestamp(),
     ativo: true,
@@ -57,7 +56,7 @@ export async function cadastrarLivro({ titulo, autor, totalPaginas, capaUrl }) {
 }
 
 // Edita os dados do livro atual SEM encerrá-lo nem zerar o progresso.
-// Útil para corrigir título, autor, total de páginas ou capa.
+// Útil para corrigir título, autor ou capa.
 export async function atualizarLivro(livroId, dados) {
   await updateDoc(doc(db, 'livroAtual', livroId), dados)
 }
@@ -75,18 +74,25 @@ export async function encerrarLivroAtivo() {
     const livro = livroSnap.data()
     const livroId = livroSnap.id
 
-    // Descobre o vencedor: maior paginaAtual no progresso desse livro.
+    // Descobre o vencedor: maior porcentagem no progresso desse livro
+    // (com fallback para paginaAtual/totalPaginas do modelo antigo).
     const progQuery = query(
       collection(db, 'progresso'),
       where('livroId', '==', livroId)
     )
     const progSnaps = await getDocs(progQuery)
     let vencedorUserId = ''
-    let maiorPagina = -1
+    let maiorPct = -1
     progSnaps.forEach((p) => {
       const d = p.data()
-      if (typeof d.paginaAtual === 'number' && d.paginaAtual > maiorPagina) {
-        maiorPagina = d.paginaAtual
+      let pct = null
+      if (typeof d.porcentagem === 'number') {
+        pct = d.porcentagem
+      } else if (typeof d.paginaAtual === 'number' && livro.totalPaginas > 0) {
+        pct = (d.paginaAtual / livro.totalPaginas) * 100
+      }
+      if (pct != null && pct > maiorPct) {
+        maiorPct = pct
         vencedorUserId = d.userId
       }
     })
@@ -95,7 +101,6 @@ export async function encerrarLivroAtivo() {
     await setDoc(doc(db, 'historicoLivros', livroId), {
       titulo: livro.titulo || '',
       autor: livro.autor || '',
-      totalPaginas: livro.totalPaginas || 0,
       capaUrl: livro.capaUrl || '',
       vencedorUserId,
       encerradoEm: serverTimestamp(),
@@ -108,14 +113,14 @@ export async function encerrarLivroAtivo() {
 
 // ---------- Progresso ----------
 
-export async function salvarProgresso(userId, livroId, paginaAtual) {
+export async function salvarProgresso(userId, livroId, porcentagem) {
   const id = `${userId}_${livroId}`
   await setDoc(
     doc(db, 'progresso', id),
     {
       userId,
       livroId,
-      paginaAtual,
+      porcentagem,
       atualizadoEm: serverTimestamp(),
     },
     { merge: true }

@@ -3,7 +3,7 @@ import './styles/app.css'
 import { obterOuCriarUserId, limparIdentidade } from './lib/identity'
 import { buscarUsuario } from './lib/db'
 import { useMembros, useLivroAtual, useProgresso, useMural } from './hooks/useDadosClube'
-import { inicial } from './lib/formato'
+import { inicial, pctDoProgresso } from './lib/formato'
 
 import Cadastro from './components/Cadastro'
 import LivroAtualCard from './components/LivroAtualCard'
@@ -102,7 +102,9 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
     return mapa
   }, [membros])
 
-  const minhaPagina = livro ? porUsuario[userId] || 0 : 0
+  const minhaPorcentagem = livro
+    ? pctDoProgresso(porUsuario[userId], livro.totalPaginas)
+    : 0
 
   // Usa o doc ao vivo (onSnapshot) como fonte do perfil, com fallback para o
   // que foi carregado no início — assim edições de nome/foto aparecem na hora.
@@ -225,7 +227,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
         <AtualizarProgressoModal
           userId={userId}
           livro={livro}
-          paginaAtualInicial={minhaPagina}
+          porcentagemInicial={minhaPorcentagem}
           onFechar={() => setModalProgresso(false)}
         />
       )}

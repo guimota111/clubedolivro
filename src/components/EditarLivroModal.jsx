@@ -9,9 +9,6 @@ import { IconeLivro } from './Icones'
 export default function EditarLivroModal({ livro, onFechar }) {
   const [titulo, setTitulo] = useState(livro.titulo || '')
   const [autor, setAutor] = useState(livro.autor || '')
-  const [totalPaginas, setTotalPaginas] = useState(
-    livro.totalPaginas ? String(livro.totalPaginas) : ''
-  )
   const [capaUrl, setCapaUrl] = useState(livro.capaUrl || '')
   const [arquivo, setArquivo] = useState(null)
   const [preview, setPreview] = useState('')
@@ -38,13 +35,8 @@ export default function EditarLivroModal({ livro, onFechar }) {
   async function aoEnviar(e) {
     e.preventDefault()
     const tituloLimpo = titulo.trim()
-    const total = parseInt(totalPaginas, 10)
     if (!tituloLimpo) {
       setErro('Informe o título do livro.')
-      return
-    }
-    if (!total || total <= 0) {
-      setErro('Informe o total de páginas (número maior que zero).')
       return
     }
     setEnviando(true)
@@ -57,7 +49,6 @@ export default function EditarLivroModal({ livro, onFechar }) {
       await atualizarLivro(livro.id, {
         titulo: tituloLimpo,
         autor: autor.trim(),
-        totalPaginas: total,
         capaUrl: urlFinal,
       })
       onFechar()
@@ -71,8 +62,7 @@ export default function EditarLivroModal({ livro, onFechar }) {
   return (
     <Modal titulo="Editar livro" onFechar={onFechar}>
       <p className="texto-suave" style={{ marginTop: 0 }}>
-        Corrija os dados do livro em leitura. O progresso de todos é mantido —
-        as porcentagens serão recalculadas com o novo total de páginas.
+        Corrija os dados do livro em leitura. O progresso de todos é mantido.
       </p>
 
       <form onSubmit={aoEnviar} style={{ marginTop: '1rem' }}>
@@ -97,18 +87,6 @@ export default function EditarLivroModal({ livro, onFechar }) {
             maxLength={140}
             onChange={(e) => setAutor(e.target.value)}
             placeholder="Ex.: Machado de Assis"
-          />
-        </div>
-
-        <div className="campo">
-          <label htmlFor="edit-total">Total de páginas</label>
-          <input
-            id="edit-total"
-            type="number"
-            min="1"
-            value={totalPaginas}
-            onChange={(e) => setTotalPaginas(e.target.value)}
-            placeholder="Ex.: 256"
           />
         </div>
 

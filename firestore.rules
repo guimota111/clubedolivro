@@ -18,17 +18,16 @@ service cloud.firestore {
     match /livroAtual/{livroId} {
       allow read: if true;
       allow write: if request.resource.data.titulo is string
-                   && request.resource.data.titulo.size() > 0
-                   && request.resource.data.totalPaginas is number
-                   && request.resource.data.totalPaginas > 0;
+                   && request.resource.data.titulo.size() > 0;
       allow delete: if true;
     }
 
-    // Progresso de leitura. ID composto userId_livroId.
+    // Progresso de leitura em porcentagem (0-100). ID composto userId_livroId.
     match /progresso/{progressoId} {
       allow read: if true;
-      allow write: if request.resource.data.paginaAtual is number
-                   && request.resource.data.paginaAtual >= 0;
+      allow write: if request.resource.data.porcentagem is number
+                   && request.resource.data.porcentagem >= 0
+                   && request.resource.data.porcentagem <= 100;
     }
 
     // Mural de recados. Criação apenas; sem edição/exclusão por enquanto.

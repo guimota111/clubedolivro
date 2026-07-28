@@ -9,7 +9,6 @@ import { IconeLivro } from './Icones'
 export default function CadastrarLivroModal({ temLivroAtual, onFechar, aoCadastrar }) {
   const [titulo, setTitulo] = useState('')
   const [autor, setAutor] = useState('')
-  const [totalPaginas, setTotalPaginas] = useState('')
   const [capaUrl, setCapaUrl] = useState('')
   const [arquivo, setArquivo] = useState(null)
   const [preview, setPreview] = useState('')
@@ -37,13 +36,8 @@ export default function CadastrarLivroModal({ temLivroAtual, onFechar, aoCadastr
   async function aoEnviar(e) {
     e.preventDefault()
     const tituloLimpo = titulo.trim()
-    const total = parseInt(totalPaginas, 10)
     if (!tituloLimpo) {
       setErro('Informe o título do livro.')
-      return
-    }
-    if (!total || total <= 0) {
-      setErro('Informe o total de páginas (número maior que zero).')
       return
     }
     setEnviando(true)
@@ -56,7 +50,6 @@ export default function CadastrarLivroModal({ temLivroAtual, onFechar, aoCadastr
       const livroId = await cadastrarLivro({
         titulo: tituloLimpo,
         autor: autor.trim(),
-        totalPaginas: total,
         capaUrl: urlFinal,
       })
       aoCadastrar?.(livroId)
@@ -99,18 +92,6 @@ export default function CadastrarLivroModal({ temLivroAtual, onFechar, aoCadastr
             maxLength={140}
             onChange={(e) => setAutor(e.target.value)}
             placeholder="Ex.: Machado de Assis"
-          />
-        </div>
-
-        <div className="campo">
-          <label htmlFor="total">Total de páginas</label>
-          <input
-            id="total"
-            type="number"
-            min="1"
-            value={totalPaginas}
-            onChange={(e) => setTotalPaginas(e.target.value)}
-            placeholder="Ex.: 256"
           />
         </div>
 

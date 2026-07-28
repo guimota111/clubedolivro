@@ -22,11 +22,30 @@ export function formatarData(ts) {
   })
 }
 
-// Calcula a porcentagem de leitura, limitada entre 0 e 100.
+// Calcula a porcentagem de leitura a partir de páginas (usado só como
+// fallback para progresso antigo que ainda guardava paginaAtual).
 export function calcularPct(paginaAtual, totalPaginas) {
   if (!totalPaginas || totalPaginas <= 0) return 0
   const pct = (paginaAtual / totalPaginas) * 100
   return Math.max(0, Math.min(100, Math.round(pct)))
+}
+
+// Garante um número inteiro de porcentagem entre 0 e 100.
+export function limitarPct(valor) {
+  const n = Math.round(Number(valor))
+  if (!Number.isFinite(n)) return 0
+  return Math.max(0, Math.min(100, n))
+}
+
+// Extrai a porcentagem de um documento de progresso, com fallback para o
+// modelo antigo (paginaAtual / totalPaginas do livro).
+export function pctDoProgresso(prog, totalPaginas) {
+  if (!prog) return 0
+  if (typeof prog.porcentagem === 'number') return limitarPct(prog.porcentagem)
+  if (typeof prog.paginaAtual === 'number') {
+    return calcularPct(prog.paginaAtual, totalPaginas || 0)
+  }
+  return 0
 }
 
 // Primeira letra do nome para avatares vazios.

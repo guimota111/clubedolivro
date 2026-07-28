@@ -40,11 +40,11 @@ export function useProgresso(livroId) {
         : null,
     [livroId]
   )
-  // Mapa userId -> paginaAtual para acesso rápido.
+  // Mapa userId -> documento de progresso (porcentagem/paginaAtual) completo.
   const porUsuario = useMemo(() => {
     const mapa = {}
     docs.forEach((d) => {
-      mapa[d.userId] = d.paginaAtual || 0
+      mapa[d.userId] = d
     })
     return mapa
   }, [docs])

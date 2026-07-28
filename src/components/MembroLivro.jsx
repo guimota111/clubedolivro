@@ -3,7 +3,7 @@ import { inicial } from '../lib/formato'
 import { useVerFoto } from './FotoContext'
 
 // Um "livro-termômetro" que representa o progresso de um membro.
-export default function MembroLivro({ membro, pct, paginaAtual, totalPaginas, lider, souEu }) {
+export default function MembroLivro({ membro, pct, lider, souEu }) {
   const verFoto = useVerFoto()
   return (
     <div className={`membro-livro${lider ? ' lider' : ''}${souEu ? ' eu' : ''}`}>
@@ -38,9 +38,7 @@ export default function MembroLivro({ membro, pct, paginaAtual, totalPaginas, li
         <div className="nome-membro" title={membro.nome}>
           {membro.nome}
         </div>
-        <div className="pagina-membro">
-          pág. {paginaAtual} de {totalPaginas}
-        </div>
+        <div className="pagina-membro">{pct}% lido</div>
       </div>
     </div>
   )

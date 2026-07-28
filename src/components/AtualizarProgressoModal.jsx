@@ -1,41 +1,27 @@
 import { useState } from 'react'
 import Modal from './Modal'
 import { salvarProgresso } from '../lib/db'
-import { calcularPct } from '../lib/formato'
+import { limitarPct } from '../lib/formato'
 import { IconeMarcador } from './Icones'
 
-// Modal para o membro informar sua página atual.
+// Modal para o membro informar em que porcentagem da leitura está.
+// Usamos % (e não página) porque cada um pode ter uma edição diferente.
 export default function AtualizarProgressoModal({
   userId,
   livro,
-  paginaAtualInicial,
+  porcentagemInicial,
   onFechar,
 }) {
-  const [pagina, setPagina] = useState(
-    paginaAtualInicial ? String(paginaAtualInicial) : ''
-  )
+  const [pct, setPct] = useState(limitarPct(porcentagemInicial || 0))
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
 
-  const total = livro?.totalPaginas || 0
-  const paginaNum = parseInt(pagina, 10)
-  const pctPrevia = Number.isFinite(paginaNum) ? calcularPct(paginaNum, total) : 0
-
   async function aoEnviar(e) {
     e.preventDefault()
-    const p = parseInt(pagina, 10)
-    if (!Number.isFinite(p) || p < 0) {
-      setErro('Informe um número de página válido.')
-      return
-    }
-    if (total && p > total) {
-      setErro(`O livro tem ${total} páginas. Informe até esse valor.`)
-      return
-    }
     setSalvando(true)
     setErro('')
     try {
-      await salvarProgresso(userId, livro.id, p)
+      await salvarProgresso(userId, livro.id, limitarPct(pct))
       onFechar()
     } catch (err) {
       console.error(err)
@@ -47,36 +33,54 @@ export default function AtualizarProgressoModal({
   return (
     <Modal titulo="Meu progresso" onFechar={onFechar}>
       <p className="texto-suave" style={{ marginTop: 0 }}>
-        Lendo <strong>{livro?.titulo}</strong> — {total} páginas.
+        Lendo <strong>{livro?.titulo}</strong>. Informe quanto você já leu —
+        assim funciona para qualquer edição.
       </p>
+
       <form onSubmit={aoEnviar}>
-        <div className="campo">
-          <label htmlFor="pagina">Estou na página</label>
-          <input
-            id="pagina"
-            type="number"
-            min="0"
-            max={total || undefined}
-            value={pagina}
-            onChange={(e) => setPagina(e.target.value)}
-            placeholder="0"
-            autoFocus
-          />
+        <div
+          className="pct-grande"
+          style={{ margin: '0.6rem 0 0.2rem' }}
+          aria-hidden="true"
+        >
+          {limitarPct(pct)}
+          <span className="pct-simbolo">%</span>
         </div>
 
-        <div
-          className="selo-secao"
-          style={{ justifyContent: 'center', fontSize: '1.3rem', margin: '0.4rem 0 1rem' }}
-        >
-          <IconeMarcador size={20} />
-          <span style={{ fontFamily: 'var(--fonte-titulo)', color: 'var(--dourado-claro)' }}>
-            {pctPrevia}% do livro
-          </span>
+        <input
+          type="range"
+          min="0"
+          max="100"
+          step="1"
+          value={pct}
+          onChange={(e) => setPct(Number(e.target.value))}
+          className="slider-pct"
+          aria-label="Porcentagem lida"
+          style={{ '--pct': `${limitarPct(pct)}%` }}
+        />
+
+        <div className="campo" style={{ marginTop: '1rem' }}>
+          <label htmlFor="pct-num">Ou digite a porcentagem exata</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <input
+              id="pct-num"
+              type="number"
+              min="0"
+              max="100"
+              value={pct}
+              onChange={(e) => setPct(e.target.value === '' ? 0 : Number(e.target.value))}
+              style={{ maxWidth: 120 }}
+            />
+            <span className="texto-suave" style={{ fontSize: '1.2rem' }}>
+              %
+            </span>
+          </div>
         </div>
 
         {erro && <div className="erro">{erro}</div>}
 
         <button className="btn" type="submit" disabled={salvando} style={{ width: '100%' }}>
+          <IconeMarcador size={18} />
           {salvando ? 'Salvando…' : 'Atualizar posição na estante'}
         </button>
       </form>

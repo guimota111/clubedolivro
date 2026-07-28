@@ -32,10 +32,6 @@ export default function LivroAtualCard({ livro, aoAbrirCadastro, aoEditar }) {
         </div>
         <h3>{livro.titulo}</h3>
         {livro.autor && <div className="autor">{livro.autor}</div>}
-        <div className="paginas selo-secao">
-          <IconeLivro size={16} />
-          {livro.totalPaginas} páginas
-        </div>
         {aoEditar && (
           <button
             className="btn-texto"
