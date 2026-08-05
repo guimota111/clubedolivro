@@ -113,14 +113,20 @@ export async function encerrarLivroAtivo() {
 
 // ---------- Progresso ----------
 
-export async function salvarProgresso(userId, livroId, porcentagem) {
+// Salva o progresso do membro. `dados` sempre traz `porcentagem` (0-100), que
+// é a fonte de verdade usada nas barras/ranking. Quando o membro informa por
+// página, também guardamos `paginaAtual`, `totalPaginas` (da edição DELE) e
+// `modo`, para reabrir o modal já no jeito que ele usou — cada edição
+// (Kindle, físico…) tem uma contagem diferente, por isso a página é sempre
+// convertida em % antes de comparar.
+export async function salvarProgresso(userId, livroId, dados) {
   const id = `${userId}_${livroId}`
   await setDoc(
     doc(db, 'progresso', id),
     {
       userId,
       livroId,
-      porcentagem,
+      ...dados,
       atualizadoEm: serverTimestamp(),
     },
     { merge: true }

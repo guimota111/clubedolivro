@@ -508,6 +508,41 @@
   cursor: grab;
 }
 
+/* Seletor entre informar por porcentagem ou por página. */
+.seletor-modo {
+  display: flex;
+  gap: 0.3rem;
+  padding: 0.25rem;
+  margin: 0.4rem 0 0.2rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(201, 162, 39, 0.35);
+}
+
+.seletor-opcao {
+  flex: 1;
+  padding: 0.5rem 0.4rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--papel);
+  font-family: var(--fonte-titulo);
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background var(--transicao), color var(--transicao);
+}
+
+.seletor-opcao:hover {
+  color: var(--dourado-claro);
+}
+
+.seletor-opcao.ativo {
+  background: linear-gradient(135deg, var(--dourado), var(--dourado-claro));
+  color: #2a1c05;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+
 /* ---------- Visualizador de foto (lightbox) ---------- */
 
 .avatar-clicavel {

@@ -228,6 +228,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
           userId={userId}
           livro={livro}
           porcentagemInicial={minhaPorcentagem}
+          progressoAtual={porUsuario[userId]}
           onFechar={() => setModalProgresso(false)}
         />
       )}
