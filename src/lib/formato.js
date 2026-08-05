@@ -48,6 +48,30 @@ export function pctDoProgresso(prog, totalPaginas) {
   return 0
 }
 
+// Converte a data-limite ('YYYY-MM-DD') no instante final daquele dia (23:59:59
+// no fuso local). Retorna null se inválida/ausente.
+export function prazoParaData(iso) {
+  if (!iso || typeof iso !== 'string') return null
+  const partes = iso.split('-').map(Number)
+  if (partes.length !== 3 || partes.some((n) => !Number.isFinite(n))) return null
+  const [ano, mes, dia] = partes
+  const d = new Date(ano, mes - 1, dia, 23, 59, 59, 999)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+// Quebra a diferença até `alvo` (Date) em dias/horas/min/seg e diz se venceu.
+export function contagemRegressiva(alvo, agora = new Date()) {
+  if (!alvo) return null
+  let ms = alvo.getTime() - agora.getTime()
+  const vencido = ms <= 0
+  if (vencido) ms = 0
+  const dias = Math.floor(ms / 86400000)
+  const horas = Math.floor((ms % 86400000) / 3600000)
+  const minutos = Math.floor((ms % 3600000) / 60000)
+  const segundos = Math.floor((ms % 60000) / 1000)
+  return { dias, horas, minutos, segundos, vencido }
+}
+
 // Primeira letra do nome para avatares vazios.
 export function inicial(nome) {
   return (nome || '?').trim().charAt(0).toUpperCase() || '?'

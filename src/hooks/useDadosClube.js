@@ -59,3 +59,67 @@ export function useMural() {
   )
   return { recados: docs, carregando }
 }
+
+// Assina o histórico de livros encerrados, do mais recente ao mais antigo.
+export function useHistorico() {
+  const { docs, carregando } = useColecaoAoVivo(
+    () => query(collection(db, 'historicoLivros'), orderBy('encerradoEm', 'desc')),
+    []
+  )
+  return { historico: docs, carregando }
+}
+
+// Assina todas as resenhas (o clube é pequeno). Mapa livroId -> lista.
+export function useResenhas() {
+  const { docs, carregando } = useColecaoAoVivo(
+    () => collection(db, 'resenhas'),
+    []
+  )
+  const porLivro = useMemo(() => {
+    const mapa = {}
+    docs.forEach((r) => {
+      ;(mapa[r.livroId] = mapa[r.livroId] || []).push(r)
+    })
+    return mapa
+  }, [docs])
+  return { resenhas: docs, porLivro, carregando }
+}
+
+// Assina as notas parciais de um livro, da mais recente à mais antiga.
+export function useNotas(livroId) {
+  const { docs, carregando } = useColecaoAoVivo(
+    () =>
+      livroId
+        ? query(collection(db, 'notas'), where('livroId', '==', livroId))
+        : null,
+    [livroId]
+  )
+  const ordenadas = useMemo(
+    () =>
+      [...docs].sort(
+        (a, b) => (b.criadoEm?.seconds || 0) - (a.criadoEm?.seconds || 0)
+      ),
+    [docs]
+  )
+  return { notas: ordenadas, carregando }
+}
+
+// Assina o progresso do membro atual em TODOS os livros (para saber quais ele
+// já terminou, na aba de resenhas).
+export function useMeuProgresso(userId) {
+  const { docs, carregando } = useColecaoAoVivo(
+    () =>
+      userId
+        ? query(collection(db, 'progresso'), where('userId', '==', userId))
+        : null,
+    [userId]
+  )
+  const porLivro = useMemo(() => {
+    const mapa = {}
+    docs.forEach((p) => {
+      mapa[p.livroId] = p
+    })
+    return mapa
+  }, [docs])
+  return { porLivro, carregando }
+}

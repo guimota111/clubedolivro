@@ -9,6 +9,7 @@ import { IconeLivro } from './Icones'
 export default function CadastrarLivroModal({ temLivroAtual, onFechar, aoCadastrar }) {
   const [titulo, setTitulo] = useState('')
   const [autor, setAutor] = useState('')
+  const [dataLimite, setDataLimite] = useState('')
   const [capaUrl, setCapaUrl] = useState('')
   const [arquivo, setArquivo] = useState(null)
   const [preview, setPreview] = useState('')
@@ -51,6 +52,7 @@ export default function CadastrarLivroModal({ temLivroAtual, onFechar, aoCadastr
         titulo: tituloLimpo,
         autor: autor.trim(),
         capaUrl: urlFinal,
+        dataLimite: dataLimite || null,
       })
       aoCadastrar?.(livroId)
       onFechar()
@@ -93,6 +95,19 @@ export default function CadastrarLivroModal({ temLivroAtual, onFechar, aoCadastr
             onChange={(e) => setAutor(e.target.value)}
             placeholder="Ex.: Machado de Assis"
           />
+        </div>
+
+        <div className="campo">
+          <label htmlFor="data-limite">Data-limite para terminar (opcional)</label>
+          <input
+            id="data-limite"
+            type="date"
+            value={dataLimite}
+            onChange={(e) => setDataLimite(e.target.value)}
+          />
+          <span className="campo-dica">
+            Aparece como contagem regressiva na página inicial.
+          </span>
         </div>
 
         <div className="campo">

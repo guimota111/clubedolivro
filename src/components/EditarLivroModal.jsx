@@ -9,6 +9,7 @@ import { IconeLivro } from './Icones'
 export default function EditarLivroModal({ livro, onFechar }) {
   const [titulo, setTitulo] = useState(livro.titulo || '')
   const [autor, setAutor] = useState(livro.autor || '')
+  const [dataLimite, setDataLimite] = useState(livro.dataLimite || '')
   const [capaUrl, setCapaUrl] = useState(livro.capaUrl || '')
   const [arquivo, setArquivo] = useState(null)
   const [preview, setPreview] = useState('')
@@ -50,6 +51,7 @@ export default function EditarLivroModal({ livro, onFechar }) {
         titulo: tituloLimpo,
         autor: autor.trim(),
         capaUrl: urlFinal,
+        dataLimite: dataLimite || null,
       })
       onFechar()
     } catch (err) {
@@ -88,6 +90,19 @@ export default function EditarLivroModal({ livro, onFechar }) {
             onChange={(e) => setAutor(e.target.value)}
             placeholder="Ex.: Machado de Assis"
           />
+        </div>
+
+        <div className="campo">
+          <label htmlFor="edit-data-limite">Data-limite para terminar (opcional)</label>
+          <input
+            id="edit-data-limite"
+            type="date"
+            value={dataLimite}
+            onChange={(e) => setDataLimite(e.target.value)}
+          />
+          <span className="campo-dica">
+            Deixe em branco para não exibir contagem regressiva.
+          </span>
         </div>
 
         <div className="campo">

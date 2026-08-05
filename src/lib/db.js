@@ -40,7 +40,7 @@ export async function atualizarUsuario(userId, dados) {
 
 // ---------- Livro atual ----------
 
-export async function cadastrarLivro({ titulo, autor, capaUrl }) {
+export async function cadastrarLivro({ titulo, autor, capaUrl, dataLimite }) {
   // Encerra o livro ativo anterior (arquiva no histórico) antes de criar o novo.
   await encerrarLivroAtivo()
 
@@ -49,6 +49,8 @@ export async function cadastrarLivro({ titulo, autor, capaUrl }) {
     titulo,
     autor: autor || '',
     capaUrl: capaUrl || '',
+    // Prazo para terminar a leitura (string ISO 'YYYY-MM-DD') ou null.
+    dataLimite: dataLimite || null,
     iniciadoEm: serverTimestamp(),
     ativo: true,
   })
@@ -131,6 +133,46 @@ export async function salvarProgresso(userId, livroId, dados) {
     },
     { merge: true }
   )
+}
+
+// ---------- Resenhas (liberadas para quem terminou o livro) ----------
+
+// Uma resenha por membro por livro (id composto). Pode ser reeditada.
+export async function salvarResenha(userId, livroId, { texto, nota }) {
+  const id = `${userId}_${livroId}`
+  await setDoc(
+    doc(db, 'resenhas', id),
+    {
+      userId,
+      livroId,
+      texto,
+      nota: nota || 0, // 0 = sem nota; 1..5 = estrelas
+      atualizadoEm: serverTimestamp(),
+    },
+    { merge: true }
+  )
+}
+
+// ---------- Notas parciais (com desbloqueio por página/porcentagem) ----------
+
+// Cada nota guarda o limite de desbloqueio SEMPRE convertido em % (para
+// comparar entre edições diferentes), além do valor/tipo original só para
+// exibição. Outros membros só leem quando o próprio progresso alcança o limite.
+export async function salvarNota(
+  userId,
+  livroId,
+  { texto, desbloqueioPct, desbloqueioTipo, desbloqueioValor, totalPaginas }
+) {
+  await addDoc(collection(db, 'notas'), {
+    userId,
+    livroId,
+    texto,
+    desbloqueioPct,
+    desbloqueioTipo, // 'pagina' | 'porcentagem'
+    desbloqueioValor,
+    totalPaginas: totalPaginas || null,
+    criadoEm: serverTimestamp(),
+  })
 }
 
 // ---------- Mural ----------

@@ -99,10 +99,17 @@ src/
 | Coleção            | Documento             | Campos principais                                             |
 | ------------------ | --------------------- | ------------------------------------------------------------- |
 | `users`            | `{userId}`            | `nome`, `avatarUrl`, `criadoEm`                               |
-| `livroAtual`       | `{livroId}`           | `titulo`, `autor`, `totalPaginas`, `capaUrl`, `ativo`, `iniciadoEm` |
-| `progresso`        | `{userId}_{livroId}`  | `userId`, `livroId`, `paginaAtual`, `atualizadoEm`            |
+| `livroAtual`       | `{livroId}`           | `titulo`, `autor`, `capaUrl`, `dataLimite`, `ativo`, `iniciadoEm` |
+| `progresso`        | `{userId}_{livroId}`  | `userId`, `livroId`, `porcentagem`, `paginaAtual`, `totalPaginas`, `modo`, `atualizadoEm` |
+| `notas`            | `{notaId}`            | `userId`, `livroId`, `texto`, `desbloqueioPct`, `desbloqueioTipo`, `desbloqueioValor`, `totalPaginas`, `criadoEm` |
+| `resenhas`         | `{userId}_{livroId}`  | `userId`, `livroId`, `texto`, `nota`, `atualizadoEm`         |
 | `mural`            | `{mensagemId}`        | `userId`, `texto`, `criadoEm`                                 |
 | `historicoLivros`  | `{livroId}`           | `titulo`, `autor`, `capaUrl`, `vencedorUserId`, `encerradoEm` |
+
+As resenhas são **liberadas no cliente** apenas para quem terminou o livro
+(100%); as notas parciais ficam trancadas até o leitor alcançar `desbloqueioPct`.
+Como o app não tem autenticação real, esse controle é de experiência, não de
+segurança.
 
 ## ⚠️ Aviso de segurança
 
