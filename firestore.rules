@@ -54,6 +54,18 @@ service cloud.firestore {
       allow delete: if true;
     }
 
+    // Comentários em resenhas e notas parciais.
+    match /comentarios/{comentarioId} {
+      allow read: if true;
+      allow create: if request.resource.data.texto is string
+                    && request.resource.data.texto.size() > 0
+                    && request.resource.data.texto.size() < 2000
+                    && request.resource.data.alvoId is string
+                    && request.resource.data.userId is string
+                    && request.resource.data.alvoTipo in ['resenha', 'nota'];
+      allow delete: if true;
+    }
+
     // Mural de recados. Criação apenas; sem edição/exclusão por enquanto.
     match /mural/{mensagemId} {
       allow read: if true;

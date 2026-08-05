@@ -104,6 +104,26 @@ export function useNotas(livroId) {
   return { notas: ordenadas, carregando }
 }
 
+// Assina todos os comentários (o clube é pequeno). Mapa alvoId -> lista
+// ordenada do mais antigo ao mais novo (leitura natural de conversa).
+export function useComentarios() {
+  const { docs, carregando } = useColecaoAoVivo(
+    () => collection(db, 'comentarios'),
+    []
+  )
+  const porAlvo = useMemo(() => {
+    const mapa = {}
+    docs.forEach((c) => {
+      ;(mapa[c.alvoId] = mapa[c.alvoId] || []).push(c)
+    })
+    Object.values(mapa).forEach((lista) =>
+      lista.sort((a, b) => (a.criadoEm?.seconds || 0) - (b.criadoEm?.seconds || 0))
+    )
+    return mapa
+  }, [docs])
+  return { porAlvo, carregando }
+}
+
 // Assina o progresso do membro atual em TODOS os livros (para saber quais ele
 // já terminou, na aba de resenhas).
 export function useMeuProgresso(userId) {

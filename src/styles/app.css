@@ -1487,3 +1487,83 @@ input[type='file'].escondido {
 }
 .changelog-lista strong { color: var(--dourado-claro); font-family: var(--fonte-titulo); }
 .changelog-lista p { margin: 0.15rem 0 0; color: var(--papel-suave); font-size: 0.95rem; line-height: 1.45; }
+
+/* ---------- Comentários (em resenhas e notas) ---------- */
+.comentarios {
+  margin-top: 0.8rem;
+  padding-top: 0.7rem;
+  border-top: 1px dashed rgba(201, 162, 39, 0.25);
+}
+.comentarios-lista {
+  list-style: none;
+  margin: 0 0 0.6rem;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.comentario {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+.comentario-avatar {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1.5px solid var(--dourado);
+}
+.comentario-inicial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--madeira-clara);
+  color: var(--dourado-claro);
+  font-family: var(--fonte-titulo);
+  font-size: 0.72rem;
+}
+.comentario-corpo {
+  flex: 1;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(201, 162, 39, 0.18);
+  border-radius: 10px;
+  padding: 0.4rem 0.6rem;
+}
+.comentario-topo {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: 0.1rem;
+}
+.comentario-quem {
+  font-family: var(--fonte-titulo);
+  font-size: 0.9rem;
+  color: var(--dourado-claro);
+}
+.comentario-quando {
+  font-size: 0.72rem;
+  color: var(--papel-tenue);
+}
+.comentario-texto {
+  color: var(--papel);
+  font-size: 0.92rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.comentario-form {
+  display: flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+.comentario-form input {
+  flex: 1;
+  min-width: 0;
+}
+.comentario-enviar {
+  flex-shrink: 0;
+  padding: 0.5rem 0.7rem;
+  white-space: nowrap;
+}

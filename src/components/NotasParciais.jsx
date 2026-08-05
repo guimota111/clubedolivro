@@ -3,6 +3,7 @@ import { salvarNota } from '../lib/db'
 import { calcularPct, limitarPct, formatarData, inicial } from '../lib/formato'
 import { IconeMarcador, IconePena, DivisoriaOrnamentada } from './Icones'
 import { useVerFoto } from './FotoContext'
+import Comentarios from './Comentarios'
 
 // Notas parciais: cada membro pode deixar uma anotação "trancada" até uma
 // página/porcentagem. Os outros só leem quando o próprio progresso alcança
@@ -11,6 +12,7 @@ export default function NotasParciais({
   userId,
   livro,
   notas,
+  comentariosPorAlvo,
   membrosPorId,
   minhaPct,
 }) {
@@ -223,7 +225,16 @@ export default function NotasParciais({
                 </div>
 
                 {liberada ? (
-                  <div className="nota-texto">{n.texto}</div>
+                  <>
+                    <div className="nota-texto">{n.texto}</div>
+                    <Comentarios
+                      alvoTipo="nota"
+                      alvoId={n.id}
+                      comentarios={comentariosPorAlvo[n.id] || []}
+                      membrosPorId={membrosPorId}
+                      userId={userId}
+                    />
+                  </>
                 ) : (
                   <div className="nota-cadeado">
                     <IconeMarcador size={16} />

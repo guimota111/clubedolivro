@@ -175,6 +175,19 @@ export async function salvarNota(
   })
 }
 
+// ---------- Comentários (em resenhas e notas parciais) ----------
+
+// Um comentário aponta para um "alvo" (uma resenha ou uma nota) pelo id.
+export async function publicarComentario(userId, { alvoTipo, alvoId, texto }) {
+  await addDoc(collection(db, 'comentarios'), {
+    userId,
+    alvoTipo, // 'resenha' | 'nota'
+    alvoId,
+    texto,
+    criadoEm: serverTimestamp(),
+  })
+}
+
 // ---------- Mural ----------
 
 export async function publicarRecado(userId, texto) {

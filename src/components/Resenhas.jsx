@@ -3,6 +3,7 @@ import { salvarResenha } from '../lib/db'
 import { pctDoProgresso, formatarData, inicial } from '../lib/formato'
 import { IconeLivro, IconePena, IconeLivroAberto } from './Icones'
 import { useVerFoto } from './FotoContext'
+import Comentarios from './Comentarios'
 
 // Aba de Resenhas: liberada por livro para quem chegou a 100%.
 // Junta o livro atual (se terminado) e os livros já encerrados no histórico.
@@ -12,6 +13,7 @@ export default function Resenhas({
   historico,
   meuProgressoPorLivro,
   resenhasPorLivro,
+  comentariosPorAlvo,
   membrosPorId,
 }) {
   // Monta a lista de livros "resenhaveis": atual + histórico (sem duplicar).
@@ -101,6 +103,7 @@ export default function Resenhas({
                 <ListaResenhas
                   resenhas={resenhas}
                   membrosPorId={membrosPorId}
+                  comentariosPorAlvo={comentariosPorAlvo}
                   meuUserId={userId}
                 />
               </>
@@ -191,24 +194,25 @@ function FormResenha({ userId, livroId, resenhaExistente }) {
   )
 }
 
-function ListaResenhas({ resenhas, membrosPorId, meuUserId }) {
+function ListaResenhas({ resenhas, membrosPorId, comentariosPorAlvo, meuUserId }) {
   const verFoto = useVerFoto()
-  const outras = resenhas
-    .filter((r) => r.userId !== meuUserId)
-    .sort((a, b) => (b.atualizadoEm?.seconds || 0) - (a.atualizadoEm?.seconds || 0))
+  const ordenadas = [...resenhas].sort(
+    (a, b) => (b.atualizadoEm?.seconds || 0) - (a.atualizadoEm?.seconds || 0)
+  )
 
-  if (!outras.length) {
+  if (!ordenadas.length) {
     return (
       <p className="texto-suave" style={{ marginTop: '1rem' }}>
-        Ninguém mais publicou resenha deste livro ainda.
+        Ninguém publicou resenha deste livro ainda. Seja o primeiro!
       </p>
     )
   }
 
   return (
     <div className="resenhas-lista">
-      {outras.map((r) => {
+      {ordenadas.map((r) => {
         const autor = membrosPorId[r.userId]
+        const souAutor = r.userId === meuUserId
         return (
           <article className="resenha-item" key={r.id}>
             <div className="resenha-cabecalho">
@@ -223,10 +227,18 @@ function ListaResenhas({ resenhas, membrosPorId, meuUserId }) {
                 <span className="nota-avatar nota-inicial">{inicial(autor?.nome)}</span>
               )}
               <span className="nota-quem">{autor?.nome || 'Membro'}</span>
+              {souAutor && <span className="nota-tag">sua resenha</span>}
               {r.nota > 0 && <Estrelas valor={r.nota} leitura />}
               <span className="nota-quando">{formatarData(r.atualizadoEm)}</span>
             </div>
             <div className="nota-texto">{r.texto}</div>
+            <Comentarios
+              alvoTipo="resenha"
+              alvoId={r.id}
+              comentarios={comentariosPorAlvo[r.id] || []}
+              membrosPorId={membrosPorId}
+              userId={meuUserId}
+            />
           </article>
         )
       })}

@@ -9,6 +9,7 @@ import {
   useMural,
   useNotas,
   useResenhas,
+  useComentarios,
   useHistorico,
   useMeuProgresso,
 } from './hooks/useDadosClube'
@@ -128,6 +129,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
   const { recados } = useMural()
   const { notas } = useNotas(livro?.id)
   const { porLivro: resenhasPorLivro } = useResenhas()
+  const { porAlvo: comentariosPorAlvo } = useComentarios()
   const { historico } = useHistorico()
   const { porLivro: meuProgressoPorLivro } = useMeuProgresso(userId)
 
@@ -257,6 +259,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
                 userId={userId}
                 livro={livro}
                 notas={notas}
+                comentariosPorAlvo={comentariosPorAlvo}
                 membrosPorId={membrosPorId}
                 minhaPct={minhaPorcentagem}
               />
@@ -273,6 +276,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
             historico={historico}
             meuProgressoPorLivro={meuProgressoPorLivro}
             resenhasPorLivro={resenhasPorLivro}
+            comentariosPorAlvo={comentariosPorAlvo}
             membrosPorId={membrosPorId}
           />
         )}
