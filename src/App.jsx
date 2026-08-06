@@ -235,6 +235,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
                     membros={membros}
                     porUsuario={porUsuario}
                     livro={livro}
+                    notas={notas}
                     meuUserId={userId}
                   />
                 </div>

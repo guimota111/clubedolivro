@@ -5,6 +5,9 @@ import { IconeMarcador, IconePena, DivisoriaOrnamentada } from './Icones'
 import { useVerFoto } from './FotoContext'
 import Comentarios from './Comentarios'
 
+// Paleta de reações para as notas parciais.
+const REACOES = ['😍', '🤯', '😲', '😢', '😂', '😡', '🤔', '😱', '❤️', '🔥', '👏', '💀']
+
 // Notas parciais: cada membro pode deixar uma anotação "trancada" até uma
 // página/porcentagem. Os outros só leem quando o próprio progresso alcança
 // esse ponto. Serve para comentar trechos sem estragar a leitura de ninguém.
@@ -19,6 +22,7 @@ export default function NotasParciais({
   const verFoto = useVerFoto()
   const [aberto, setAberto] = useState(false)
   const [texto, setTexto] = useState('')
+  const [emoji, setEmoji] = useState('')
   const [modo, setModo] = useState('porcentagem') // 'porcentagem' | 'pagina'
   const [pct, setPct] = useState('')
   const [pagina, setPagina] = useState('')
@@ -28,6 +32,7 @@ export default function NotasParciais({
 
   function limpar() {
     setTexto('')
+    setEmoji('')
     setPct('')
     setPagina('')
     setTotalPag('')
@@ -70,6 +75,7 @@ export default function NotasParciais({
     try {
       await salvarNota(userId, livro.id, {
         texto: limpo.slice(0, 4999),
+        emoji,
         desbloqueioPct,
         desbloqueioTipo: modo,
         desbloqueioValor,
@@ -114,6 +120,23 @@ export default function NotasParciais({
               onChange={(e) => setTexto(e.target.value)}
               placeholder="O que você achou desse trecho…"
             />
+          </div>
+
+          <label className="campo-rotulo">Sua reação (todos veem, mesmo quem está atrás)</label>
+          <div className="reacao-paleta" role="radiogroup" aria-label="Reação">
+            {REACOES.map((e) => (
+              <button
+                type="button"
+                key={e}
+                role="radio"
+                aria-checked={emoji === e}
+                aria-label={`Reação ${e}`}
+                className={`reacao-opcao${emoji === e ? ' ativo' : ''}`}
+                onClick={() => setEmoji(emoji === e ? '' : e)}
+              >
+                {e}
+              </button>
+            ))}
           </div>
 
           <label className="campo-rotulo">Liberar a partir de…</label>
@@ -218,6 +241,9 @@ export default function NotasParciais({
                     />
                   ) : (
                     <span className="nota-avatar nota-inicial">{inicial(autor?.nome)}</span>
+                  )}
+                  {n.emoji && (
+                    <span className="nota-emoji" aria-label="Reação">{n.emoji}</span>
                   )}
                   <span className="nota-quem">{autor?.nome || 'Membro'}</span>
                   {souAutor && <span className="nota-tag">sua nota</span>}

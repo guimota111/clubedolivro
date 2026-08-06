@@ -161,12 +161,14 @@ export async function salvarResenha(userId, livroId, { texto, nota }) {
 export async function salvarNota(
   userId,
   livroId,
-  { texto, desbloqueioPct, desbloqueioTipo, desbloqueioValor, totalPaginas }
+  { texto, emoji, desbloqueioPct, desbloqueioTipo, desbloqueioValor, totalPaginas }
 ) {
   await addDoc(collection(db, 'notas'), {
     userId,
     livroId,
     texto,
+    // Reação visível para TODOS (mesmo quem ainda não desbloqueou o texto).
+    emoji: emoji || '💬',
     desbloqueioPct,
     desbloqueioTipo, // 'pagina' | 'porcentagem'
     desbloqueioValor,

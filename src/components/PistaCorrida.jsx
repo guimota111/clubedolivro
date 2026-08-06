@@ -7,7 +7,18 @@ import { useVerFoto } from './FotoContext'
 // onde a Estante vertical aparece no lugar). Cada membro corre em uma raia e
 // seu retrato fica na posição da sua %. Líder(es) recebem a coroa. No hover,
 // um cartão mostra nome, página (se houver) e porcentagem.
-export default function PistaCorrida({ membros, porUsuario, livro, meuUserId }) {
+export default function PistaCorrida({ membros, porUsuario, livro, notas = [], meuUserId }) {
+  // Agrupa as notas por autor para pintar os emojis na trilha de cada um,
+  // na posição da % de desbloqueio (a reação é visível para todos).
+  const notasPorUsuario = useMemo(() => {
+    const mapa = {}
+    notas.forEach((n) => {
+      if (!n.emoji) return
+      ;(mapa[n.userId] = mapa[n.userId] || []).push(n)
+    })
+    return mapa
+  }, [notas])
+
   const corredores = useMemo(() => {
     const total = livro?.totalPaginas || 0
     return membros
@@ -65,6 +76,17 @@ export default function PistaCorrida({ membros, porUsuario, livro, meuUserId }) 
               <div className="raia-trilho" aria-hidden="true">
                 <div className="raia-preenchida" style={{ width: `${c.pct}%` }} />
               </div>
+              {(notasPorUsuario[c.membro.id] || []).map((n) => (
+                <span
+                  key={n.id}
+                  className="raia-nota"
+                  style={{ left: `${n.desbloqueioPct || 0}%` }}
+                  title={`Nota em ${n.desbloqueioPct || 0}%`}
+                  aria-hidden="true"
+                >
+                  {n.emoji}
+                </span>
+              ))}
               <div
                 className="corredor"
                 style={{ left: `${c.pct}%` }}

@@ -1567,3 +1567,45 @@ input[type='file'].escondido {
   padding: 0.5rem 0.7rem;
   white-space: nowrap;
 }
+
+/* ---------- Reações (emoji) nas notas parciais ---------- */
+.reacao-paleta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+  margin: 0.2rem 0 0.4rem;
+}
+.reacao-opcao {
+  font-size: 1.25rem;
+  line-height: 1;
+  padding: 0.28rem 0.36rem;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(201, 162, 39, 0.22);
+  cursor: pointer;
+  transition: transform var(--transicao), border-color var(--transicao), background var(--transicao);
+}
+.reacao-opcao:hover { transform: scale(1.18); }
+.reacao-opcao.ativo {
+  border-color: var(--dourado-claro);
+  background: rgba(201, 162, 39, 0.25);
+  transform: scale(1.12);
+}
+.nota-emoji {
+  font-size: 1.15rem;
+  line-height: 1;
+  margin-right: 0.1rem;
+}
+
+/* ---------- Emoji das notas na trilha da pista ---------- */
+.raia-nota {
+  position: absolute;
+  top: 1px;
+  transform: translateX(-50%);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: default;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.7));
+  z-index: 2;
+  user-select: none;
+}
