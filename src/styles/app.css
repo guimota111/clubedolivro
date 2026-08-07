@@ -1511,10 +1511,15 @@ input[type='file'].escondido {
 .nota-texto { color: var(--papel); white-space: pre-wrap; line-height: 1.5; }
 .nota-cadeado {
   display: flex;
-  align-items: center;
+  /* O texto costuma quebrar em duas linhas; o cadeado acompanha a primeira. */
+  align-items: flex-start;
   gap: 0.5rem;
   color: var(--papel-tenue);
   font-style: italic;
+}
+.nota-cadeado svg {
+  flex-shrink: 0;
+  margin-top: 0.15rem;
 }
 .nota-cadeado strong { color: var(--dourado-claro); font-style: normal; }
 
@@ -2035,4 +2040,94 @@ input[type='file'].escondido {
 .seletor-vista {
   max-width: 320px;
   margin: 0 auto 1rem;
+}
+
+/* ======================================================================
+   Notas e comentários recolhíveis
+   ====================================================================== */
+
+/* Barra com a contagem e o atalho de abrir/fechar tudo. */
+.notas-barra {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  margin: 1.4rem 0 -0.6rem;
+  font-size: 0.85rem;
+}
+
+/* O cabeçalho da nota inteiro é o botão de abrir — menos o retrato, que
+   continua abrindo a foto. */
+.nota-alternar {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.15rem 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  font-size: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.nota-identidade {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+.nota-contador {
+  font-size: 0.75rem;
+  color: var(--papel-tenue);
+  white-space: nowrap;
+}
+.nota-alternar:hover .nota-quem,
+.comentarios-alternar:hover {
+  color: var(--dourado-claro);
+}
+
+/* Seta que gira ao abrir — serve para as notas e para os comentários. */
+.seta-alternar {
+  flex-shrink: 0;
+  color: var(--papel-tenue);
+  transition: transform var(--transicao), color var(--transicao);
+}
+[aria-expanded='true'] .seta-alternar {
+  transform: rotate(180deg);
+  color: var(--dourado-claro);
+}
+
+/* Prévia de uma linha da nota recolhida. */
+.nota-previa {
+  margin: 0;
+  color: var(--papel-suave);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nota-aberta {
+  border-color: rgba(201, 162, 39, 0.4);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* Abridor da thread de comentários. */
+.comentarios-alternar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.2rem 0;
+  border: none;
+  background: none;
+  color: var(--papel-tenue);
+  font-family: var(--fonte-display);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: color var(--transicao);
 }

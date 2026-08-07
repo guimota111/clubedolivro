@@ -117,6 +117,25 @@ export function IconeMarcador({ size = 24, ...props }) {
   )
 }
 
+// Seta de expandir/recolher. Aponta para baixo; o CSS gira quando abre.
+export function IconeSeta({ size = 24, ...props }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  )
+}
+
 // Filigrana / ornamento de canto (decorativo).
 export function Filigrana({ size = 60, ...props }) {
   return (
