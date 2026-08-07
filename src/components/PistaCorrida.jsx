@@ -83,60 +83,83 @@ export default function PistaCorrida({ membros, porUsuario, livro, notas = [], m
               key={c.membro.id}
               style={variaveisDaCor(c.cor)}
             >
-              <div className="raia-trilho" aria-hidden="true">
-                <div className="raia-preenchida" style={{ width: `${c.faixas.base}%` }} />
-                {c.faixas.recente > 0 && (
-                  <div
-                    className="raia-recente"
-                    style={{
-                      left: `${c.faixas.base}%`,
-                      width: `${c.faixas.recente}%`,
-                    }}
-                  />
-                )}
-              </div>
-              {(notasPorUsuario[c.membro.id] || []).map((n) => {
-                const frase = fraseReacao(n.emoji)
-                const nome = c.membro.nome || 'Membro'
-                const pct = n.desbloqueioPct || 0
-                const titulo = frase
-                  ? `Nota de ${nome} ${frase} em ${pct}%`
-                  : `Nota de ${nome} em ${pct}%`
-                return (
-                  <span
-                    key={n.id}
-                    className="raia-nota"
-                    style={{ left: `${pct}%` }}
-                    title={titulo}
-                    aria-hidden="true"
-                  >
-                    {n.emoji}
-                  </span>
-                )
-              })}
-              <div
-                className="corredor"
-                style={{ left: `${c.pct}%` }}
-                tabIndex={0}
-                aria-label={
-                  c.faixas.recente > 0
-                    ? `${c.membro.nome}: ${c.pct}% lido, sendo ${c.faixas.recente}% nas últimas 24 horas`
-                    : `${c.membro.nome}: ${c.pct}% lido`
-                }
-              >
-                {lider && (
-                  <IconeCoroa size={22} className="corredor-coroa" aria-hidden="true" />
-                )}
-                <CorredorAvatar membro={c.membro} />
-                <div className="corredor-tooltip" role="tooltip">
-                  <strong>{c.membro.nome}</strong>
-                  <span>{c.pct}% lido</span>
-                  <span className="corredor-tooltip-pag">{paginaTxt}</span>
+              {/* Ficha da raia: no celular não há hover, então nome e % ficam
+                  sempre à vista, acima do trilho. O CSS esconde no desktop,
+                  onde essa informação vem no cartão de hover. */}
+              <div className="raia-info" aria-hidden="true">
+                <span className="raia-nome">{c.membro.nome}</span>
+                <span className="raia-numeros">
                   {c.faixas.recente > 0 && (
-                    <span className="corredor-tooltip-recente">
-                      +{c.faixas.recente}% nas últimas 24 h
+                    <span className="raia-ganho">+{c.faixas.recente}%</span>
+                  )}
+                  <span className="raia-pct">{c.pct}%</span>
+                </span>
+              </div>
+
+              <div className="raia-pista">
+                <div className="raia-trilho" aria-hidden="true">
+                  <div className="raia-preenchida" style={{ width: `${c.faixas.base}%` }} />
+                  {c.faixas.recente > 0 && (
+                    <div
+                      className="raia-recente"
+                      style={{
+                        left: `${c.faixas.base}%`,
+                        width: `${c.faixas.recente}%`,
+                      }}
+                    />
+                  )}
+                </div>
+                {(notasPorUsuario[c.membro.id] || []).map((n) => {
+                  const frase = fraseReacao(n.emoji)
+                  const nome = c.membro.nome || 'Membro'
+                  const pct = n.desbloqueioPct || 0
+                  const titulo = frase
+                    ? `Nota de ${nome} ${frase} em ${pct}%`
+                    : `Nota de ${nome} em ${pct}%`
+                  return (
+                    <span
+                      key={n.id}
+                      className="raia-nota"
+                      style={{ left: `${pct}%` }}
+                      title={titulo}
+                      aria-hidden="true"
+                    >
+                      {n.emoji}
+                    </span>
+                  )
+                })}
+                <div
+                  className="corredor"
+                  style={{ left: `${c.pct}%` }}
+                  tabIndex={0}
+                  aria-label={
+                    c.faixas.recente > 0
+                      ? `${c.membro.nome}: ${c.pct}% lido, sendo ${c.faixas.recente}% nas últimas 24 horas`
+                      : `${c.membro.nome}: ${c.pct}% lido`
+                  }
+                >
+                  {lider && (
+                    <IconeCoroa size={22} className="corredor-coroa" aria-hidden="true" />
+                  )}
+                  {/* Ganho das 24 h sempre à vista: a faixa dourada dele fica
+                      logo atrás do retrato, então um avanço pequeno some.
+                      No celular quem mostra isso é a ficha da raia. */}
+                  {c.faixas.recente > 0 && (
+                    <span className="corredor-ganho" aria-hidden="true">
+                      +{c.faixas.recente}%
                     </span>
                   )}
+                  <CorredorAvatar membro={c.membro} />
+                  <div className="corredor-tooltip" role="tooltip">
+                    <strong>{c.membro.nome}</strong>
+                    <span>{c.pct}% lido</span>
+                    <span className="corredor-tooltip-pag">{paginaTxt}</span>
+                    {c.faixas.recente > 0 && (
+                      <span className="corredor-tooltip-recente">
+                        +{c.faixas.recente}% nas últimas 24 h
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

@@ -25,6 +25,12 @@ const NOVIDADES = [
     texto:
       'Ao atualizar o progresso (e ao passar o mouse na pista) aparece quanto você já leu nas últimas 24 h.',
   },
+  {
+    emoji: '🏁',
+    titulo: 'Corrida no celular',
+    texto:
+      'No celular agora dá para alternar entre as barras da estante e a pista de corrida — é só tocar em “Barras” ou “Corrida” acima do progresso. Sua escolha fica guardada.',
+  },
 ]
 
 export default function ChangelogModal({ onFechar }) {

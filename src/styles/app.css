@@ -1271,7 +1271,18 @@ input[type='file'].escondido {
 }
 .raia {
   position: relative;
+}
+/* Área onde o trilho e o corredor vivem — é ela que serve de referência para
+   o posicionamento absoluto, e não a raia inteira (que no celular ainda
+   carrega a ficha com nome e %). A folga de cima é o lugar do selo de ganho. */
+.raia-pista {
+  position: relative;
   height: 46px;
+  margin-top: 20px;
+}
+/* Ficha da raia: só aparece no celular (ver media query). */
+.raia-info {
+  display: none;
 }
 .raia-trilho {
   position: absolute;
@@ -1356,13 +1367,39 @@ input[type='file'].escondido {
   box-shadow: 0 0 0 3px var(--cor-membro-brilho, rgba(244, 217, 123, 0.35)),
     0 2px 8px rgba(0, 0, 0, 0.6);
 }
+/* A coroa fica no canto do retrato, e não flutuando acima: o espaço de cima é
+   do selo de ganho das 24 h — e o líder, sempre mais à direita, era justamente
+   quem batia nele. */
 .corredor-coroa {
   position: absolute;
-  top: -18px;
+  top: -6px;
+  right: -6px;
+  width: 18px;
+  height: 18px;
+  color: var(--dourado-brilho);
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.85));
+}
+
+/* Selo dourado com o avanço das últimas 24 h, acima do corredor. Sem ele, um
+   ganho pequeno ficaria invisível: a faixa dourada nasce justamente onde o
+   retrato pousa. Compacto de propósito, para não vazar da pista em 100%. */
+.corredor-ganho {
+  position: absolute;
+  bottom: calc(100% + 9px);
   left: 50%;
   transform: translateX(-50%);
+  padding: 0 0.4em;
+  border-radius: 999px;
+  background: rgba(20, 14, 9, 0.92);
+  border: 1px solid rgba(224, 185, 77, 0.55);
   color: var(--dourado-brilho);
-  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.6));
+  font-family: var(--fonte-corpo);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.55;
+  white-space: nowrap;
+  box-shadow: 0 0 10px rgba(244, 217, 123, 0.22);
+  pointer-events: none;
 }
 .corredor-tooltip {
   position: absolute;
@@ -1890,4 +1927,112 @@ input[type='file'].escondido {
 .chip-membro img,
 .chip-membro .chip-inicial {
   border-color: var(--cor-membro, var(--dourado));
+}
+
+/* ======================================================================
+   Pista de corrida no celular
+   ====================================================================== */
+
+/* No mobile a pista compete com a estante de barras: o membro escolhe qual
+   quer ver (ver .seletor-vista). Aqui a pista é reapertada para caber numa
+   tela estreita — sem hover, a informação sai do cartão flutuante e vira uma
+   ficha fixa acima de cada trilho. */
+@media (max-width: 759px) {
+  .pista {
+    /* Espaço nas laterais para o retrato não ser cortado em 0% e em 100%. */
+    padding: 0.9rem 1.4rem 1.1rem;
+    border-radius: 12px;
+  }
+
+  .pista-marcadores {
+    font-size: 0.68rem;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.5rem;
+  }
+  /* Em telas estreitas as marcas do meio viram ruído; ficam largada e chegada. */
+  .pista-marcadores span:not(:first-child):not(:last-child) {
+    display: none;
+  }
+
+  .pista-raias {
+    gap: 0.9rem;
+  }
+
+  .raia-info {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.1rem;
+  }
+  .raia-nome {
+    font-family: var(--fonte-display);
+    font-size: 0.95rem;
+    color: var(--papel);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .raia-eu .raia-nome::after {
+    content: ' (você)';
+    color: var(--dourado-claro);
+    font-style: italic;
+    font-size: 0.85em;
+  }
+  .raia-numeros {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    white-space: nowrap;
+  }
+  .raia-ganho {
+    padding: 0 0.4em;
+    border-radius: 999px;
+    background: rgba(201, 162, 39, 0.18);
+    border: 1px solid rgba(224, 185, 77, 0.45);
+    color: var(--dourado-brilho);
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+  .raia-pct {
+    font-family: var(--fonte-display);
+    font-size: 0.85rem;
+    color: var(--papel-tenue);
+  }
+
+  /* Aqui o ganho já aparece na ficha da raia, então a folga de cima e o selo
+     sobre o corredor não fazem falta. */
+  .raia-pista {
+    height: 34px;
+    margin-top: 0;
+  }
+  .corredor-ganho {
+    display: none;
+  }
+
+  .corredor-avatar {
+    width: 30px;
+    height: 30px;
+  }
+  .corredor-inicial {
+    font-size: 0.95rem;
+  }
+  .corredor-coroa {
+    top: -5px;
+    right: -5px;
+    width: 15px;
+    height: 15px;
+  }
+
+  /* Sem mouse não há hover: a ficha acima do trilho já diz nome e %, então o
+     cartão flutuante sai de cena para não atrapalhar o toque. */
+  .corredor-tooltip {
+    display: none;
+  }
+}
+
+/* ---------- Alternador barras / corrida (só no celular) ---------- */
+.seletor-vista {
+  max-width: 320px;
+  margin: 0 auto 1rem;
 }
