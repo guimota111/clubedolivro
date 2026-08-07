@@ -1609,3 +1609,21 @@ input[type='file'].escondido {
   z-index: 2;
   user-select: none;
 }
+
+/* ---------- Ações de editar/excluir nota ---------- */
+.nota-acoes {
+  display: flex;
+  gap: 1rem;
+  margin-top: 0.6rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed rgba(201, 162, 39, 0.18);
+}
+.nota-acoes .btn-texto {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  font-size: 0.85rem;
+}
+.nota-excluir { color: #e08a6d; }
+.nota-excluir:hover { color: #f0a88d; }
+.nota-excluir:disabled { opacity: 0.6; cursor: default; }

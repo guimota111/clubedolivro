@@ -6,6 +6,7 @@ import {
   setDoc,
   updateDoc,
   addDoc,
+  deleteDoc,
   query,
   where,
   orderBy,
@@ -175,6 +176,22 @@ export async function salvarNota(
     totalPaginas: totalPaginas || null,
     criadoEm: serverTimestamp(),
   })
+}
+
+// Edita uma nota existente (apenas o autor, validado no cliente + regras).
+export async function atualizarNota(notaId, dados) {
+  await updateDoc(doc(db, 'notas', notaId), {
+    ...dados,
+    atualizadoEm: serverTimestamp(),
+  })
+}
+
+// Exclui uma nota e, junto, os comentários que apontavam para ela (sem órfãos).
+export async function excluirNota(notaId) {
+  const q = query(collection(db, 'comentarios'), where('alvoId', '==', notaId))
+  const snaps = await getDocs(q)
+  await Promise.all(snaps.docs.map((d) => deleteDoc(d.ref)))
+  await deleteDoc(doc(db, 'notas', notaId))
 }
 
 // ---------- Comentários (em resenhas e notas parciais) ----------

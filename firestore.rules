@@ -44,7 +44,7 @@ service cloud.firestore {
     // Notas parciais com desbloqueio por página/porcentagem.
     match /notas/{notaId} {
       allow read: if true;
-      allow create: if request.resource.data.texto is string
+      allow create, update: if request.resource.data.texto is string
                     && request.resource.data.texto.size() > 0
                     && request.resource.data.texto.size() < 5000
                     && request.resource.data.livroId is string

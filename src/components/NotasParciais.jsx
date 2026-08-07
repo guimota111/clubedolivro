@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { salvarNota } from '../lib/db'
+import { salvarNota, atualizarNota, excluirNota } from '../lib/db'
 import { calcularPct, limitarPct, formatarData, inicial } from '../lib/formato'
 import { IconeMarcador, IconePena, DivisoriaOrnamentada } from './Icones'
 import { useVerFoto } from './FotoContext'
@@ -19,6 +19,7 @@ export default function NotasParciais({
 }) {
   const verFoto = useVerFoto()
   const [aberto, setAberto] = useState(false)
+  const [editandoId, setEditandoId] = useState(null) // id da nota em edição
   const [texto, setTexto] = useState('')
   const [emoji, setEmoji] = useState('')
   const [modo, setModo] = useState('porcentagem') // 'porcentagem' | 'pagina'
@@ -27,15 +28,54 @@ export default function NotasParciais({
   const [totalPag, setTotalPag] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState('')
+  const [excluindoId, setExcluindoId] = useState(null)
 
   function limpar() {
     setTexto('')
     setEmoji('')
+    setModo('porcentagem')
     setPct('')
     setPagina('')
     setTotalPag('')
     setErro('')
+    setEditandoId(null)
     setAberto(false)
+  }
+
+  // Abre o formulário já preenchido para editar uma nota existente.
+  function iniciarEdicao(n) {
+    setEditandoId(n.id)
+    setTexto(n.texto || '')
+    setEmoji(n.emoji || '')
+    if (n.desbloqueioTipo === 'pagina') {
+      setModo('pagina')
+      setPagina(n.desbloqueioValor != null ? String(n.desbloqueioValor) : '')
+      setTotalPag(n.totalPaginas != null ? String(n.totalPaginas) : '')
+      setPct('')
+    } else {
+      setModo('porcentagem')
+      setPct(String(n.desbloqueioValor ?? n.desbloqueioPct ?? ''))
+      setPagina('')
+      setTotalPag('')
+    }
+    setErro('')
+    setAberto(true)
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  async function excluir(n) {
+    const ok = window.confirm('Excluir esta nota? Os comentários dela também somem.')
+    if (!ok) return
+    setExcluindoId(n.id)
+    try {
+      await excluirNota(n.id)
+      if (editandoId === n.id) limpar()
+    } catch (err) {
+      console.error(err)
+      window.alert('Não foi possível excluir a nota.')
+    } finally {
+      setExcluindoId(null)
+    }
   }
 
   async function aoEnviar(e) {
@@ -68,17 +108,23 @@ export default function NotasParciais({
       desbloqueioValor = desbloqueioPct
     }
 
+    const dados = {
+      texto: limpo.slice(0, 4999),
+      emoji,
+      desbloqueioPct,
+      desbloqueioTipo: modo,
+      desbloqueioValor,
+      totalPaginas,
+    }
+
     setEnviando(true)
     setErro('')
     try {
-      await salvarNota(userId, livro.id, {
-        texto: limpo.slice(0, 4999),
-        emoji,
-        desbloqueioPct,
-        desbloqueioTipo: modo,
-        desbloqueioValor,
-        totalPaginas,
-      })
+      if (editandoId) {
+        await atualizarNota(editandoId, dados)
+      } else {
+        await salvarNota(userId, livro.id, dados)
+      }
       limpar()
     } catch (err) {
       console.error(err)
@@ -208,7 +254,7 @@ export default function NotasParciais({
           <div style={{ display: 'flex', gap: '0.6rem', marginTop: '1rem', flexWrap: 'wrap' }}>
             <button className="btn" type="submit" disabled={enviando}>
               <IconeMarcador size={16} />
-              {enviando ? 'Salvando…' : 'Publicar nota'}
+              {enviando ? 'Salvando…' : editandoId ? 'Salvar alterações' : 'Publicar nota'}
             </button>
             <button className="btn btn-fantasma" type="button" onClick={limpar}>
               Cancelar
@@ -266,6 +312,26 @@ export default function NotasParciais({
                       Trancada — desbloqueia em <strong>{alvoTxt}</strong>. Você está
                       em {minhaPct}%.
                     </span>
+                  </div>
+                )}
+
+                {souAutor && (
+                  <div className="nota-acoes">
+                    <button
+                      type="button"
+                      className="btn-texto"
+                      onClick={() => iniciarEdicao(n)}
+                    >
+                      <IconePena size={13} /> Editar
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-texto nota-excluir"
+                      onClick={() => excluir(n)}
+                      disabled={excluindoId === n.id}
+                    >
+                      {excluindoId === n.id ? 'Excluindo…' : 'Excluir'}
+                    </button>
                   </div>
                 )}
               </article>
