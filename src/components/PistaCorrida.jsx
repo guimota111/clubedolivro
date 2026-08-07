@@ -1,6 +1,8 @@
 import { useMemo } from 'react'
 import { pctDoProgresso, inicial } from '../lib/formato'
 import { fraseReacao } from '../lib/reacoes'
+import { corDoMembro, variaveisDaCor } from '../lib/cores'
+import { faixasDeProgresso } from '../lib/progresso24h'
 import { IconeCoroa } from './Icones'
 import { useVerFoto } from './FotoContext'
 
@@ -8,6 +10,9 @@ import { useVerFoto } from './FotoContext'
 // onde a Estante vertical aparece no lugar). Cada membro corre em uma raia e
 // seu retrato fica na posição da sua %. Líder(es) recebem a coroa. No hover,
 // um cartão mostra nome, página (se houver) e porcentagem.
+//
+// A raia é pintada na cor escolhida pelo membro; só o trecho conquistado nas
+// últimas 24 h fica dourado, para saltar aos olhos quem devorou o livro ontem.
 export default function PistaCorrida({ membros, porUsuario, livro, notas = [], meuUserId }) {
   // Agrupa as notas por autor para pintar os emojis na trilha de cada um,
   // na posição da % de desbloqueio (a reação é visível para todos).
@@ -22,6 +27,7 @@ export default function PistaCorrida({ membros, porUsuario, livro, notas = [], m
 
   const corredores = useMemo(() => {
     const total = livro?.totalPaginas || 0
+    const agora = Date.now()
     return membros
       .map((m) => {
         const prog = porUsuario[m.id]
@@ -30,7 +36,8 @@ export default function PistaCorrida({ membros, porUsuario, livro, notas = [], m
           prog && typeof prog.paginaAtual === 'number' ? prog.paginaAtual : null
         const totalPag =
           prog && typeof prog.totalPaginas === 'number' ? prog.totalPaginas : null
-        return { membro: m, pct, pagina, totalPag }
+        const faixas = faixasDeProgresso(prog, pct, agora)
+        return { membro: m, pct, pagina, totalPag, faixas, cor: corDoMembro(m) }
       })
       .sort((a, b) => {
         if (b.pct !== a.pct) return b.pct - a.pct
@@ -50,7 +57,8 @@ export default function PistaCorrida({ membros, porUsuario, livro, notas = [], m
   const temLider = maiorPct > 0
 
   return (
-    <div className="pista" role="img" aria-label="Pista de corrida da leitura">
+    <>
+    <div className="pista" aria-label="Pista de corrida da leitura">
       <div className="pista-marcadores" aria-hidden="true">
         <span>Largada</span>
         <span>25%</span>
@@ -73,9 +81,19 @@ export default function PistaCorrida({ membros, porUsuario, livro, notas = [], m
             <div
               className={`raia${lider ? ' raia-lider' : ''}${souEu ? ' raia-eu' : ''}`}
               key={c.membro.id}
+              style={variaveisDaCor(c.cor)}
             >
               <div className="raia-trilho" aria-hidden="true">
-                <div className="raia-preenchida" style={{ width: `${c.pct}%` }} />
+                <div className="raia-preenchida" style={{ width: `${c.faixas.base}%` }} />
+                {c.faixas.recente > 0 && (
+                  <div
+                    className="raia-recente"
+                    style={{
+                      left: `${c.faixas.base}%`,
+                      width: `${c.faixas.recente}%`,
+                    }}
+                  />
+                )}
               </div>
               {(notasPorUsuario[c.membro.id] || []).map((n) => {
                 const frase = fraseReacao(n.emoji)
@@ -100,6 +118,11 @@ export default function PistaCorrida({ membros, porUsuario, livro, notas = [], m
                 className="corredor"
                 style={{ left: `${c.pct}%` }}
                 tabIndex={0}
+                aria-label={
+                  c.faixas.recente > 0
+                    ? `${c.membro.nome}: ${c.pct}% lido, sendo ${c.faixas.recente}% nas últimas 24 horas`
+                    : `${c.membro.nome}: ${c.pct}% lido`
+                }
               >
                 {lider && (
                   <IconeCoroa size={22} className="corredor-coroa" aria-hidden="true" />
@@ -109,6 +132,11 @@ export default function PistaCorrida({ membros, porUsuario, livro, notas = [], m
                   <strong>{c.membro.nome}</strong>
                   <span>{c.pct}% lido</span>
                   <span className="corredor-tooltip-pag">{paginaTxt}</span>
+                  {c.faixas.recente > 0 && (
+                    <span className="corredor-tooltip-recente">
+                      +{c.faixas.recente}% nas últimas 24 h
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -116,6 +144,24 @@ export default function PistaCorrida({ membros, porUsuario, livro, notas = [], m
         })}
       </div>
     </div>
+    <LegendaCores />
+    </>
+  )
+}
+
+// Explica o código de cores da pista (vale também para a estante no celular).
+export function LegendaCores() {
+  return (
+    <p className="legenda-cores">
+      <span className="legenda-item">
+        <i className="legenda-amostra legenda-amostra-membro" aria-hidden="true" />
+        Progresso acumulado, na cor de cada leitor
+      </span>
+      <span className="legenda-item">
+        <i className="legenda-amostra legenda-amostra-dourada" aria-hidden="true" />
+        Lido nas últimas 24 h
+      </span>
+    </p>
   )
 }
 

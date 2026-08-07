@@ -19,10 +19,18 @@ tipografia serifada e dourado como cor de destaque.
 
 ## Funcionalidades
 
-- **Cadastro sem senha:** nome/apelido + foto (vira o avatar do membro).
-- **A Estante:** cada membro é um "livro-termômetro" que se enche de dourado de
-  baixo para cima conforme a % de páginas lidas. Reordena ao vivo, do mais
-  avançado ao menos avançado, com destaque (coroa + brilho) para o 1º lugar.
+- **Cadastro sem senha:** nome/apelido + foto (vira o avatar do membro) + a cor
+  do leitor.
+- **Cor de cada leitor:** cada membro escolhe sua cor (paleta do clube ou um tom
+  livre) no cadastro e em "Editar perfil". Ela pinta a barra de progresso na
+  pista e na estante e emoldura o retrato. Quem entrou antes desta
+  funcionalidade recebe uma cor sorteada automaticamente.
+- **Dourado = últimas 24 h:** a barra é pintada na cor do leitor, mas o trecho
+  que ele avançou nas últimas 24 horas fica **dourado** — dá para ver de
+  relance quem devorou o livro de ontem para hoje.
+- **A Estante:** cada membro é um "livro-termômetro" que se enche de baixo para
+  cima conforme a % de páginas lidas. Reordena ao vivo, do mais avançado ao
+  menos avançado, com destaque (coroa + brilho) para o 1º lugar.
 - **Livro do clube:** qualquer membro cadastra o livro atual (título, autor,
   total de páginas, capa por upload ou URL). Ao trocar de livro, o anterior é
   arquivado no histórico com o vencedor e o progresso de todos zera.
@@ -75,6 +83,8 @@ src/
 │   ├── identity.js          # UUID no localStorage (sessão sem login)
 │   ├── db.js                # operações no Firestore
 │   ├── storage.js           # upload de imagens
+│   ├── cores.js             # paleta, cor de cada membro e sorteio
+│   ├── progresso24h.js      # histórico de leitura e ganho das últimas 24 h
 │   └── formato.js           # datas, % e utilidades
 ├── hooks/
 │   ├── useColecaoAoVivo.js  # wrapper de onSnapshot
@@ -84,6 +94,8 @@ src/
 │   ├── LivroAtualCard.jsx
 │   ├── CadastrarLivroModal.jsx
 │   ├── Estante.jsx / MembroLivro.jsx
+│   ├── PistaCorrida.jsx
+│   ├── SeletorCor.jsx       # escolha da cor do membro + prévia da barra
 │   ├── AtualizarProgressoModal.jsx
 │   ├── Mural.jsx
 │   ├── Historico.jsx
@@ -98,9 +110,9 @@ src/
 
 | Coleção            | Documento             | Campos principais                                             |
 | ------------------ | --------------------- | ------------------------------------------------------------- |
-| `users`            | `{userId}`            | `nome`, `avatarUrl`, `criadoEm`                               |
+| `users`            | `{userId}`            | `nome`, `avatarUrl`, `cor`, `criadoEm`                        |
 | `livroAtual`       | `{livroId}`           | `titulo`, `autor`, `capaUrl`, `dataLimite`, `ativo`, `iniciadoEm` |
-| `progresso`        | `{userId}_{livroId}`  | `userId`, `livroId`, `porcentagem`, `paginaAtual`, `totalPaginas`, `modo`, `atualizadoEm` |
+| `progresso`        | `{userId}_{livroId}`  | `userId`, `livroId`, `porcentagem`, `paginaAtual`, `totalPaginas`, `modo`, `historico`, `atualizadoEm` |
 | `notas`            | `{notaId}`            | `userId`, `livroId`, `texto`, `desbloqueioPct`, `desbloqueioTipo`, `desbloqueioValor`, `totalPaginas`, `criadoEm` |
 | `resenhas`         | `{userId}_{livroId}`  | `userId`, `livroId`, `texto`, `nota`, `atualizadoEm`         |
 | `mural`            | `{mensagemId}`        | `userId`, `texto`, `criadoEm`                                 |
@@ -110,6 +122,19 @@ As resenhas são **liberadas no cliente** apenas para quem terminou o livro
 (100%); as notas parciais ficam trancadas até o leitor alcançar `desbloqueioPct`.
 Como o app não tem autenticação real, esse controle é de experiência, não de
 segurança.
+
+`users.cor` é sempre um hex `#rrggbb`. Se um membro ainda não tem cor, o app
+mostra uma da paleta derivada do id dele (estável) e grava um sorteio no
+Firestore na primeira vez que alguém abre o site — o sorteio é determinístico,
+então dois navegadores fazendo isso ao mesmo tempo chegam ao mesmo resultado.
+
+`progresso.historico` é a trilha que permite saber o que foi lido nas últimas
+24 h: uma lista enxuta de marcações `{ pct, em }`, onde `em` são milissegundos
+(`Date.now()` — o Firestore não aceita `serverTimestamp()` dentro de arrays). A
+% "de 24 h atrás" é a da marcação mais recente anterior à janela; o que veio
+depois é o trecho dourado da barra. A lista é podada (mantendo sempre a
+marcação âncora anterior à janela) para não inchar o documento. O carimbo vem
+do relógio de quem salvou — suficiente para um clube de amigos.
 
 ## ⚠️ Aviso de segurança
 

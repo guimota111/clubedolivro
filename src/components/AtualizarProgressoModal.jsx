@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import Modal from './Modal'
 import { salvarProgresso } from '../lib/db'
-import { limitarPct, calcularPct } from '../lib/formato'
+import { limitarPct, calcularPct, pctDoProgresso } from '../lib/formato'
+import { montarHistorico, faixasDeProgresso } from '../lib/progresso24h'
 import { IconeMarcador } from './Icones'
 
 // Modal para o membro informar quanto já leu. Ele escolhe entre:
@@ -29,6 +30,11 @@ export default function AtualizarProgressoModal({
   )
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
+
+  // % que já está gravada (base para o histórico) e o quanto dela veio das
+  // últimas 24 h — usado no aviso abaixo do formulário.
+  const pctSalva = pctDoProgresso(progressoAtual, livro?.totalPaginas)
+  const faixasSalvas = faixasDeProgresso(progressoAtual, pctSalva)
 
   const paginaNum = Number(pagina)
   const totalNum = Number(totalPag)
@@ -62,6 +68,14 @@ export default function AtualizarProgressoModal({
     } else {
       dados = { porcentagem: limitarPct(pct), modo: 'porcentagem' }
     }
+
+    // Marca a posição no histórico para saber, depois, o que foi lido nas
+    // últimas 24 h (a faixa dourada das barras).
+    dados.historico = montarHistorico(
+      progressoAtual?.historico,
+      progressoAtual ? pctSalva : null,
+      dados.porcentagem
+    )
 
     setSalvando(true)
     try {
@@ -185,6 +199,21 @@ export default function AtualizarProgressoModal({
             </p>
           </>
         )}
+
+        <p className="texto-tenue nota-24h">
+          {faixasSalvas.recente > 0 ? (
+            <>
+              Nas últimas 24 h você já avançou{' '}
+              <strong>{faixasSalvas.recente}%</strong> — é o trecho dourado da
+              sua barra.
+            </>
+          ) : (
+            <>
+              O que você avançar nas próximas 24 h aparece em{' '}
+              <strong>dourado</strong> na sua barra; o resto fica na sua cor.
+            </>
+          )}
+        </p>
 
         {erro && <div className="erro">{erro}</div>}
 

@@ -13,6 +13,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore'
 import { db } from '../firebase'
+import { normalizarCor, sortearCoresFaltantes, sortearCorLivre } from './cores'
 
 // ---------- Usuários ----------
 
@@ -27,16 +28,34 @@ export async function listarUsuarios() {
   return snaps.docs.map((d) => ({ id: d.id, ...d.data() }))
 }
 
-export async function criarUsuario(userId, { nome, avatarUrl }) {
+export async function criarUsuario(userId, { nome, avatarUrl, cor }) {
   await setDoc(doc(db, 'users', userId), {
     nome,
     avatarUrl: avatarUrl || '',
+    // Cor da barra de progresso. Se o membro não escolher, sorteamos uma.
+    cor: normalizarCor(cor) || sortearCorLivre([], userId),
     criadoEm: serverTimestamp(),
   })
 }
 
 export async function atualizarUsuario(userId, dados) {
   await updateDoc(doc(db, 'users', userId), dados)
+}
+
+// Dá uma cor aos membros que entraram antes desta funcionalidade existir.
+// O sorteio é determinístico (ver `sortearCoresFaltantes`), então dois
+// navegadores rodando isto ao mesmo tempo gravam exatamente a mesma cor.
+export async function garantirCoresDosMembros(membros) {
+  const faltantes = sortearCoresFaltantes(membros)
+  if (!faltantes.length) return 0
+  await Promise.all(
+    faltantes.map(({ id, cor }) =>
+      updateDoc(doc(db, 'users', id), { cor }).catch((err) => {
+        console.error('Não foi possível sortear a cor de', id, err)
+      })
+    )
+  )
+  return faltantes.length
 }
 
 // ---------- Livro atual ----------

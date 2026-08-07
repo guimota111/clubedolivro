@@ -3,6 +3,8 @@ import { criarUsuario, listarUsuarios } from '../lib/db'
 import { enviarImagem } from '../lib/storage'
 import { definirUserId } from '../lib/identity'
 import { inicial } from '../lib/formato'
+import { corDoMembro, coresEmUso, sortearCorLivre } from '../lib/cores'
+import SeletorCor, { PreviaBarra } from './SeletorCor'
 import { IconeLivroAberto, IconePena, DivisoriaOrnamentada } from './Icones'
 
 // Tela de cadastro / entrada (aparece quando não há identidade neste navegador).
@@ -17,6 +19,8 @@ export default function Cadastro({ userId, aoConcluir }) {
   // Membros já existentes — para entrar em outro dispositivo sem duplicar conta.
   const [membros, setMembros] = useState([])
   const [novo, setNovo] = useState(false) // mostrar o formulário de novo personagem
+  // Já começa com uma cor livre sugerida; o membro troca se quiser.
+  const [cor, setCor] = useState(() => sortearCorLivre([], userId))
 
   useEffect(() => {
     let ativo = true
@@ -27,6 +31,8 @@ export default function Cadastro({ userId, aoConcluir }) {
           (a.nome || '').localeCompare(b.nome || '')
         )
         setMembros(ordenada)
+        // Sugere uma cor que ainda não esteja na pista.
+        setCor(sortearCorLivre(ordenada, userId))
         // Se ainda não há ninguém, já abre direto o formulário de cadastro.
         if (ordenada.length === 0) setNovo(true)
       })
@@ -75,7 +81,7 @@ export default function Cadastro({ userId, aoConcluir }) {
       if (arquivo) {
         avatarUrl = await enviarImagem('avatares', arquivo, userId)
       }
-      await criarUsuario(userId, { nome: nomeLimpo, avatarUrl })
+      await criarUsuario(userId, { nome: nomeLimpo, avatarUrl, cor })
       aoConcluir()
     } catch (err) {
       console.error(err)
@@ -113,6 +119,7 @@ export default function Cadastro({ userId, aoConcluir }) {
                   key={m.id}
                   type="button"
                   className="chip-membro"
+                  style={{ '--cor-membro': corDoMembro(m) }}
                   onClick={() => entrarComo(m)}
                 >
                   {m.avatarUrl ? (
@@ -174,6 +181,14 @@ export default function Cadastro({ userId, aoConcluir }) {
               autoComplete="off"
             />
           </div>
+
+          <SeletorCor
+            valor={cor}
+            aoEscolher={setCor}
+            coresUsadas={coresEmUso(membros)}
+          />
+
+          <PreviaBarra cor={cor} />
 
           {erro && <div className="erro">{erro}</div>}
 

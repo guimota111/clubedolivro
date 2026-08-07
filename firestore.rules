@@ -3,15 +3,23 @@ service cloud.firestore {
   match /databases/{database}/documents {
 
     // Perfis dos membros. Sem autenticação, então validamos apenas o formato.
+    // `cor` é a cor da barra de progresso do membro, sempre em '#rrggbb'.
+    function corValida(dados) {
+      return !('cor' in dados.keys())
+             || (dados.cor is string && dados.cor.matches('^#[0-9a-fA-F]{6}$'));
+    }
+
     match /users/{userId} {
       allow read: if true;
       allow create: if request.resource.data.nome is string
                     && request.resource.data.nome.size() > 0
                     && request.resource.data.nome.size() < 60
-                    && request.resource.data.avatarUrl is string;
+                    && request.resource.data.avatarUrl is string
+                    && corValida(request.resource.data);
       allow update: if request.resource.data.nome is string
                     && request.resource.data.nome.size() > 0
-                    && request.resource.data.nome.size() < 60;
+                    && request.resource.data.nome.size() < 60
+                    && corValida(request.resource.data);
     }
 
     // Livro atual do clube. Qualquer membro pode cadastrar/encerrar.
@@ -23,11 +31,16 @@ service cloud.firestore {
     }
 
     // Progresso de leitura em porcentagem (0-100). ID composto userId_livroId.
+    // `historico` é a trilha de marcações {pct, em} usada para descobrir o que
+    // foi lido nas últimas 24 h; fica limitada para não inchar o documento.
     match /progresso/{progressoId} {
       allow read: if true;
       allow write: if request.resource.data.porcentagem is number
                    && request.resource.data.porcentagem >= 0
-                   && request.resource.data.porcentagem <= 100;
+                   && request.resource.data.porcentagem <= 100
+                   && (!('historico' in request.resource.data.keys())
+                       || (request.resource.data.historico is list
+                           && request.resource.data.historico.size() <= 60));
     }
 
     // Resenhas (uma por membro por livro). A regra de "só quem terminou lê"

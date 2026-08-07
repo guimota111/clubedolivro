@@ -1,17 +1,27 @@
 import { useMemo } from 'react'
 import MembroLivro from './MembroLivro'
+import { LegendaCores } from './PistaCorrida'
 import { pctDoProgresso } from '../lib/formato'
+import { corDoMembro } from '../lib/cores'
+import { faixasDeProgresso } from '../lib/progresso24h'
 
 // A Estante: cada membro vira um livro que se enche conforme sua % de leitura.
 // Ordenada do mais avançado ao menos avançado, em tempo real.
 export default function Estante({ membros, porUsuario, livro, meuUserId }) {
   const ordenados = useMemo(() => {
     const total = livro?.totalPaginas || 0
+    const agora = Date.now()
     return membros
-      .map((m) => ({
-        membro: m,
-        pct: pctDoProgresso(porUsuario[m.id], total),
-      }))
+      .map((m) => {
+        const prog = porUsuario[m.id]
+        const pct = pctDoProgresso(prog, total)
+        return {
+          membro: m,
+          pct,
+          faixas: faixasDeProgresso(prog, pct, agora),
+          cor: corDoMembro(m),
+        }
+      })
       .sort((a, b) => {
         // Mais avançado primeiro; empate desempata por nome.
         if (b.pct !== a.pct) return b.pct - a.pct
@@ -39,11 +49,14 @@ export default function Estante({ membros, porUsuario, livro, meuUserId }) {
             key={item.membro.id}
             membro={item.membro}
             pct={item.pct}
+            faixas={item.faixas}
+            cor={item.cor}
             lider={temLider && i === 0}
             souEu={item.membro.id === meuUserId}
           />
         ))}
       </div>
+      <LegendaCores />
     </div>
   )
 }
