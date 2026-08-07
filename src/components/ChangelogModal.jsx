@@ -1,40 +1,29 @@
 import Modal from './Modal'
-import {
-  IconeLivroAberto,
-  IconeMarcador,
-  IconePena,
-  IconeCoroa,
-  IconeVela,
-} from './Icones'
+import { IconeLivroAberto, IconeMarcador, IconePena } from './Icones'
 
 // Chave de versão do changelog. Ao lançar novidades futuras, troque a versão
 // para que o aviso apareça de novo uma única vez por navegador.
-export const CHANGELOG_VERSAO = 'clubedolivro:changelog:2026-08'
+export const CHANGELOG_VERSAO = 'clubedolivro:changelog:2026-08-v2'
 
+// Cada item usa um ícone (Icone) OU um emoji literal (emoji).
 const NOVIDADES = [
   {
     Icone: IconePena,
-    titulo: 'Resenhas ao terminar',
+    titulo: 'Comentários',
     texto:
-      'Chegou a 100%? Uma aba de Resenhas libera para você escrever e ler o que os outros acharam — visível só para quem também terminou.',
+      'Agora dá para comentar nas resenhas e nas notas parciais dos outros — puxe conversa embaixo de cada uma.',
+  },
+  {
+    emoji: '🤯',
+    titulo: 'Reações nas notas',
+    texto:
+      'Ao escrever uma nota parcial, escolha um emoji de reação. Todos veem a carinha (mesmo quem ainda não desbloqueou o texto) — inclusive na sua trilha da pista.',
   },
   {
     Icone: IconeMarcador,
-    titulo: 'Notas parciais sem spoiler',
+    titulo: 'Editar e excluir notas',
     texto:
-      'Comente um trecho e escolha a página ou % de desbloqueio. Os outros só leem quando chegam naquele ponto da leitura.',
-  },
-  {
-    Icone: IconeVela,
-    titulo: 'Contador de prazo',
-    texto:
-      'Ao cadastrar o livro dá para definir a data-limite de término, com uma contagem regressiva na página inicial.',
-  },
-  {
-    Icone: IconeCoroa,
-    titulo: 'Pista de corrida',
-    texto:
-      'No computador, a leitura vira uma pista: cada um corre na sua raia pela sua %, e o líder leva a coroa. Passe o mouse para ver os detalhes.',
+      'Suas notas parciais agora podem ser editadas ou apagadas quando quiser (e os comentários da nota vão junto ao excluir).',
   },
 ]
 
@@ -45,14 +34,18 @@ export default function ChangelogModal({ onFechar }) {
         <IconeLivroAberto size={34} />
       </div>
       <p className="texto-suave centro" style={{ marginTop: 0 }}>
-        Atualizamos a estante! Veja o que mudou:
+        Mais novidades na estante! Veja o que chegou:
       </p>
 
       <ul className="changelog-lista">
-        {NOVIDADES.map(({ Icone, titulo, texto }) => (
+        {NOVIDADES.map(({ Icone, emoji, titulo, texto }) => (
           <li key={titulo}>
             <span className="changelog-icone">
-              <Icone size={20} />
+              {emoji ? (
+                <span style={{ fontSize: '1.25rem', lineHeight: 1 }}>{emoji}</span>
+              ) : (
+                <Icone size={20} />
+              )}
             </span>
             <div>
               <strong>{titulo}</strong>
