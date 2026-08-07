@@ -101,6 +101,25 @@ firebase deploy --only hosting
 O `firebase.json` já aponta o hosting para a pasta `dist/` gerada pelo Vite e faz
 o rewrite de todas as rotas para `index.html` (SPA).
 
+## Widget de iPhone (Scriptable)
+
+`scriptable/widget-clube.js` é um widget para a tela de início do iPhone, feito
+para o app [Scriptable](https://scriptable.app). Mostra o livro atual e a
+corrida da leitura — cada membro na sua cor, com o avanço das últimas 24 h em
+dourado, igual ao site.
+
+Ele lê o Firestore pela **API REST**, sem SDK e sem login: as regras já liberam
+leitura para todo mundo, e a chave usada é a mesma chave web pública do site.
+Só lê — nada no widget altera o clube.
+
+Para instalar: copie o arquivo para um script novo no Scriptable com o nome
+"Clube do Livro", e na tela de início adicione um widget do Scriptable
+apontando para ele. Funciona nos três tamanhos (mostra 3, 4 ou 9 leitores).
+
+A lógica de cor e da janela de 24 h é uma cópia enxuta de `src/lib/cores.js` e
+`src/lib/progresso24h.js` — se mudar a paleta ou a janela lá, atualize aqui
+também.
+
 ## Estrutura
 
 ```
