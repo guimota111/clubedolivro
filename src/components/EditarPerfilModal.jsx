@@ -4,10 +4,13 @@ import { atualizarUsuario } from '../lib/db'
 import { enviarImagem } from '../lib/storage'
 import { IconePena, IconeMarcador } from './Icones'
 import { inicial } from '../lib/formato'
+import { corDoMembro, coresEmUso } from '../lib/cores'
+import SeletorCor, { PreviaBarra } from './SeletorCor'
 
-// Modal para o membro editar seu nome e sua foto.
-export default function EditarPerfilModal({ userId, perfil, onFechar }) {
+// Modal para o membro editar seu nome, sua foto e a cor da sua barra.
+export default function EditarPerfilModal({ userId, perfil, membros = [], onFechar }) {
   const [nome, setNome] = useState(perfil.nome || '')
+  const [cor, setCor] = useState(() => corDoMembro({ id: userId, ...perfil }))
   const [arquivo, setArquivo] = useState(null)
   const [preview, setPreview] = useState('')
   const [enviando, setEnviando] = useState(false)
@@ -42,7 +45,7 @@ export default function EditarPerfilModal({ userId, perfil, onFechar }) {
     setEnviando(true)
     setErro('')
     try {
-      const dados = { nome: nomeLimpo }
+      const dados = { nome: nomeLimpo, cor }
       if (arquivo) {
         dados.avatarUrl = await enviarImagem('avatares', arquivo, userId)
       }
@@ -105,6 +108,14 @@ export default function EditarPerfilModal({ userId, perfil, onFechar }) {
             autoComplete="off"
           />
         </div>
+
+        <SeletorCor
+          valor={cor}
+          aoEscolher={setCor}
+          coresUsadas={coresEmUso(membros, userId)}
+        />
+
+        <PreviaBarra cor={cor} />
 
         {erro && <div className="erro">{erro}</div>}
 

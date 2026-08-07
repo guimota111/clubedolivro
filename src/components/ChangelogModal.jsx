@@ -1,29 +1,29 @@
 import Modal from './Modal'
-import { IconeLivroAberto, IconeMarcador, IconePena } from './Icones'
+import { IconeLivroAberto, IconeMarcador } from './Icones'
 
 // Chave de versão do changelog. Ao lançar novidades futuras, troque a versão
 // para que o aviso apareça de novo uma única vez por navegador.
-export const CHANGELOG_VERSAO = 'clubedolivro:changelog:2026-08-v2'
+export const CHANGELOG_VERSAO = 'clubedolivro:changelog:2026-08-v3'
 
 // Cada item usa um ícone (Icone) OU um emoji literal (emoji).
 const NOVIDADES = [
   {
-    Icone: IconePena,
-    titulo: 'Comentários',
+    emoji: '🎨',
+    titulo: 'Cada leitor, uma cor',
     texto:
-      'Agora dá para comentar nas resenhas e nas notas parciais dos outros — puxe conversa embaixo de cada uma.',
+      'Escolha a sua cor em “Editar perfil”: ela pinta a sua barra na pista e na estante, e emoldura o seu retrato. Quem já estava no clube recebeu uma cor sorteada — é só trocar se não gostar.',
   },
   {
-    emoji: '🤯',
-    titulo: 'Reações nas notas',
+    emoji: '✨',
+    titulo: 'Dourado = leitura das últimas 24 h',
     texto:
-      'Ao escrever uma nota parcial, escolha um emoji de reação. Todos veem a carinha (mesmo quem ainda não desbloqueou o texto) — inclusive na sua trilha da pista.',
+      'A pontinha dourada da barra mostra o que você avançou nas últimas 24 horas. Bateu perna no livro ontem à noite? Todo mundo vai ver o brilho.',
   },
   {
     Icone: IconeMarcador,
-    titulo: 'Editar e excluir notas',
+    titulo: 'Seu ritmo, em números',
     texto:
-      'Suas notas parciais agora podem ser editadas ou apagadas quando quiser (e os comentários da nota vão junto ao excluir).',
+      'Ao atualizar o progresso (e ao passar o mouse na pista) aparece quanto você já leu nas últimas 24 h.',
   },
 ]
 

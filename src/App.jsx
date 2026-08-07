@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import './styles/app.css'
 import { obterOuCriarUserId, limparIdentidade } from './lib/identity'
-import { buscarUsuario } from './lib/db'
+import { buscarUsuario, garantirCoresDosMembros } from './lib/db'
 import {
   useMembros,
   useLivroAtual,
@@ -14,6 +14,7 @@ import {
   useMeuProgresso,
 } from './hooks/useDadosClube'
 import { inicial, pctDoProgresso } from './lib/formato'
+import { corDoMembro } from './lib/cores'
 
 import Cadastro from './components/Cadastro'
 import LivroAtualCard from './components/LivroAtualCard'
@@ -141,6 +142,18 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
     return mapa
   }, [membros])
 
+  // Membros que entraram antes das cores existirem ganham uma sorteada. Roda
+  // uma vez por sessão; o sorteio é determinístico, então não há briga se dois
+  // navegadores fizerem isso ao mesmo tempo.
+  const coresSorteadas = useRef(false)
+  useEffect(() => {
+    if (coresSorteadas.current || !membros.length) return
+    coresSorteadas.current = true
+    garantirCoresDosMembros(membros).catch((err) =>
+      console.error('Erro ao sortear cores dos membros:', err)
+    )
+  }, [membros])
+
   const minhaPorcentagem = livro
     ? pctDoProgresso(porUsuario[userId], livro.totalPaginas)
     : 0
@@ -148,6 +161,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
   // Usa o doc ao vivo (onSnapshot) como fonte do perfil, com fallback para o
   // que foi carregado no início — assim edições de nome/foto aparecem na hora.
   const meuPerfil = membrosPorId[userId] || usuario
+  const minhaCor = corDoMembro({ id: userId, ...meuPerfil })
 
   return (
     <div className="app">
@@ -163,6 +177,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
                 className="mini-avatar avatar-clicavel"
                 src={meuPerfil.avatarUrl}
                 alt={meuPerfil.nome}
+                style={{ borderColor: minhaCor }}
                 onClick={() => verFoto(meuPerfil.avatarUrl, meuPerfil.nome)}
               />
             ) : (
@@ -173,6 +188,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
                   alignItems: 'center',
                   justifyContent: 'center',
                   background: 'var(--madeira-clara)',
+                  borderColor: minhaCor,
                   color: 'var(--dourado-claro)',
                 }}
               >
@@ -317,6 +333,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
         <EditarPerfilModal
           userId={userId}
           perfil={meuPerfil}
+          membros={membros}
           onFechar={() => setModalPerfil(false)}
         />
       )}

@@ -207,7 +207,8 @@
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid var(--dourado);
+  /* A moldura do retrato usa a cor do próprio membro. */
+  border: 2px solid var(--cor-membro, var(--dourado));
   box-shadow: 0 3px 8px var(--sombra);
 }
 
@@ -219,8 +220,8 @@
   align-items: center;
   justify-content: center;
   background: var(--madeira-clara);
-  border: 2px solid var(--dourado);
-  color: var(--dourado-claro);
+  border: 2px solid var(--cor-membro, var(--dourado));
+  color: var(--cor-membro-clara, var(--dourado-claro));
   font-family: var(--fonte-titulo);
   font-size: 1.3rem;
 }
@@ -261,21 +262,26 @@
   z-index: 2;
 }
 
-/* Preenchimento dourado de baixo para cima (o "termômetro").
-   A altura vem da variável --pct definida inline no componente. */
+/* Preenchimento de baixo para cima (o "termômetro"), na cor escolhida pelo
+   membro. A altura vem da variável --pct definida inline no componente. */
 .livro-vasilha .preenchimento {
   position: absolute;
   left: 0;
   right: 0;
   bottom: 0;
   height: var(--pct, 0%);
-  background: linear-gradient(180deg, var(--dourado-brilho), var(--dourado) 60%, #a9841c);
-  box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.25);
+  background: linear-gradient(
+    180deg,
+    var(--cor-membro-clara, var(--dourado-brilho)),
+    var(--cor-membro, var(--dourado)) 60%,
+    var(--cor-membro-escura, #a9841c)
+  );
+  box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.22);
   transition: height var(--transicao);
   z-index: 1;
 }
 
-/* Linha de brilho no topo do líquido dourado. */
+/* Linha de brilho no topo do líquido. */
 .livro-vasilha .preenchimento::before {
   content: '';
   position: absolute;
@@ -283,8 +289,33 @@
   left: 0;
   right: 0;
   height: 3px;
+  background: var(--cor-membro-clara, var(--dourado-brilho));
+  box-shadow: 0 0 8px var(--cor-membro-brilho, rgba(244, 217, 123, 0.8));
+}
+
+/* Faixa DOURADA: o que o membro leu nas últimas 24 h. Fica logo acima do
+   acumulado (--base) e tem a altura do ganho recente (--recente). */
+.livro-vasilha .preenchimento-recente {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: var(--base, 0%);
+  height: var(--recente, 0%);
+  background: linear-gradient(180deg, var(--dourado-brilho), var(--dourado) 70%, #a9841c);
+  box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.3);
+  transition: height var(--transicao), bottom var(--transicao);
+  z-index: 1;
+}
+
+.livro-vasilha .preenchimento-recente::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
   background: var(--dourado-brilho);
-  box-shadow: 0 0 8px rgba(244, 217, 123, 0.8);
+  box-shadow: 0 0 10px rgba(244, 217, 123, 0.9);
 }
 
 /* Rótulo de porcentagem no meio da lombada. */
@@ -337,6 +368,20 @@
   font-size: 0.8rem;
   color: var(--papel-tenue);
   text-align: center;
+}
+
+/* Selo dourado com o quanto o membro avançou nas últimas 24 h. */
+.ganho-24h {
+  display: inline-block;
+  margin-left: 0.35em;
+  padding: 0 0.4em;
+  border-radius: 999px;
+  background: rgba(201, 162, 39, 0.18);
+  border: 1px solid rgba(224, 185, 77, 0.45);
+  color: var(--dourado-brilho);
+  font-size: 0.9em;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 .membro-livro.eu .nome-membro::after {
@@ -1021,9 +1066,36 @@ input[type='file'].escondido {
     height: 100%;
     width: var(--pct, 0%);
     transition: width var(--transicao);
+    background: linear-gradient(
+      90deg,
+      var(--cor-membro-escura, #a9841c),
+      var(--cor-membro, var(--dourado)) 40%,
+      var(--cor-membro-clara, var(--dourado-brilho))
+    );
   }
 
   .livro-vasilha .preenchimento::before {
+    top: 0;
+    bottom: 0;
+    left: auto;
+    right: 0;
+    width: 3px;
+    height: auto;
+  }
+
+  /* A faixa dourada das 24 h também deita: começa onde o acumulado termina. */
+  .livro-vasilha .preenchimento-recente {
+    top: 0;
+    bottom: auto;
+    right: auto;
+    left: var(--base, 0%);
+    height: 100%;
+    width: var(--recente, 0%);
+    transition: width var(--transicao), left var(--transicao);
+    background: linear-gradient(90deg, var(--dourado), var(--dourado-brilho));
+  }
+
+  .livro-vasilha .preenchimento-recente::before {
     top: 0;
     bottom: 0;
     left: auto;
@@ -1213,12 +1285,44 @@ input[type='file'].escondido {
   border: 1px solid rgba(201, 162, 39, 0.18);
   overflow: hidden;
 }
+/* Trecho acumulado, na cor do membro. */
 .raia-preenchida {
-  height: 100%;
-  background: linear-gradient(90deg, rgba(201, 162, 39, 0.35), rgba(224, 185, 77, 0.6));
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  background: linear-gradient(
+    90deg,
+    var(--cor-membro-escura, rgba(201, 162, 39, 0.35)),
+    var(--cor-membro, rgba(224, 185, 77, 0.6))
+  );
+  transition: width var(--transicao);
 }
-.raia-lider .raia-preenchida {
+/* Trecho conquistado nas últimas 24 h — sempre dourado, com brilho para
+   saltar aos olhos quem devorou o livro de ontem para hoje. */
+.raia-recente {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
   background: linear-gradient(90deg, var(--dourado), var(--dourado-brilho));
+  box-shadow: 0 0 10px rgba(244, 217, 123, 0.75);
+  transition: width var(--transicao), left var(--transicao);
+}
+/* Emenda entre a cor do membro e o dourado. */
+.raia-recente::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 2px;
+  background: rgba(0, 0, 0, 0.35);
+}
+.raia-lider .raia-trilho {
+  border-color: rgba(224, 185, 77, 0.55);
+  box-shadow: 0 0 12px rgba(224, 185, 77, 0.3);
 }
 .corredor {
   position: absolute;
@@ -1234,7 +1338,8 @@ input[type='file'].escondido {
   height: 38px;
   border-radius: 50%;
   object-fit: cover;
-  border: 2px solid var(--dourado);
+  /* Moldura na cor do membro: dá para achar quem é quem sem ler o nome. */
+  border: 2px solid var(--cor-membro, var(--dourado));
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.6);
   background: var(--madeira-clara);
 }
@@ -1243,12 +1348,13 @@ input[type='file'].escondido {
   align-items: center;
   justify-content: center;
   font-family: var(--fonte-titulo);
-  color: var(--dourado-claro);
+  color: var(--cor-membro-clara, var(--dourado-claro));
   font-size: 1.1rem;
 }
 .raia-eu .corredor-avatar {
-  border-color: var(--dourado-brilho);
-  box-shadow: 0 0 0 3px rgba(244, 217, 123, 0.35), 0 2px 8px rgba(0, 0, 0, 0.6);
+  border-color: var(--cor-membro-clara, var(--dourado-brilho));
+  box-shadow: 0 0 0 3px var(--cor-membro-brilho, rgba(244, 217, 123, 0.35)),
+    0 2px 8px rgba(0, 0, 0, 0.6);
 }
 .corredor-coroa {
   position: absolute;
@@ -1281,6 +1387,10 @@ input[type='file'].escondido {
 .corredor-tooltip strong { color: var(--dourado-claro); font-family: var(--fonte-titulo); }
 .corredor-tooltip span { font-size: 0.85rem; color: var(--papel-suave); }
 .corredor-tooltip-pag { color: var(--papel-tenue) !important; font-style: italic; }
+.corredor-tooltip-recente {
+  color: var(--dourado-brilho) !important;
+  font-weight: 600;
+}
 .corredor-tooltip::after {
   content: '';
   position: absolute;
@@ -1627,3 +1737,157 @@ input[type='file'].escondido {
 .nota-excluir { color: #e08a6d; }
 .nota-excluir:hover { color: #f0a88d; }
 .nota-excluir:disabled { opacity: 0.6; cursor: default; }
+
+/* ======================================================================
+   Cores dos membros e destaque das últimas 24 h
+   ====================================================================== */
+
+/* ---------- Legenda do código de cores (pista e estante) ---------- */
+.legenda-cores {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem 1.4rem;
+  margin: 1rem 0 0;
+  font-family: var(--fonte-display);
+  font-size: 0.92rem;
+  color: var(--papel-tenue);
+}
+.legenda-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45em;
+}
+.legenda-amostra {
+  display: inline-block;
+  width: 26px;
+  height: 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 0, 0, 0.45);
+}
+/* Amostra multicor: representa "a cor de cada leitor". */
+.legenda-amostra-membro {
+  background: linear-gradient(90deg, #d1403a, #8a63d8 50%, #2aa6a6);
+}
+.legenda-amostra-dourada {
+  background: linear-gradient(90deg, var(--dourado), var(--dourado-brilho));
+  box-shadow: 0 0 8px rgba(244, 217, 123, 0.6);
+}
+
+/* ---------- Seletor de cor ---------- */
+.paleta-cores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.7rem;
+}
+.amostra-cor {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(0, 0, 0, 0.45);
+  background: var(--cor-amostra);
+  box-shadow: 0 2px 6px var(--sombra);
+  transition: transform var(--transicao), box-shadow var(--transicao);
+}
+.amostra-cor:hover {
+  transform: scale(1.1);
+}
+.amostra-cor.ativa {
+  border-color: var(--papel);
+  box-shadow: 0 0 0 3px rgba(240, 230, 210, 0.35), 0 2px 6px var(--sombra);
+  transform: scale(1.1);
+}
+/* Cor já escolhida por outro membro: dá para insistir, mas fica avisado. */
+.amostra-cor.usada {
+  opacity: 0.45;
+}
+.amostra-cor.usada::after {
+  content: '';
+  display: block;
+  width: 100%;
+  height: 2px;
+  background: rgba(0, 0, 0, 0.6);
+  transform: rotate(-45deg);
+}
+
+.paleta-livre {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.entrada-cor {
+  width: 46px;
+  height: 32px;
+  padding: 2px;
+  border-radius: 6px;
+  border: 1px solid rgba(201, 162, 39, 0.35);
+  background: rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+}
+.aviso-cor {
+  margin: 0.6rem 0 0;
+  padding: 0.5rem 0.7rem;
+  border-radius: var(--raio);
+  border: 1px dashed rgba(224, 185, 77, 0.45);
+  background: rgba(201, 162, 39, 0.08);
+  color: var(--papel-suave);
+  font-size: 0.85rem;
+}
+
+/* ---------- Prévia da barra no seletor de cor ---------- */
+.previa-barra {
+  margin-bottom: 1.1rem;
+}
+.previa-trilho {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(201, 162, 39, 0.18);
+  overflow: hidden;
+}
+.previa-base {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(
+    90deg,
+    var(--cor-membro-escura),
+    var(--cor-membro)
+  );
+  transition: width var(--transicao), background var(--transicao);
+}
+.previa-recente {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, var(--dourado), var(--dourado-brilho));
+  box-shadow: 0 0 10px rgba(244, 217, 123, 0.7);
+}
+.previa-legenda {
+  margin: 0.45rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+.previa-legenda strong {
+  color: var(--dourado-brilho);
+}
+
+/* Aviso sobre o dourado dentro do modal de progresso. */
+.nota-24h {
+  margin: 0.9rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+.nota-24h strong {
+  color: var(--dourado-brilho);
+}
+
+/* A cor do membro também identifica seu chip na lista de entrada. */
+.chip-membro img,
+.chip-membro .chip-inicial {
+  border-color: var(--cor-membro, var(--dourado));
+}
