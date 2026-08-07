@@ -4,9 +4,7 @@ import { calcularPct, limitarPct, formatarData, inicial } from '../lib/formato'
 import { IconeMarcador, IconePena, DivisoriaOrnamentada } from './Icones'
 import { useVerFoto } from './FotoContext'
 import Comentarios from './Comentarios'
-
-// Paleta de reações para as notas parciais.
-const REACOES = ['😍', '🤯', '😲', '😢', '😂', '😡', '🤔', '😱', '❤️', '🔥', '👏', '💀']
+import { REACOES } from '../lib/reacoes'
 
 // Notas parciais: cada membro pode deixar uma anotação "trancada" até uma
 // página/porcentagem. Os outros só leem quando o próprio progresso alcança

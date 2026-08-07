@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { pctDoProgresso, inicial } from '../lib/formato'
+import { fraseReacao } from '../lib/reacoes'
 import { IconeCoroa } from './Icones'
 import { useVerFoto } from './FotoContext'
 
@@ -76,17 +77,25 @@ export default function PistaCorrida({ membros, porUsuario, livro, notas = [], m
               <div className="raia-trilho" aria-hidden="true">
                 <div className="raia-preenchida" style={{ width: `${c.pct}%` }} />
               </div>
-              {(notasPorUsuario[c.membro.id] || []).map((n) => (
-                <span
-                  key={n.id}
-                  className="raia-nota"
-                  style={{ left: `${n.desbloqueioPct || 0}%` }}
-                  title={`Nota em ${n.desbloqueioPct || 0}%`}
-                  aria-hidden="true"
-                >
-                  {n.emoji}
-                </span>
-              ))}
+              {(notasPorUsuario[c.membro.id] || []).map((n) => {
+                const frase = fraseReacao(n.emoji)
+                const nome = c.membro.nome || 'Membro'
+                const pct = n.desbloqueioPct || 0
+                const titulo = frase
+                  ? `Nota de ${nome} ${frase} em ${pct}%`
+                  : `Nota de ${nome} em ${pct}%`
+                return (
+                  <span
+                    key={n.id}
+                    className="raia-nota"
+                    style={{ left: `${pct}%` }}
+                    title={titulo}
+                    aria-hidden="true"
+                  >
+                    {n.emoji}
+                  </span>
+                )
+              })}
               <div
                 className="corredor"
                 style={{ left: `${c.pct}%` }}
