@@ -58,6 +58,34 @@ npm run preview   # pré-visualiza o build
 
 ## Deploy (Firebase Hosting)
 
+### Automático (GitHub Actions)
+
+O workflow `.github/workflows/publicar.yml` publica **o site e as regras** a
+cada mudança na branch principal. Também dá para rodar na mão pelo navegador,
+sem terminal: aba **Actions** → **Publicar no Firebase** → **Run workflow**.
+
+Site e regras vão juntos de propósito — assim nunca fica uma regra nova no ar
+sem o código que a usa (ou o contrário).
+
+**Configuração, uma vez só.** O workflow precisa de um secret chamado
+`FIREBASE_SERVICE_ACCOUNT`:
+
+1. No [Console do Google Cloud](https://console.cloud.google.com/iam-admin/serviceaccounts),
+   com o projeto `clube-do-livro-16073` selecionado, crie uma conta de serviço
+   (ex.: `deploy-github`) com o papel **Firebase Admin**.
+2. Na conta criada, aba **Chaves** → **Adicionar chave** → **Criar nova chave**
+   → tipo **JSON**. Um arquivo é baixado.
+3. No GitHub, em **Settings** → **Secrets and variables** → **Actions** →
+   **New repository secret**, crie `FIREBASE_SERVICE_ACCOUNT` e cole o
+   **conteúdo inteiro** do arquivo JSON.
+
+O papel *Firebase Admin* cobre Hosting e regras sem dar acesso ao resto do
+Google Cloud. A chave é um segredo de verdade: não a coloque em nenhum commit —
+os secrets do GitHub não são expostos em PRs vindos de forks, e este workflow só
+roda na branch principal ou quando alguém com acesso de escrita o dispara.
+
+### Manual (Firebase CLI)
+
 Requer a [Firebase CLI](https://firebase.google.com/docs/cli) instalada e
 autenticada (`firebase login`).
 

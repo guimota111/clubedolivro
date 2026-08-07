@@ -1,0 +1,58 @@
+# Publica o site no Firebase Hosting e as regras do Firestore/Storage.
+#
+# Dispara sozinho a cada mudança na branch principal e também pode ser rodado
+# na mão pelo GitHub (aba "Actions" -> "Publicar no Firebase" -> "Run workflow"),
+# sem precisar de terminal.
+#
+# Exige um secret do repositório chamado FIREBASE_SERVICE_ACCOUNT com o JSON
+# de uma conta de serviço do projeto (veja o README).
+
+name: Publicar no Firebase
+
+on:
+  push:
+    branches: [claude/clube-do-livro-spec-dkjmgh]
+  workflow_dispatch:
+
+# Só uma publicação por vez: se dois merges caírem juntos, o mais novo espera
+# em vez de brigar com o anterior.
+concurrency:
+  group: publicar-firebase
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Gerar o build (pasta dist/)
+        run: npm run build
+
+      # Escreve a chave da conta de serviço em disco e aponta a variável
+      # GOOGLE_APPLICATION_CREDENTIALS para ela — é assim que a CLI do Firebase
+      # se autentica sem `firebase login`.
+      - name: Autenticar no Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+
+      # Publica o site E as regras na mesma tacada, para nunca ficarem
+      # dessincronizados (regra nova no ar sem o site novo, ou vice-versa).
+      - name: Publicar site e regras
+        run: >
+          npx --yes firebase-tools deploy
+          --only hosting,firestore:rules,storage
+          --project clube-do-livro-16073
+          --non-interactive
