@@ -1,17 +1,24 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { publicarComentario } from '../lib/db'
 import { formatarData, inicial } from '../lib/formato'
-import { IconePena } from './Icones'
+import { IconePena, IconeSeta } from './Icones'
 import { useVerFoto } from './FotoContext'
 
 // Thread de comentários reutilizável — serve tanto para resenhas quanto para
 // notas parciais. Só deve ser renderizado onde o conteúdo-alvo está visível
 // (resenha liberada ou nota desbloqueada).
+//
+// A thread começa recolhida: com muitos comentários, deixá-las todas abertas
+// alonga demais a página. O botão sempre diz quantos há, então dá para saber
+// onde a conversa está sem abrir nada.
 export default function Comentarios({ alvoTipo, alvoId, comentarios, membrosPorId, userId }) {
   const verFoto = useVerFoto()
+  const idPainel = useId()
+  const [aberto, setAberto] = useState(false)
   const [texto, setTexto] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState('')
+  const total = comentarios.length
 
   async function aoEnviar(e) {
     e.preventDefault()
@@ -36,6 +43,20 @@ export default function Comentarios({ alvoTipo, alvoId, comentarios, membrosPorI
 
   return (
     <div className="comentarios">
+      <button
+        type="button"
+        className="comentarios-alternar"
+        aria-expanded={aberto}
+        aria-controls={idPainel}
+        onClick={() => setAberto((v) => !v)}
+      >
+        <IconeSeta size={14} className="seta-alternar" aria-hidden="true" />
+        {total === 0
+          ? 'Comentar'
+          : `${total} comentário${total > 1 ? 's' : ''}`}
+      </button>
+
+      <div id={idPainel} hidden={!aberto}>
       {comentarios.length > 0 && (
         <ul className="comentarios-lista">
           {comentarios.map((c) => {
@@ -87,6 +108,7 @@ export default function Comentarios({ alvoTipo, alvoId, comentarios, membrosPorI
         </button>
       </form>
       {erro && <div className="erro">{erro}</div>}
+      </div>
     </div>
   )
 }

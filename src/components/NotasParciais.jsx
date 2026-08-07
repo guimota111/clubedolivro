@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { salvarNota, atualizarNota, excluirNota } from '../lib/db'
 import { calcularPct, limitarPct, formatarData, inicial } from '../lib/formato'
-import { IconeMarcador, IconePena, DivisoriaOrnamentada } from './Icones'
+import { IconeMarcador, IconePena, IconeSeta, DivisoriaOrnamentada } from './Icones'
 import { useVerFoto } from './FotoContext'
 import Comentarios from './Comentarios'
 import { REACOES } from '../lib/reacoes'
@@ -29,6 +29,29 @@ export default function NotasParciais({
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState('')
   const [excluindoId, setExcluindoId] = useState(null)
+
+  // Notas começam recolhidas: com a lista crescendo, abrir tudo de uma vez
+  // deixa a página imensa. O cabeçalho e uma prévia de uma linha bastam para
+  // achar a nota certa.
+  const [abertas, setAbertas] = useState(() => new Set())
+
+  function alternarNota(id) {
+    setAbertas((antes) => {
+      const nova = new Set(antes)
+      if (nova.has(id)) nova.delete(id)
+      else nova.add(id)
+      return nova
+    })
+  }
+
+  // Só as liberadas contam: a trancada não abre (não há o que mostrar além
+  // do cadeado, que já aparece recolhido).
+  const liberadas = notas.filter((n) => n.userId === userId || minhaPct >= (n.desbloqueioPct || 0))
+  const todasAbertas = liberadas.length > 0 && liberadas.every((n) => abertas.has(n.id))
+
+  function alternarTodas() {
+    setAbertas(todasAbertas ? new Set() : new Set(liberadas.map((n) => n.id)))
+  }
 
   function limpar() {
     setTexto('')
@@ -60,6 +83,8 @@ export default function NotasParciais({
     }
     setErro('')
     setAberto(true)
+    // Quem está editando quer ver o resultado: deixa a nota expandida.
+    setAbertas((antes) => new Set(antes).add(n.id))
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
@@ -264,80 +289,135 @@ export default function NotasParciais({
       )}
 
       {notas.length > 0 && (
-        <div className="notas-lista">
-          {notas.map((n) => {
-            const autor = membrosPorId[n.userId]
-            const souAutor = n.userId === userId
-            const liberada = souAutor || minhaPct >= (n.desbloqueioPct || 0)
-            const alvoTxt =
-              n.desbloqueioTipo === 'pagina'
-                ? `página ${n.desbloqueioValor}${n.totalPaginas ? `/${n.totalPaginas}` : ''} (${n.desbloqueioPct}%)`
-                : `${n.desbloqueioPct}%`
-            return (
-              <article className={`nota${liberada ? '' : ' nota-trancada'}`} key={n.id}>
-                <div className="nota-cabecalho">
-                  {autor?.avatarUrl ? (
-                    <img
-                      src={autor.avatarUrl}
-                      alt={autor.nome || ''}
-                      className="nota-avatar avatar-clicavel"
-                      onClick={() => verFoto(autor.avatarUrl, autor.nome)}
-                    />
-                  ) : (
-                    <span className="nota-avatar nota-inicial">{inicial(autor?.nome)}</span>
-                  )}
-                  {n.emoji && (
-                    <span className="nota-emoji" aria-label="Reação">{n.emoji}</span>
-                  )}
-                  <span className="nota-quem">{autor?.nome || 'Membro'}</span>
-                  {souAutor && <span className="nota-tag">sua nota</span>}
-                  <span className="nota-quando">{formatarData(n.criadoEm)}</span>
-                </div>
+        <>
+          {liberadas.length > 1 && (
+            <div className="notas-barra">
+              <span className="texto-tenue">
+                {notas.length} nota{notas.length > 1 ? 's' : ''}
+              </span>
+              <button type="button" className="btn-texto" onClick={alternarTodas}>
+                {todasAbertas ? 'Recolher todas' : 'Expandir todas'}
+              </button>
+            </div>
+          )}
 
-                {liberada ? (
-                  <>
-                    <div className="nota-texto">{n.texto}</div>
-                    <Comentarios
-                      alvoTipo="nota"
-                      alvoId={n.id}
-                      comentarios={comentariosPorAlvo[n.id] || []}
-                      membrosPorId={membrosPorId}
-                      userId={userId}
-                    />
-                  </>
-                ) : (
-                  <div className="nota-cadeado">
-                    <IconeMarcador size={16} />
-                    <span>
-                      Trancada — desbloqueia em <strong>{alvoTxt}</strong>. Você está
-                      em {minhaPct}%.
-                    </span>
-                  </div>
-                )}
+          <div className="notas-lista">
+            {notas.map((n) => {
+              const autor = membrosPorId[n.userId]
+              const souAutor = n.userId === userId
+              const liberada = souAutor || minhaPct >= (n.desbloqueioPct || 0)
+              const aberta = abertas.has(n.id)
+              const nComentarios = (comentariosPorAlvo[n.id] || []).length
+              const alvoTxt =
+                n.desbloqueioTipo === 'pagina'
+                  ? `página ${n.desbloqueioValor}${n.totalPaginas ? `/${n.totalPaginas}` : ''} (${n.desbloqueioPct}%)`
+                  : `${n.desbloqueioPct}%`
+              return (
+                <article
+                  className={`nota${liberada ? '' : ' nota-trancada'}${aberta ? ' nota-aberta' : ''}`}
+                  key={n.id}
+                >
+                  {/* O retrato fica FORA do botão: ele abre a foto em tamanho
+                      grande, e um clicável dentro de outro seria ambíguo (e
+                      HTML inválido). */}
+                  <div className="nota-cabecalho">
+                    {autor?.avatarUrl ? (
+                      <img
+                        src={autor.avatarUrl}
+                        alt={autor.nome || ''}
+                        className="nota-avatar avatar-clicavel"
+                        onClick={() => verFoto(autor.avatarUrl, autor.nome)}
+                      />
+                    ) : (
+                      <span className="nota-avatar nota-inicial">{inicial(autor?.nome)}</span>
+                    )}
 
-                {souAutor && (
-                  <div className="nota-acoes">
-                    <button
-                      type="button"
-                      className="btn-texto"
-                      onClick={() => iniciarEdicao(n)}
-                    >
-                      <IconePena size={13} /> Editar
-                    </button>
-                    <button
-                      type="button"
-                      className="btn-texto nota-excluir"
-                      onClick={() => excluir(n)}
-                      disabled={excluindoId === n.id}
-                    >
-                      {excluindoId === n.id ? 'Excluindo…' : 'Excluir'}
-                    </button>
+                    {liberada ? (
+                      <button
+                        type="button"
+                        className="nota-alternar"
+                        aria-expanded={aberta}
+                        onClick={() => alternarNota(n.id)}
+                      >
+                        <span className="nota-identidade">
+                          {n.emoji && (
+                            <span className="nota-emoji" aria-hidden="true">{n.emoji}</span>
+                          )}
+                          <span className="nota-quem">{autor?.nome || 'Membro'}</span>
+                          {souAutor && <span className="nota-tag">sua nota</span>}
+                          {nComentarios > 0 && (
+                            <span className="nota-contador">
+                              {nComentarios} 💬
+                            </span>
+                          )}
+                        </span>
+                        <span className="nota-quando">{formatarData(n.criadoEm)}</span>
+                        <IconeSeta size={16} className="seta-alternar" aria-hidden="true" />
+                      </button>
+                    ) : (
+                      <span className="nota-identidade">
+                        {n.emoji && (
+                          <span className="nota-emoji" aria-hidden="true">{n.emoji}</span>
+                        )}
+                        <span className="nota-quem">{autor?.nome || 'Membro'}</span>
+                        <span className="nota-quando">{formatarData(n.criadoEm)}</span>
+                      </span>
+                    )}
                   </div>
-                )}
-              </article>
-            )
-          })}
-        </div>
+
+                  {/* Recolhida, a nota mostra a primeira linha do texto — dá
+                      para achar a que interessa sem abrir uma por uma. */}
+                  {liberada && !aberta && <p className="nota-previa">{n.texto}</p>}
+
+                  {liberada && aberta && (
+                    <>
+                      <div className="nota-texto">{n.texto}</div>
+                      <Comentarios
+                        alvoTipo="nota"
+                        alvoId={n.id}
+                        comentarios={comentariosPorAlvo[n.id] || []}
+                        membrosPorId={membrosPorId}
+                        userId={userId}
+                      />
+                    </>
+                  )}
+
+                  {/* A trancada não colapsa: não há o que esconder além do
+                      cadeado, e vê-lo de relance é justamente o útil. */}
+                  {!liberada && (
+                    <div className="nota-cadeado">
+                      <IconeMarcador size={16} />
+                      <span>
+                        Trancada — desbloqueia em <strong>{alvoTxt}</strong>. Você está
+                        em {minhaPct}%.
+                      </span>
+                    </div>
+                  )}
+
+                  {souAutor && aberta && (
+                    <div className="nota-acoes">
+                      <button
+                        type="button"
+                        className="btn-texto"
+                        onClick={() => iniciarEdicao(n)}
+                      >
+                        <IconePena size={13} /> Editar
+                      </button>
+                      <button
+                        type="button"
+                        className="btn-texto nota-excluir"
+                        onClick={() => excluir(n)}
+                        disabled={excluindoId === n.id}
+                      >
+                        {excluindoId === n.id ? 'Excluindo…' : 'Excluir'}
+                      </button>
+                    </div>
+                  )}
+                </article>
+              )
+            })}
+          </div>
+        </>
       )}
     </section>
   )
