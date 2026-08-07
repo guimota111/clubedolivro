@@ -141,6 +141,14 @@ export default function PistaCorrida({ membros, porUsuario, livro, notas = [], m
                   {lider && (
                     <IconeCoroa size={22} className="corredor-coroa" aria-hidden="true" />
                   )}
+                  {/* Ganho das 24 h sempre à vista: a faixa dourada dele fica
+                      logo atrás do retrato, então um avanço pequeno some.
+                      No celular quem mostra isso é a ficha da raia. */}
+                  {c.faixas.recente > 0 && (
+                    <span className="corredor-ganho" aria-hidden="true">
+                      +{c.faixas.recente}%
+                    </span>
+                  )}
                   <CorredorAvatar membro={c.membro} />
                   <div className="corredor-tooltip" role="tooltip">
                     <strong>{c.membro.nome}</strong>
