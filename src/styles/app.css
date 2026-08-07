@@ -1271,7 +1271,17 @@ input[type='file'].escondido {
 }
 .raia {
   position: relative;
+}
+/* Área onde o trilho e o corredor vivem — é ela que serve de referência para
+   o posicionamento absoluto, e não a raia inteira (que no celular ainda
+   carrega a ficha com nome e %). */
+.raia-pista {
+  position: relative;
   height: 46px;
+}
+/* Ficha da raia: só aparece no celular (ver media query). */
+.raia-info {
+  display: none;
 }
 .raia-trilho {
   position: absolute;
@@ -1890,4 +1900,111 @@ input[type='file'].escondido {
 .chip-membro img,
 .chip-membro .chip-inicial {
   border-color: var(--cor-membro, var(--dourado));
+}
+
+/* ======================================================================
+   Pista de corrida no celular
+   ====================================================================== */
+
+/* No mobile a pista compete com a estante de barras: o membro escolhe qual
+   quer ver (ver .seletor-vista). Aqui a pista é reapertada para caber numa
+   tela estreita — sem hover, a informação sai do cartão flutuante e vira uma
+   ficha fixa acima de cada trilho. */
+@media (max-width: 759px) {
+  .pista {
+    /* Espaço nas laterais para o retrato não ser cortado em 0% e em 100%. */
+    padding: 0.9rem 1.4rem 1.1rem;
+    border-radius: 12px;
+  }
+
+  .pista-marcadores {
+    font-size: 0.68rem;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.5rem;
+  }
+  /* Em telas estreitas as marcas do meio viram ruído; ficam largada e chegada. */
+  .pista-marcadores span:not(:first-child):not(:last-child) {
+    display: none;
+  }
+
+  .pista-raias {
+    gap: 0.9rem;
+  }
+
+  .raia-info {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.1rem;
+  }
+  .raia-nome {
+    font-family: var(--fonte-display);
+    font-size: 0.95rem;
+    color: var(--papel);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .raia-eu .raia-nome::after {
+    content: ' (você)';
+    color: var(--dourado-claro);
+    font-style: italic;
+    font-size: 0.85em;
+  }
+  .raia-numeros {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.35rem;
+    white-space: nowrap;
+  }
+  .raia-ganho {
+    padding: 0 0.4em;
+    border-radius: 999px;
+    background: rgba(201, 162, 39, 0.18);
+    border: 1px solid rgba(224, 185, 77, 0.45);
+    color: var(--dourado-brilho);
+    font-size: 0.72rem;
+    font-weight: 600;
+  }
+  .raia-pct {
+    font-family: var(--fonte-display);
+    font-size: 0.85rem;
+    color: var(--papel-tenue);
+  }
+
+  .raia-pista {
+    height: 34px;
+  }
+
+  .corredor-avatar {
+    width: 30px;
+    height: 30px;
+  }
+  .corredor-inicial {
+    font-size: 0.95rem;
+  }
+  /* A coroa flutuando acima do retrato bateria na ficha da raia — e logo no
+     líder, que está sempre mais à direita, bem embaixo do selo de %. No
+     celular ela vira um selo no canto do retrato. */
+  .corredor-coroa {
+    top: -5px;
+    left: auto;
+    right: -5px;
+    transform: none;
+    width: 15px;
+    height: 15px;
+  }
+
+  /* Sem mouse não há hover: a ficha acima do trilho já diz nome e %, então o
+     cartão flutuante sai de cena para não atrapalhar o toque. */
+  .corredor-tooltip {
+    display: none;
+  }
+}
+
+/* ---------- Alternador barras / corrida (só no celular) ---------- */
+.seletor-vista {
+  max-width: 320px;
+  margin: 0 auto 1rem;
 }

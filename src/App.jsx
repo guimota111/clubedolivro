@@ -39,6 +39,9 @@ import {
   DivisoriaOrnamentada,
 } from './components/Icones'
 
+// Preferência de visualização do progresso no celular (barras ou corrida).
+const CHAVE_VISTA = 'clubedolivro:vista-mobile'
+
 export default function App() {
   const [userId] = useState(() => obterOuCriarUserId())
   const [usuario, setUsuario] = useState(null)
@@ -106,6 +109,24 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
   const [modalProgresso, setModalProgresso] = useState(false)
   const [aba, setAba] = useState('leitura') // 'leitura' | 'resenhas'
   const verFoto = useVerFoto()
+
+  // Como o progresso aparece no celular: barras (a estante) ou a pista de
+  // corrida. A escolha fica guardada neste navegador.
+  const [vista, setVista] = useState(() => {
+    try {
+      return localStorage.getItem(CHAVE_VISTA) === 'corrida' ? 'corrida' : 'barras'
+    } catch {
+      return 'barras'
+    }
+  })
+  function trocarVista(nova) {
+    setVista(nova)
+    try {
+      localStorage.setItem(CHAVE_VISTA, nova)
+    } catch {
+      // navegador sem localStorage: a escolha só não sobrevive ao recarregar
+    }
+  }
 
   // Changelog: mostra uma vez por navegador, logo após estar logado.
   const [modalChangelog, setModalChangelog] = useState(() => {
@@ -245,7 +266,8 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
                 <h2 className="secao-titulo">
                   <IconeLivroAberto size={22} /> A corrida da leitura
                 </h2>
-                {/* Desktop: pista de corrida. Mobile: estante vertical. */}
+                {/* No desktop a pista sempre cabe. No celular o membro escolhe
+                    entre as barras (estante) e a pista de corrida. */}
                 <div className="so-desktop">
                   <PistaCorrida
                     membros={membros}
@@ -256,12 +278,45 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
                   />
                 </div>
                 <div className="so-mobile">
-                  <Estante
-                    membros={membros}
-                    porUsuario={porUsuario}
-                    livro={livro}
-                    meuUserId={userId}
-                  />
+                  <div
+                    className="seletor-modo seletor-vista"
+                    role="tablist"
+                    aria-label="Como ver o progresso"
+                  >
+                    <button
+                      role="tab"
+                      aria-selected={vista === 'barras'}
+                      className={`seletor-opcao${vista === 'barras' ? ' ativo' : ''}`}
+                      onClick={() => trocarVista('barras')}
+                    >
+                      Barras
+                    </button>
+                    <button
+                      role="tab"
+                      aria-selected={vista === 'corrida'}
+                      className={`seletor-opcao${vista === 'corrida' ? ' ativo' : ''}`}
+                      onClick={() => trocarVista('corrida')}
+                    >
+                      Corrida
+                    </button>
+                  </div>
+
+                  {vista === 'corrida' ? (
+                    <PistaCorrida
+                      membros={membros}
+                      porUsuario={porUsuario}
+                      livro={livro}
+                      notas={notas}
+                      meuUserId={userId}
+                    />
+                  ) : (
+                    <Estante
+                      membros={membros}
+                      porUsuario={porUsuario}
+                      livro={livro}
+                      meuUserId={userId}
+                    />
+                  )}
                 </div>
                 <div className="centro" style={{ marginTop: '2rem' }}>
                   <button className="btn btn-fantasma" onClick={() => setModalLivro(true)}>

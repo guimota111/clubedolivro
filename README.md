@@ -31,6 +31,11 @@ tipografia serifada e dourado como cor de destaque.
 - **A Estante:** cada membro é um "livro-termômetro" que se enche de baixo para
   cima conforme a % de páginas lidas. Reordena ao vivo, do mais avançado ao
   menos avançado, com destaque (coroa + brilho) para o 1º lugar.
+- **Pista de corrida:** cada membro corre numa raia e o retrato dele fica na
+  posição da sua %. No desktop é o formato principal; no celular o membro
+  alterna entre **Barras** (a estante) e **Corrida**, e a escolha fica guardada
+  no `localStorage`. Sem hover no celular, nome e % saem do cartão flutuante e
+  viram uma ficha fixa acima de cada trilho.
 - **Livro do clube:** qualquer membro cadastra o livro atual (título, autor,
   total de páginas, capa por upload ou URL). Ao trocar de livro, o anterior é
   arquivado no histórico com o vencedor e o progresso de todos zera.
