@@ -16,6 +16,7 @@ import {
 import { inicial, pctDoProgresso } from './lib/formato'
 import { corDoMembro } from './lib/cores'
 import { montarAtividades, contarNaoVistas } from './lib/atividades'
+import { useFoco } from './hooks/useFoco'
 
 import Cadastro from './components/Cadastro'
 import LivroAtualCard from './components/LivroAtualCard'
@@ -148,6 +149,15 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
   })
   // O que estava por ver quando a aba foi aberta (para destacar na lista).
   const [destaqueAte, setDestaqueAte] = useState(null)
+  // Para onde um aviso de novidades mandou ir. A `marca` muda a cada clique,
+  // então clicar duas vezes no mesmo aviso funciona de novo.
+  const [foco, setFoco] = useState(null)
+
+  function irPara(destino) {
+    if (!destino) return
+    setAba(destino.aba)
+    setFoco({ ...destino, marca: Date.now() })
+  }
 
   // Changelog: mostra uma vez por navegador, logo após estar logado.
   const [modalChangelog, setModalChangelog] = useState(() => {
@@ -207,6 +217,14 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
     return mapa
   }, [historico, livro])
 
+  const livrosResenhaveis = useMemo(() => {
+    const conjunto = new Set()
+    Object.entries(meuProgressoPorLivro).forEach(([livroId, prog]) => {
+      if (pctDoProgresso(prog, 0) >= 100) conjunto.add(livroId)
+    })
+    return conjunto
+  }, [meuProgressoPorLivro])
+
   const atividades = useMemo(
     () =>
       montarAtividades({
@@ -217,8 +235,18 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
         membrosPorId,
         livroAtual: livro,
         tituloPorLivroId,
+        livrosResenhaveis,
       }),
-    [notas, resenhas, comentarios, progresso, membrosPorId, livro, tituloPorLivroId]
+    [
+      notas,
+      resenhas,
+      comentarios,
+      progresso,
+      membrosPorId,
+      livro,
+      tituloPorLivroId,
+      livrosResenhaveis,
+    ]
   )
 
   const naoVistas = contarNaoVistas(atividades, vistoAte)
@@ -236,6 +264,8 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
     }
     setAba('novidades')
   }
+
+  useFoco(foco, 'corrida')
 
   const minhaPorcentagem = livro
     ? pctDoProgresso(porUsuario[userId], livro.totalPaginas)
@@ -337,7 +367,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
         {aba === 'leitura' ? (
           <>
             {livro && (
-              <section>
+              <section id="foco-corrida-corrida">
                 <h2 className="secao-titulo">
                   <IconeLivroAberto size={22} /> A corrida da leitura
                 </h2>
@@ -409,6 +439,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
                 comentariosPorAlvo={comentariosPorAlvo}
                 membrosPorId={membrosPorId}
                 minhaPct={minhaPorcentagem}
+                foco={foco}
               />
             )}
 
@@ -421,6 +452,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
             atividades={atividades}
             membrosPorId={membrosPorId}
             vistoAte={destaqueAte}
+            aoIrPara={irPara}
           />
         ) : (
           <Resenhas
@@ -431,6 +463,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
             resenhasPorLivro={resenhasPorLivro}
             comentariosPorAlvo={comentariosPorAlvo}
             membrosPorId={membrosPorId}
+            foco={foco}
           />
         )}
       </main>

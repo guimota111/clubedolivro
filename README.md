@@ -45,7 +45,11 @@ tipografia serifada e dourado como cor de destaque.
   do livro ("Monique se surpreendeu na página 200"), resenhas, comentários e
   avanços de leitura. A lista é montada no cliente a partir do que o app já
   assina ao vivo; não há coleção de eventos no Firestore. Um selo na aba conta
-  o que chegou desde a última visita (marco no `localStorage`).
+  o que chegou desde a última visita (marco no `localStorage`). Cada aviso leva
+  ao que ele conta — a nota (já expandida), a resenha ou a corrida —, com a
+  conversa aberta quando o aviso é de comentário. Aviso cujo destino não existe
+  para quem está olhando (resenha de livro que essa pessoa não terminou) vira
+  texto simples, em vez de um clique que não faz nada.
 - **Relógio do ciclo:** mostra quanto falta para o prazo e, ao ser tocado,
   há quanto tempo a leitura começou. O começo vem de `dataInicio` (informável
   ao cadastrar/editar o livro) ou, na falta dele, de `iniciadoEm`.
@@ -150,7 +154,8 @@ src/
 │   └── formato.js           # datas, % e utilidades
 ├── hooks/
 │   ├── useColecaoAoVivo.js  # wrapper de onSnapshot
-│   └── useDadosClube.js     # membros, livro atual, progresso, mural
+│   ├── useDadosClube.js     # membros, livro atual, progresso, mural
+│   └── useFoco.js           # rola até o item apontado por um aviso
 ├── components/
 │   ├── Cadastro.jsx
 │   ├── LivroAtualCard.jsx

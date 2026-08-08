@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useFoco } from '../hooks/useFoco'
 import { salvarNota, atualizarNota, excluirNota } from '../lib/db'
 import { calcularPct, limitarPct, formatarData, inicial, posicaoDaNota } from '../lib/formato'
 import { IconeMarcador, IconePena, IconeSeta, DivisoriaOrnamentada } from './Icones'
@@ -33,6 +34,7 @@ export default function NotasParciais({
   comentariosPorAlvo,
   membrosPorId,
   minhaPct,
+  foco,
 }) {
   const verFoto = useVerFoto()
   const [aberto, setAberto] = useState(false)
@@ -74,6 +76,11 @@ export default function NotasParciais({
   function alternarTodas() {
     setAbertas(todasAbertas ? new Set() : new Set(liberadas.map((n) => n.id)))
   }
+
+  // Vindo de um aviso de novidades: a nota abre antes de a tela rolar até ela.
+  const notaEmFoco = useFoco(foco, 'nota', (f) =>
+    setAbertas((antes) => new Set(antes).add(f.id))
+  )
 
   function limpar() {
     setTexto('')
@@ -342,7 +349,10 @@ export default function NotasParciais({
               const nComentarios = (comentariosPorAlvo[n.id] || []).length
               return (
                 <article
-                  className={`nota${liberada ? '' : ' nota-trancada'}${aberta ? ' nota-aberta' : ''}`}
+                  id={`foco-nota-${n.id}`}
+                  className={`nota${liberada ? '' : ' nota-trancada'}${aberta ? ' nota-aberta' : ''}${
+                    notaEmFoco === n.id ? ' em-foco' : ''
+                  }`}
                   key={n.id}
                 >
                   {/* O retrato fica FORA do botão: ele abre a foto em tamanho
@@ -404,6 +414,11 @@ export default function NotasParciais({
                         comentarios={comentariosPorAlvo[n.id] || []}
                         membrosPorId={membrosPorId}
                         userId={userId}
+                        abrirEm={
+                          foco?.tipo === 'nota' && foco.id === n.id && foco.comentarios
+                            ? foco.marca
+                            : null
+                        }
                       />
                     </>
                   )}

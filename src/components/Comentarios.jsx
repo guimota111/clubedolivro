@@ -1,4 +1,4 @@
-import { useId, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { publicarComentario } from '../lib/db'
 import { formatarData, inicial } from '../lib/formato'
 import { IconePena, IconeSeta } from './Icones'
@@ -11,7 +11,7 @@ import { useVerFoto } from './FotoContext'
 // A thread começa recolhida: com muitos comentários, deixá-las todas abertas
 // alonga demais a página. O botão sempre diz quantos há, então dá para saber
 // onde a conversa está sem abrir nada.
-export default function Comentarios({ alvoTipo, alvoId, comentarios, membrosPorId, userId }) {
+export default function Comentarios({ alvoTipo, alvoId, comentarios, membrosPorId, userId, abrirEm }) {
   const verFoto = useVerFoto()
   const idPainel = useId()
   const [aberto, setAberto] = useState(false)
@@ -19,6 +19,12 @@ export default function Comentarios({ alvoTipo, alvoId, comentarios, membrosPorI
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState('')
   const total = comentarios.length
+
+  // Quem chega aqui por um aviso de novidades veio ver a conversa: ela abre
+  // sozinha. `abrirEm` muda a cada clique, então funciona mais de uma vez.
+  useEffect(() => {
+    if (abrirEm) setAberto(true)
+  }, [abrirEm])
 
   async function aoEnviar(e) {
     e.preventDefault()

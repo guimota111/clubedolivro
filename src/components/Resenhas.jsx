@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { useFoco } from '../hooks/useFoco'
 import { salvarResenha } from '../lib/db'
 import { pctDoProgresso, formatarData, inicial } from '../lib/formato'
 import { IconeLivro, IconePena, IconeLivroAberto } from './Icones'
@@ -15,6 +16,7 @@ export default function Resenhas({
   resenhasPorLivro,
   comentariosPorAlvo,
   membrosPorId,
+  foco,
 }) {
   // Monta a lista de livros "resenhaveis": atual + histórico (sem duplicar).
   const livros = useMemo(() => {
@@ -105,6 +107,7 @@ export default function Resenhas({
                   membrosPorId={membrosPorId}
                   comentariosPorAlvo={comentariosPorAlvo}
                   meuUserId={userId}
+                  foco={foco}
                 />
               </>
             )}
@@ -194,8 +197,9 @@ function FormResenha({ userId, livroId, resenhaExistente }) {
   )
 }
 
-function ListaResenhas({ resenhas, membrosPorId, comentariosPorAlvo, meuUserId }) {
+function ListaResenhas({ resenhas, membrosPorId, comentariosPorAlvo, meuUserId, foco }) {
   const verFoto = useVerFoto()
+  const emFoco = useFoco(foco, 'resenha')
   const ordenadas = [...resenhas].sort(
     (a, b) => (b.atualizadoEm?.seconds || 0) - (a.atualizadoEm?.seconds || 0)
   )
@@ -214,7 +218,11 @@ function ListaResenhas({ resenhas, membrosPorId, comentariosPorAlvo, meuUserId }
         const autor = membrosPorId[r.userId]
         const souAutor = r.userId === meuUserId
         return (
-          <article className="resenha-item" key={r.id}>
+          <article
+            id={`foco-resenha-${r.id}`}
+            className={`resenha-item${emFoco === r.id ? ' em-foco' : ''}`}
+            key={r.id}
+          >
             <div className="resenha-cabecalho">
               {autor?.avatarUrl ? (
                 <img
@@ -238,6 +246,11 @@ function ListaResenhas({ resenhas, membrosPorId, comentariosPorAlvo, meuUserId }
               comentarios={comentariosPorAlvo[r.id] || []}
               membrosPorId={membrosPorId}
               userId={meuUserId}
+              abrirEm={
+                foco?.tipo === 'resenha' && foco.id === r.id && foco.comentarios
+                  ? foco.marca
+                  : null
+              }
             />
           </article>
         )
