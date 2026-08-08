@@ -2315,3 +2315,65 @@ input[type='file'].escondido {
   color: var(--papel-tenue);
   font-style: italic;
 }
+
+/* ---------- Aviso de novidades clicável ---------- */
+/* O corpo do aviso vira botão; o retrato continua fora dele, abrindo a foto. */
+.atividade-link {
+  display: block;
+  text-align: left;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  position: relative;
+  padding-right: 1.3rem;
+}
+.atividade-link .atividade-texto {
+  display: block;
+  margin: 0;
+}
+.atividade-seta {
+  position: absolute;
+  right: 0;
+  top: 0.15rem;
+  color: var(--papel-tenue);
+  /* A seta do componente aponta para baixo; aqui ela indica "vá até lá". */
+  transform: rotate(-90deg);
+  transition: transform var(--transicao), color var(--transicao);
+}
+.atividade-link:hover .atividade-texto {
+  color: var(--dourado-claro);
+}
+.atividade-link:hover .atividade-seta {
+  color: var(--dourado-claro);
+  transform: rotate(-90deg) translateY(3px);
+}
+.atividade-link:focus-visible {
+  outline: 2px solid var(--dourado-claro);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+/* ---------- Item alcançado por um aviso ---------- */
+/* Sem isto a tela rola e a pessoa não sabe qual dos itens era o assunto. */
+.em-foco {
+  animation: pulso-foco 2.4s ease-out;
+}
+@keyframes pulso-foco {
+  0%,
+  60% {
+    border-color: var(--dourado-claro);
+    box-shadow: 0 0 0 3px rgba(224, 185, 77, 0.28);
+  }
+  100% {
+    box-shadow: 0 0 0 3px rgba(224, 185, 77, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .em-foco {
+    animation: none;
+    border-color: var(--dourado-claro);
+  }
+}

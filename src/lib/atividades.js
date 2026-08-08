@@ -41,6 +41,22 @@ function textoDaNota(nota, nome) {
     : `${nome} reagiu ${onde}.`
 }
 
+// Para onde cada aviso leva ao ser clicado. `null` = aviso sem destino, que o
+// feed desenha como texto simples em vez de botão — melhor que um clique que
+// não faz nada.
+//
+// `livrosResenhaveis` são os livros que ESTE membro terminou: só neles a lista
+// de resenhas existe na tela, então só neles o clique tem para onde ir.
+function destinoDoComentario(c, notasNaTela, resenhasPorId, livrosResenhaveis) {
+  if (c.alvoTipo === 'resenha') {
+    const alvo = resenhasPorId[c.alvoId]
+    if (!alvo || !livrosResenhaveis.has(alvo.livroId)) return null
+    return { aba: 'resenhas', tipo: 'resenha', id: c.alvoId, comentarios: true }
+  }
+  if (!notasNaTela.has(c.alvoId)) return null
+  return { aba: 'leitura', tipo: 'nota', id: c.alvoId, comentarios: true }
+}
+
 export function montarAtividades({
   notas = [],
   resenhas = [],
@@ -49,8 +65,16 @@ export function montarAtividades({
   membrosPorId = {},
   livroAtual = null,
   tituloPorLivroId = {},
+  livrosResenhaveis = new Set(),
 }) {
   const eventos = []
+  // Comentário em nota de livro antigo não tem para onde levar: a lista de
+  // notas só mostra as do livro atual.
+  const notasNaTela = new Set(notas.map((n) => n.id))
+  const resenhasPorId = {}
+  resenhas.forEach((r) => {
+    resenhasPorId[r.id] = r
+  })
 
   notas.forEach((n) => {
     const em = emMs(n.criadoEm)
@@ -62,6 +86,7 @@ export function montarAtividades({
       userId: n.userId,
       emoji: n.emoji || '',
       texto: textoDaNota(n, nomeDe(membrosPorId, n.userId)),
+      destino: { aba: 'leitura', tipo: 'nota', id: n.id },
     })
   })
 
@@ -78,6 +103,9 @@ export function montarAtividades({
       texto: titulo
         ? `${nomeDe(membrosPorId, r.userId)} escreveu uma resenha de ${titulo}.`
         : `${nomeDe(membrosPorId, r.userId)} escreveu uma resenha.`,
+      destino: livrosResenhaveis.has(r.livroId)
+        ? { aba: 'resenhas', tipo: 'resenha', id: r.id }
+        : null,
     })
   })
 
@@ -93,6 +121,8 @@ export function montarAtividades({
       texto: `${nomeDe(membrosPorId, c.userId)} comentou em uma ${
         c.alvoTipo === 'resenha' ? 'resenha' : 'nota parcial'
       }.`,
+      // O clique abre a conversa direto, já que é ela o assunto do aviso.
+      destino: destinoDoComentario(c, notasNaTela, resenhasPorId, livrosResenhaveis),
     })
   })
 
@@ -115,6 +145,7 @@ export function montarAtividades({
         pct >= 100
           ? `${nome} terminou${livroAtual?.titulo ? ` ${livroAtual.titulo}` : ' o livro'}!`
           : `${nome} chegou a ${pct}% da leitura.`,
+      destino: { aba: 'leitura', tipo: 'corrida', id: 'corrida' },
     })
   })
 

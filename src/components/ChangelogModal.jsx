@@ -17,7 +17,7 @@ const NOVIDADES = [
     emoji: '🔔',
     titulo: 'Aba de novidades',
     texto:
-      'Uma aba nova mostra o que o clube andou fazendo: quem reagiu a que trecho, quem comentou, quem avançou. O selo no nome da aba conta quantas novidades chegaram desde a sua última visita.',
+      'Uma aba nova mostra o que o clube andou fazendo: quem reagiu a que trecho, quem comentou, quem avançou. Toque num aviso para ir direto ao que ele conta — a nota, a resenha ou a corrida. O selo no nome da aba conta quantas novidades chegaram desde a sua última visita.',
   },
   {
     emoji: '😲',
