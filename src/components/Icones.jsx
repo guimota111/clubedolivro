@@ -117,6 +117,22 @@ export function IconeMarcador({ size = 24, ...props }) {
   )
 }
 
+// Sino das novidades.
+export function IconeSino({ size = 24, ...props }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      {...props}
+    >
+      <path d="M12 2a1.4 1.4 0 0 1 1.4 1.4v.5A6 6 0 0 1 18 9.7V14l1.6 2.5a.8.8 0 0 1-.67 1.23H5.07A.8.8 0 0 1 4.4 16.5L6 14V9.7a6 6 0 0 1 4.6-5.8v-.5A1.4 1.4 0 0 1 12 2Z" />
+      <path d="M9.7 19.2h4.6a2.3 2.3 0 0 1-4.6 0Z" />
+    </svg>
+  )
+}
+
 // Seta de expandir/recolher. Aponta para baixo; o CSS gira quando abre.
 export function IconeSeta({ size = 24, ...props }) {
   return (

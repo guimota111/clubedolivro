@@ -60,7 +60,7 @@ export async function garantirCoresDosMembros(membros) {
 
 // ---------- Livro atual ----------
 
-export async function cadastrarLivro({ titulo, autor, capaUrl, dataLimite }) {
+export async function cadastrarLivro({ titulo, autor, capaUrl, dataLimite, dataInicio }) {
   // Encerra o livro ativo anterior (arquiva no histórico) antes de criar o novo.
   await encerrarLivroAtivo()
 
@@ -71,6 +71,9 @@ export async function cadastrarLivro({ titulo, autor, capaUrl, dataLimite }) {
     capaUrl: capaUrl || '',
     // Prazo para terminar a leitura (string ISO 'YYYY-MM-DD') ou null.
     dataLimite: dataLimite || null,
+    // Quando o ciclo começou. Em branco, vale `iniciadoEm` (agora) — é o caso
+    // de todo livro cadastrado antes deste campo existir.
+    dataInicio: dataInicio || null,
     iniciadoEm: serverTimestamp(),
     ativo: true,
   })

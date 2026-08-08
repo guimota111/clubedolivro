@@ -10,6 +10,7 @@ export default function EditarLivroModal({ livro, onFechar }) {
   const [titulo, setTitulo] = useState(livro.titulo || '')
   const [autor, setAutor] = useState(livro.autor || '')
   const [dataLimite, setDataLimite] = useState(livro.dataLimite || '')
+  const [dataInicio, setDataInicio] = useState(livro.dataInicio || '')
   const [capaUrl, setCapaUrl] = useState(livro.capaUrl || '')
   const [arquivo, setArquivo] = useState(null)
   const [preview, setPreview] = useState('')
@@ -52,6 +53,7 @@ export default function EditarLivroModal({ livro, onFechar }) {
         autor: autor.trim(),
         capaUrl: urlFinal,
         dataLimite: dataLimite || null,
+        dataInicio: dataInicio || null,
       })
       onFechar()
     } catch (err) {
@@ -90,6 +92,20 @@ export default function EditarLivroModal({ livro, onFechar }) {
             onChange={(e) => setAutor(e.target.value)}
             placeholder="Ex.: Machado de Assis"
           />
+        </div>
+
+        <div className="campo">
+          <label htmlFor="edit-data-inicio">Início da leitura (opcional)</label>
+          <input
+            id="edit-data-inicio"
+            type="date"
+            value={dataInicio}
+            onChange={(e) => setDataInicio(e.target.value)}
+          />
+          <span className="campo-dica">
+            É daqui que conta o tempo decorrido do ciclo. Em branco, vale o dia
+            em que o livro entrou no site.
+          </span>
         </div>
 
         <div className="campo">

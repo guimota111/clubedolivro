@@ -22,3 +22,27 @@ const FRASE_REACAO = {
 export function fraseReacao(emoji) {
   return FRASE_REACAO[emoji] || ''
 }
+
+// A mesma emoção contada como ação de quem leu — é o que o aviso de novidades
+// usa: "Monique se surpreendeu na página 200".
+//
+// Todas em forma neutra de propósito: o clube não guarda gênero de ninguém, e
+// "ficou surpreso(a)" fica feio. Por isso "levou um susto" e não "assustado".
+const VERBO_REACAO = {
+  '😍': 'se apaixonou',
+  '🤯': 'surtou',
+  '😲': 'se surpreendeu',
+  '😢': 'se emocionou',
+  '😂': 'deu risada',
+  '😡': 'ficou com raiva',
+  '🤔': 'ficou na dúvida',
+  '😱': 'levou um susto',
+  '❤️': 'se derreteu',
+  '🔥': 'se empolgou',
+  '👏': 'aplaudiu',
+  '💀': 'não sobreviveu',
+}
+
+export function verboReacao(emoji) {
+  return VERBO_REACAO[emoji] || ''
+}
