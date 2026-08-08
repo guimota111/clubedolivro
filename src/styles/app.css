@@ -1497,7 +1497,15 @@ input[type='file'].escondido {
   font-family: var(--fonte-titulo);
   font-size: 0.85rem;
 }
-.nota-quem { font-family: var(--fonte-titulo); color: var(--papel); }
+/* Só trunca se o nome sozinho não couber numa linha inteira — como a ficha
+   quebra, o caso normal é ele descer para a linha de baixo por completo. */
+.nota-quem {
+  font-family: var(--fonte-titulo);
+  color: var(--papel);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .nota-tag {
   font-size: 0.7rem;
   text-transform: uppercase;
@@ -1507,7 +1515,13 @@ input[type='file'].escondido {
   padding: 0.1rem 0.4rem;
   border-radius: 999px;
 }
-.nota-quando { margin-left: auto; font-size: 0.82rem; color: var(--papel-tenue); }
+.nota-quando {
+  margin-left: auto;
+  font-size: 0.82rem;
+  color: var(--papel-tenue);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
 .nota-texto { color: var(--papel); white-space: pre-wrap; line-height: 1.5; }
 .nota-cadeado {
   display: flex;
@@ -2073,12 +2087,19 @@ input[type='file'].escondido {
   text-align: left;
   cursor: pointer;
 }
+/* Numa tela estreita, selo da reação + nome + data + seta não cabem na mesma
+   linha; forçar uma linha só espremeria o nome até sobrar uma letra. Então o
+   conjunto pode quebrar — mas cada peça fica inteira. */
 .nota-identidade {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.5rem 0.5rem;
   min-width: 0;
   flex-wrap: wrap;
+}
+.nota-tag,
+.nota-contador {
+  flex-shrink: 0;
 }
 .nota-contador {
   font-size: 0.75rem;
@@ -2130,4 +2151,35 @@ input[type='file'].escondido {
   font-size: 0.9rem;
   cursor: pointer;
   transition: color var(--transicao);
+}
+
+/* ---------- Ponto do livro colado na reação ---------- */
+/* A reação é visível para todos, inclusive para quem ainda não desbloqueou o
+   texto — e sozinha não diz a que trecho se refere. O selo com a página/% anda
+   junto dela para responder isso de relance. */
+.nota-reacao {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  flex-shrink: 0;
+}
+/* A nota trancada não tem o botão de abrir, então é a própria ficha que
+   ocupa a linha — sem isto o retrato ficaria sozinho numa linha só dele. */
+.nota-identidade-larga {
+  flex: 1;
+  min-width: 0;
+}
+.nota-identidade-larga .nota-quando {
+  margin-left: auto;
+}
+.nota-ponto {
+  padding: 0.05rem 0.45rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(201, 162, 39, 0.35);
+  color: var(--dourado-claro);
+  font-family: var(--fonte-display);
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }

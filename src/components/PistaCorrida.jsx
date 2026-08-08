@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { pctDoProgresso, inicial } from '../lib/formato'
+import { pctDoProgresso, inicial, posicaoDaNota } from '../lib/formato'
 import { fraseReacao } from '../lib/reacoes'
 import { corDoMembro, variaveisDaCor } from '../lib/cores'
 import { faixasDeProgresso } from '../lib/progresso24h'
@@ -113,9 +113,12 @@ export default function PistaCorrida({ membros, porUsuario, livro, notas = [], m
                   const frase = fraseReacao(n.emoji)
                   const nome = c.membro.nome || 'Membro'
                   const pct = n.desbloqueioPct || 0
+                  // Na trilha a posição do emoji já mostra o ponto do livro;
+                  // o texto traz o número exato (e a página, se houver).
+                  const ponto = posicaoDaNota(n)
                   const titulo = frase
-                    ? `Nota de ${nome} ${frase} em ${pct}%`
-                    : `Nota de ${nome} em ${pct}%`
+                    ? `Nota de ${nome} ${frase} em ${ponto}`
+                    : `Nota de ${nome} em ${ponto}`
                   return (
                     <span
                       key={n.id}
