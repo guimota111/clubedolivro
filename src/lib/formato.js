@@ -72,6 +72,22 @@ export function contagemRegressiva(alvo, agora = new Date()) {
   return { dias, horas, minutos, segundos, vencido }
 }
 
+// Em que ponto do livro a nota — e portanto a reação dela — foi deixada.
+// Quem escreveu por página vê a página junto da %, porque a % sozinha não diz
+// muito para quem está com o livro na mão; a % vai sempre, já que é a única
+// medida comparável entre edições diferentes.
+export function posicaoDaNota(nota) {
+  if (!nota) return ''
+  const pct = limitarPct(nota.desbloqueioPct || 0)
+  // Sem o total da edição alheia de propósito: ele ocupa espaço num selo que
+  // precisa caber ao lado do nome, e quem lê não faz nada com esse número —
+  // a medida comparável entre edições é a %.
+  if (nota.desbloqueioTipo === 'pagina' && nota.desbloqueioValor != null) {
+    return `pág. ${nota.desbloqueioValor} · ${pct}%`
+  }
+  return `${pct}%`
+}
+
 // Primeira letra do nome para avatares vazios.
 export function inicial(nome) {
   return (nome || '?').trim().charAt(0).toUpperCase() || '?'

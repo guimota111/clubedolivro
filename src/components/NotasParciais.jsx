@@ -1,10 +1,27 @@
 import { useState } from 'react'
 import { salvarNota, atualizarNota, excluirNota } from '../lib/db'
-import { calcularPct, limitarPct, formatarData, inicial } from '../lib/formato'
+import { calcularPct, limitarPct, formatarData, inicial, posicaoDaNota } from '../lib/formato'
 import { IconeMarcador, IconePena, IconeSeta, DivisoriaOrnamentada } from './Icones'
 import { useVerFoto } from './FotoContext'
 import Comentarios from './Comentarios'
 import { REACOES } from '../lib/reacoes'
+
+// A reação de uma nota é visível para TODOS, inclusive para quem ainda não
+// desbloqueou o texto. Sozinha, ela não diz nada: o ponto do livro vem colado
+// nela para que se saiba a que trecho aquele espanto (ou aquele choro) se
+// refere.
+function ReacaoNoPonto({ nota }) {
+  const ponto = posicaoDaNota(nota)
+  return (
+    <span className="nota-reacao" title={`Reação deixada em ${ponto}`}>
+      <span className="nota-emoji" aria-hidden="true">{nota.emoji || '💬'}</span>
+      <span className="nota-ponto">
+        <span className="sr-only">reação em </span>
+        {ponto}
+      </span>
+    </span>
+  )
+}
 
 // Notas parciais: cada membro pode deixar uma anotação "trancada" até uma
 // página/porcentagem. Os outros só leem quando o próprio progresso alcança
@@ -308,10 +325,6 @@ export default function NotasParciais({
               const liberada = souAutor || minhaPct >= (n.desbloqueioPct || 0)
               const aberta = abertas.has(n.id)
               const nComentarios = (comentariosPorAlvo[n.id] || []).length
-              const alvoTxt =
-                n.desbloqueioTipo === 'pagina'
-                  ? `página ${n.desbloqueioValor}${n.totalPaginas ? `/${n.totalPaginas}` : ''} (${n.desbloqueioPct}%)`
-                  : `${n.desbloqueioPct}%`
               return (
                 <article
                   className={`nota${liberada ? '' : ' nota-trancada'}${aberta ? ' nota-aberta' : ''}`}
@@ -340,9 +353,7 @@ export default function NotasParciais({
                         onClick={() => alternarNota(n.id)}
                       >
                         <span className="nota-identidade">
-                          {n.emoji && (
-                            <span className="nota-emoji" aria-hidden="true">{n.emoji}</span>
-                          )}
+                          <ReacaoNoPonto nota={n} />
                           <span className="nota-quem">{autor?.nome || 'Membro'}</span>
                           {souAutor && <span className="nota-tag">sua nota</span>}
                           {nComentarios > 0 && (
@@ -355,10 +366,8 @@ export default function NotasParciais({
                         <IconeSeta size={16} className="seta-alternar" aria-hidden="true" />
                       </button>
                     ) : (
-                      <span className="nota-identidade">
-                        {n.emoji && (
-                          <span className="nota-emoji" aria-hidden="true">{n.emoji}</span>
-                        )}
+                      <span className="nota-identidade nota-identidade-larga">
+                        <ReacaoNoPonto nota={n} />
                         <span className="nota-quem">{autor?.nome || 'Membro'}</span>
                         <span className="nota-quando">{formatarData(n.criadoEm)}</span>
                       </span>
@@ -384,12 +393,13 @@ export default function NotasParciais({
 
                   {/* A trancada não colapsa: não há o que esconder além do
                       cadeado, e vê-lo de relance é justamente o útil. */}
+                  {/* O ponto do livro já aparece ao lado da reação, então aqui
+                      basta dizer o que falta para chegar lá. */}
                   {!liberada && (
                     <div className="nota-cadeado">
                       <IconeMarcador size={16} />
                       <span>
-                        Trancada — desbloqueia em <strong>{alvoTxt}</strong>. Você está
-                        em {minhaPct}%.
+                        Trancada — você está em {minhaPct}%.
                       </span>
                     </div>
                   )}
