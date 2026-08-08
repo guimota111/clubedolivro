@@ -1,35 +1,23 @@
 import Modal from './Modal'
-import { IconeLivroAberto, IconeMarcador } from './Icones'
+import { IconeLivroAberto } from './Icones'
 
 // Chave de versão do changelog. Ao lançar novidades futuras, troque a versão
 // para que o aviso apareça de novo uma única vez por navegador.
-export const CHANGELOG_VERSAO = 'clubedolivro:changelog:2026-08-v3'
+export const CHANGELOG_VERSAO = 'clubedolivro:changelog:2026-08-v4'
 
 // Cada item usa um ícone (Icone) OU um emoji literal (emoji).
 const NOVIDADES = [
   {
-    emoji: '🎨',
-    titulo: 'Cada leitor, uma cor',
+    emoji: '⏳',
+    titulo: 'O relógio agora conta para os dois lados',
     texto:
-      'Escolha a sua cor em “Editar perfil”: ela pinta a sua barra na pista e na estante, e emoldura o seu retrato. Quem já estava no clube recebeu uma cor sorteada — é só trocar se não gostar.',
+      'Toque no relógio da página inicial para alternar entre o tempo que FALTA para o prazo e o tempo que já se PASSOU desde que o ciclo do livro começou. Toque de novo para voltar — e ele lembra da sua escolha.',
   },
   {
-    emoji: '✨',
-    titulo: 'Dourado = leitura das últimas 24 h',
+    emoji: '📅',
+    titulo: 'Data de início do livro',
     texto:
-      'A pontinha dourada da barra mostra o que você avançou nas últimas 24 horas. Bateu perna no livro ontem à noite? Todo mundo vai ver o brilho.',
-  },
-  {
-    Icone: IconeMarcador,
-    titulo: 'Seu ritmo, em números',
-    texto:
-      'Ao atualizar o progresso (e ao passar o mouse na pista) aparece quanto você já leu nas últimas 24 h.',
-  },
-  {
-    emoji: '🏁',
-    titulo: 'Corrida no celular',
-    texto:
-      'No celular agora dá para alternar entre as barras da estante e a pista de corrida — é só tocar em “Barras” ou “Corrida” acima do progresso. Sua escolha fica guardada.',
+      'Ao cadastrar (ou editar) o livro do clube dá para informar quando a leitura começou. Em branco, vale o dia em que o livro entrou no site.',
   },
 ]
 

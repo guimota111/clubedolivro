@@ -20,7 +20,7 @@ import Cadastro from './components/Cadastro'
 import LivroAtualCard from './components/LivroAtualCard'
 import Estante from './components/Estante'
 import PistaCorrida from './components/PistaCorrida'
-import ContagemRegressiva from './components/ContagemRegressiva'
+import RelogioCiclo from './components/RelogioCiclo'
 import NotasParciais from './components/NotasParciais'
 import Resenhas from './components/Resenhas'
 import Mural from './components/Mural'
@@ -237,7 +237,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
           aoEditar={() => setModalEditar(true)}
         />
 
-        {livro && <ContagemRegressiva dataLimite={livro.dataLimite} />}
+        {livro && <RelogioCiclo livro={livro} />}
 
         {/* Abas: leitura (pista/estante + notas) e resenhas. */}
         <nav className="abas" role="tablist" aria-label="Seções do clube">

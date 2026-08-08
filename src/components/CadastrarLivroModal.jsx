@@ -10,6 +10,7 @@ export default function CadastrarLivroModal({ temLivroAtual, onFechar, aoCadastr
   const [titulo, setTitulo] = useState('')
   const [autor, setAutor] = useState('')
   const [dataLimite, setDataLimite] = useState('')
+  const [dataInicio, setDataInicio] = useState('')
   const [capaUrl, setCapaUrl] = useState('')
   const [arquivo, setArquivo] = useState(null)
   const [preview, setPreview] = useState('')
@@ -53,6 +54,7 @@ export default function CadastrarLivroModal({ temLivroAtual, onFechar, aoCadastr
         autor: autor.trim(),
         capaUrl: urlFinal,
         dataLimite: dataLimite || null,
+        dataInicio: dataInicio || null,
       })
       aoCadastrar?.(livroId)
       onFechar()
@@ -95,6 +97,20 @@ export default function CadastrarLivroModal({ temLivroAtual, onFechar, aoCadastr
             onChange={(e) => setAutor(e.target.value)}
             placeholder="Ex.: Machado de Assis"
           />
+        </div>
+
+        <div className="campo">
+          <label htmlFor="data-inicio">Início da leitura (opcional)</label>
+          <input
+            id="data-inicio"
+            type="date"
+            value={dataInicio}
+            onChange={(e) => setDataInicio(e.target.value)}
+          />
+          <span className="campo-dica">
+            Em branco, vale a data de hoje. É a partir daqui que conta o tempo
+            decorrido do ciclo.
+          </span>
         </div>
 
         <div className="campo">

@@ -2183,3 +2183,29 @@ input[type='file'].escondido {
   letter-spacing: 0.02em;
   white-space: nowrap;
 }
+
+/* ---------- Relógio do ciclo (alterna restante / decorrido ao toque) ---------- */
+/* Vira um <button>, então precisa desmanchar o estilo de botão do navegador e
+   herdar de volta o do bloco. Sem nenhum rótulo dizendo que dá para tocar —
+   isso é de propósito; a dica mora no changelog. */
+.contador-alternavel {
+  display: block;
+  width: 100%;
+  font-family: inherit;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color var(--transicao), box-shadow var(--transicao);
+}
+.contador-alternavel:hover {
+  border-color: rgba(224, 185, 77, 0.65);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 16px rgba(224, 185, 77, 0.15);
+}
+.contador-alternavel:focus-visible {
+  outline: 2px solid var(--dourado-claro);
+  outline-offset: 3px;
+}
+.contador-alternavel:active {
+  transform: translateY(1px);
+}

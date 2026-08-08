@@ -59,17 +59,52 @@ export function prazoParaData(iso) {
   return Number.isNaN(d.getTime()) ? null : d
 }
 
-// Quebra a diferença até `alvo` (Date) em dias/horas/min/seg e diz se venceu.
+// Converte a data de início ('YYYY-MM-DD') no primeiro instante daquele dia
+// (00:00 no fuso local) — o oposto de `prazoParaData`, que pega o último.
+export function inicioParaData(iso) {
+  if (!iso || typeof iso !== 'string') return null
+  const partes = iso.split('-').map(Number)
+  if (partes.length !== 3 || partes.some((n) => !Number.isFinite(n))) return null
+  const [ano, mes, dia] = partes
+  const d = new Date(ano, mes - 1, dia, 0, 0, 0, 0)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+// Quando o ciclo do livro começou: a data informada por quem cadastrou ou,
+// na falta dela, o instante em que o livro entrou no site.
+export function inicioDoLivro(livro) {
+  if (!livro) return null
+  const informada = inicioParaData(livro.dataInicio)
+  if (informada) return informada
+  const ts = livro.iniciadoEm
+  if (ts?.toDate) return ts.toDate()
+  return ts instanceof Date ? ts : null
+}
+
+// Quebra uma duração em milissegundos em dias/horas/min/seg.
+function quebrarDuracao(ms) {
+  const m = Math.max(0, ms)
+  return {
+    dias: Math.floor(m / 86400000),
+    horas: Math.floor((m % 86400000) / 3600000),
+    minutos: Math.floor((m % 3600000) / 60000),
+    segundos: Math.floor((m % 60000) / 1000),
+  }
+}
+
+// Quanto falta até `alvo` (Date), e se o prazo já venceu.
 export function contagemRegressiva(alvo, agora = new Date()) {
   if (!alvo) return null
-  let ms = alvo.getTime() - agora.getTime()
-  const vencido = ms <= 0
-  if (vencido) ms = 0
-  const dias = Math.floor(ms / 86400000)
-  const horas = Math.floor((ms % 86400000) / 3600000)
-  const minutos = Math.floor((ms % 3600000) / 60000)
-  const segundos = Math.floor((ms % 60000) / 1000)
-  return { dias, horas, minutos, segundos, vencido }
+  const ms = alvo.getTime() - agora.getTime()
+  return { ...quebrarDuracao(ms), vencido: ms <= 0 }
+}
+
+// Quanto já se passou desde `inicio` (Date). `naoComecou` cobre o caso de uma
+// data de início no futuro — o relógio fica zerado em vez de contar ao contrário.
+export function tempoDecorrido(inicio, agora = new Date()) {
+  if (!inicio) return null
+  const ms = agora.getTime() - inicio.getTime()
+  return { ...quebrarDuracao(ms), naoComecou: ms < 0 }
 }
 
 // Em que ponto do livro a nota — e portanto a reação dela — foi deixada.
