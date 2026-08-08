@@ -41,6 +41,14 @@ tipografia serifada e dourado como cor de destaque.
   arquivado no histórico com o vencedor e o progresso de todos zera.
 - **Atualizar progresso:** o membro informa apenas a página atual; a % é
   calculada. Botão flutuante fixo, acessível no celular.
+- **Novidades:** aba que reúne o que o clube andou fazendo — reações em pontos
+  do livro ("Monique se surpreendeu na página 200"), resenhas, comentários e
+  avanços de leitura. A lista é montada no cliente a partir do que o app já
+  assina ao vivo; não há coleção de eventos no Firestore. Um selo na aba conta
+  o que chegou desde a última visita (marco no `localStorage`).
+- **Relógio do ciclo:** mostra quanto falta para o prazo e, ao ser tocado,
+  há quanto tempo a leitura começou. O começo vem de `dataInicio` (informável
+  ao cadastrar/editar o livro) ou, na falta dele, de `iniciadoEm`.
 - **Mural de recados:** post-its que qualquer membro pode deixar.
 - **Histórico:** livros já lidos e quem venceu cada rodada.
 
@@ -137,6 +145,8 @@ src/
 │   ├── storage.js           # upload de imagens
 │   ├── cores.js             # paleta, cor de cada membro e sorteio
 │   ├── progresso24h.js      # histórico de leitura e ganho das últimas 24 h
+│   ├── atividades.js        # monta a aba de novidades a partir dos dados vivos
+│   ├── reacoes.js           # emojis e como descrevê-los por extenso
 │   └── formato.js           # datas, % e utilidades
 ├── hooks/
 │   ├── useColecaoAoVivo.js  # wrapper de onSnapshot
@@ -147,6 +157,8 @@ src/
 │   ├── CadastrarLivroModal.jsx
 │   ├── Estante.jsx / MembroLivro.jsx
 │   ├── PistaCorrida.jsx
+│   ├── RelogioCiclo.jsx     # relógio restante / decorrido
+│   ├── Atividades.jsx       # aba de novidades
 │   ├── SeletorCor.jsx       # escolha da cor do membro + prévia da barra
 │   ├── AtualizarProgressoModal.jsx
 │   ├── Mural.jsx
@@ -163,12 +175,17 @@ src/
 | Coleção            | Documento             | Campos principais                                             |
 | ------------------ | --------------------- | ------------------------------------------------------------- |
 | `users`            | `{userId}`            | `nome`, `avatarUrl`, `cor`, `criadoEm`                        |
-| `livroAtual`       | `{livroId}`           | `titulo`, `autor`, `capaUrl`, `dataLimite`, `ativo`, `iniciadoEm` |
+| `livroAtual`       | `{livroId}`           | `titulo`, `autor`, `capaUrl`, `dataLimite`, `dataInicio`, `ativo`, `iniciadoEm` |
 | `progresso`        | `{userId}_{livroId}`  | `userId`, `livroId`, `porcentagem`, `paginaAtual`, `totalPaginas`, `modo`, `historico`, `atualizadoEm` |
 | `notas`            | `{notaId}`            | `userId`, `livroId`, `texto`, `desbloqueioPct`, `desbloqueioTipo`, `desbloqueioValor`, `totalPaginas`, `criadoEm` |
 | `resenhas`         | `{userId}_{livroId}`  | `userId`, `livroId`, `texto`, `nota`, `atualizadoEm`         |
 | `mural`            | `{mensagemId}`        | `userId`, `texto`, `criadoEm`                                 |
 | `historicoLivros`  | `{livroId}`           | `titulo`, `autor`, `capaUrl`, `vencedorUserId`, `encerradoEm` |
+
+Uma nota parcial pode ser **só a reação**, sem texto: o emoji já diz o que a
+pessoa sentiu, e o ponto do livro vem no selo ao lado. Nota assim não tranca —
+não há spoiler a esconder. As regras aceitam `texto` vazio desde que haja
+`emoji`.
 
 As resenhas são **liberadas no cliente** apenas para quem terminou o livro
 (100%); as notas parciais ficam trancadas até o leitor alcançar `desbloqueioPct`.

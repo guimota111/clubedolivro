@@ -121,7 +121,8 @@ export function useComentarios() {
     )
     return mapa
   }, [docs])
-  return { porAlvo, carregando }
+  // A lista plana alimenta a aba de novidades; o mapa, as threads.
+  return { comentarios: docs, porAlvo, carregando }
 }
 
 // Assina o progresso do membro atual em TODOS os livros (para saber quais ele

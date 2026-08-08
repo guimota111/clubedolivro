@@ -14,6 +14,18 @@ const NOVIDADES = [
       'Toque no relógio da página inicial para alternar entre o tempo que FALTA para o prazo e o tempo que já se PASSOU desde que o ciclo do livro começou. Toque de novo para voltar — e ele lembra da sua escolha.',
   },
   {
+    emoji: '🔔',
+    titulo: 'Aba de novidades',
+    texto:
+      'Uma aba nova mostra o que o clube andou fazendo: quem reagiu a que trecho, quem comentou, quem avançou. O selo no nome da aba conta quantas novidades chegaram desde a sua última visita.',
+  },
+  {
+    emoji: '😲',
+    titulo: 'Nota só com a reação',
+    texto:
+      'Agora dá para publicar uma nota parcial sem escrever nada — só o emoji. Ela vira um aviso do tipo “Fulana se surpreendeu na página 200”, sem spoiler nenhum.',
+  },
+  {
     emoji: '📅',
     titulo: 'Data de início do livro',
     texto:

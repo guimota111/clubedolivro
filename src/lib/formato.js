@@ -123,6 +123,17 @@ export function posicaoDaNota(nota) {
   return `${pct}%`
 }
 
+// O mesmo ponto do livro, mas em forma de frase: "na página 200 (40%)" ou
+// "em 40%". Usado nos avisos de novidades.
+export function ondeNoLivro(nota) {
+  if (!nota) return ''
+  const pct = limitarPct(nota.desbloqueioPct || 0)
+  if (nota.desbloqueioTipo === 'pagina' && nota.desbloqueioValor != null) {
+    return `na página ${nota.desbloqueioValor} (${pct}%)`
+  }
+  return `em ${pct}%`
+}
+
 // Primeira letra do nome para avatares vazios.
 export function inicial(nome) {
   return (nome || '?').trim().charAt(0).toUpperCase() || '?'

@@ -62,8 +62,13 @@ export default function NotasParciais({
   }
 
   // Só as liberadas contam: a trancada não abre (não há o que mostrar além
-  // do cadeado, que já aparece recolhido).
-  const liberadas = notas.filter((n) => n.userId === userId || minhaPct >= (n.desbloqueioPct || 0))
+  // do cadeado, que já aparece recolhido). Nota só de reação nunca tranca.
+  const liberadas = notas.filter(
+    (n) =>
+      n.userId === userId ||
+      !(n.texto || '').trim() ||
+      minhaPct >= (n.desbloqueioPct || 0)
+  )
   const todasAbertas = liberadas.length > 0 && liberadas.every((n) => abertas.has(n.id))
 
   function alternarTodas() {
@@ -123,8 +128,10 @@ export default function NotasParciais({
   async function aoEnviar(e) {
     e.preventDefault()
     const limpo = texto.trim()
-    if (!limpo) {
-      setErro('Escreva a nota.')
+    // Uma nota pode ser só a reação: o emoji sozinho já diz o que a pessoa
+    // sentiu naquele ponto do livro. O que não pode é vir vazia dos dois.
+    if (!limpo && !emoji) {
+      setErro('Escreva a nota ou escolha uma reação.')
       return
     }
 
@@ -198,17 +205,21 @@ export default function NotasParciais({
       ) : (
         <form className="nota-form" onSubmit={aoEnviar}>
           <div className="campo">
-            <label htmlFor="nota-texto">Sua anotação</label>
+            <label htmlFor="nota-texto">
+              Sua anotação {emoji ? '(opcional — a reação já basta)' : ''}
+            </label>
             <textarea
               id="nota-texto"
               value={texto}
               maxLength={4999}
               onChange={(e) => setTexto(e.target.value)}
-              placeholder="O que você achou desse trecho…"
+              placeholder="O que você achou desse trecho… (ou publique só a reação)"
             />
           </div>
 
-          <label className="campo-rotulo">Sua reação (todos veem, mesmo quem está atrás)</label>
+          <label className="campo-rotulo">
+            Sua reação (todos veem, mesmo quem está atrás)
+          </label>
           <div className="reacao-paleta" role="radiogroup" aria-label="Reação">
             {REACOES.map((e) => (
               <button
@@ -322,7 +333,11 @@ export default function NotasParciais({
             {notas.map((n) => {
               const autor = membrosPorId[n.userId]
               const souAutor = n.userId === userId
-              const liberada = souAutor || minhaPct >= (n.desbloqueioPct || 0)
+              // Nota só de reação não esconde nada: a reação já é pública, e o
+              // ponto do livro vem no selo. Trancá-la seria trancar o vazio.
+              const semTexto = !(n.texto || '').trim()
+              const liberada =
+                souAutor || semTexto || minhaPct >= (n.desbloqueioPct || 0)
               const aberta = abertas.has(n.id)
               const nComentarios = (comentariosPorAlvo[n.id] || []).length
               return (
@@ -376,11 +391,13 @@ export default function NotasParciais({
 
                   {/* Recolhida, a nota mostra a primeira linha do texto — dá
                       para achar a que interessa sem abrir uma por uma. */}
-                  {liberada && !aberta && <p className="nota-previa">{n.texto}</p>}
+                  {liberada && !aberta && !semTexto && (
+                    <p className="nota-previa">{n.texto}</p>
+                  )}
 
                   {liberada && aberta && (
                     <>
-                      <div className="nota-texto">{n.texto}</div>
+                      {!semTexto && <div className="nota-texto">{n.texto}</div>}
                       <Comentarios
                         alvoTipo="nota"
                         alvoId={n.id}

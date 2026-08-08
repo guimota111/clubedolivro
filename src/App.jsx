@@ -15,6 +15,7 @@ import {
 } from './hooks/useDadosClube'
 import { inicial, pctDoProgresso } from './lib/formato'
 import { corDoMembro } from './lib/cores'
+import { montarAtividades, contarNaoVistas } from './lib/atividades'
 
 import Cadastro from './components/Cadastro'
 import LivroAtualCard from './components/LivroAtualCard'
@@ -25,6 +26,7 @@ import NotasParciais from './components/NotasParciais'
 import Resenhas from './components/Resenhas'
 import Mural from './components/Mural'
 import Historico from './components/Historico'
+import Atividades from './components/Atividades'
 import CadastrarLivroModal from './components/CadastrarLivroModal'
 import EditarLivroModal from './components/EditarLivroModal'
 import EditarPerfilModal from './components/EditarPerfilModal'
@@ -36,11 +38,14 @@ import {
   IconeMarcador,
   IconeLivroAberto,
   IconePena,
+  IconeSino,
   DivisoriaOrnamentada,
 } from './components/Icones'
 
 // Preferência de visualização do progresso no celular (barras ou corrida).
 const CHAVE_VISTA = 'clubedolivro:vista-mobile'
+// Até quando o membro já viu as novidades (milissegundos).
+const CHAVE_NOVIDADES = 'clubedolivro:novidades-vistas'
 
 export default function App() {
   const [userId] = useState(() => obterOuCriarUserId())
@@ -107,7 +112,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
   const [modalEditar, setModalEditar] = useState(false)
   const [modalPerfil, setModalPerfil] = useState(false)
   const [modalProgresso, setModalProgresso] = useState(false)
-  const [aba, setAba] = useState('leitura') // 'leitura' | 'resenhas'
+  const [aba, setAba] = useState('leitura') // 'leitura' | 'novidades' | 'resenhas'
   const verFoto = useVerFoto()
 
   // Como o progresso aparece no celular: barras (a estante) ou a pista de
@@ -128,6 +133,22 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
     }
   }
 
+  // Até quando este navegador já viu as novidades. Na primeira visita o marco
+  // é agora: quem chega hoje não recebe um contador com meses de história.
+  const [vistoAte, setVistoAte] = useState(() => {
+    const agora = Date.now()
+    try {
+      const salvo = Number(localStorage.getItem(CHAVE_NOVIDADES))
+      if (Number.isFinite(salvo) && salvo > 0) return salvo
+      localStorage.setItem(CHAVE_NOVIDADES, String(agora))
+    } catch {
+      // segue com o marco de agora, só sem persistir
+    }
+    return agora
+  })
+  // O que estava por ver quando a aba foi aberta (para destacar na lista).
+  const [destaqueAte, setDestaqueAte] = useState(null)
+
   // Changelog: mostra uma vez por navegador, logo após estar logado.
   const [modalChangelog, setModalChangelog] = useState(() => {
     try {
@@ -147,11 +168,11 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
 
   const { membros } = useMembros()
   const { livro } = useLivroAtual()
-  const { porUsuario } = useProgresso(livro?.id)
+  const { progresso, porUsuario } = useProgresso(livro?.id)
   const { recados } = useMural()
   const { notas } = useNotas(livro?.id)
-  const { porLivro: resenhasPorLivro } = useResenhas()
-  const { porAlvo: comentariosPorAlvo } = useComentarios()
+  const { resenhas, porLivro: resenhasPorLivro } = useResenhas()
+  const { comentarios, porAlvo: comentariosPorAlvo } = useComentarios()
   const { historico } = useHistorico()
   const { porLivro: meuProgressoPorLivro } = useMeuProgresso(userId)
 
@@ -174,6 +195,47 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
       console.error('Erro ao sortear cores dos membros:', err)
     )
   }, [membros])
+
+  // Títulos de todos os livros (atual + histórico) para nomear a resenha no
+  // aviso de novidades.
+  const tituloPorLivroId = useMemo(() => {
+    const mapa = {}
+    historico.forEach((h) => {
+      mapa[h.id] = h.titulo
+    })
+    if (livro) mapa[livro.id] = livro.titulo
+    return mapa
+  }, [historico, livro])
+
+  const atividades = useMemo(
+    () =>
+      montarAtividades({
+        notas,
+        resenhas,
+        comentarios,
+        progresso,
+        membrosPorId,
+        livroAtual: livro,
+        tituloPorLivroId,
+      }),
+    [notas, resenhas, comentarios, progresso, membrosPorId, livro, tituloPorLivroId]
+  )
+
+  const naoVistas = contarNaoVistas(atividades, vistoAte)
+
+  // Ao entrar na aba, guarda o que ERA novo para continuar destacado durante a
+  // visita — e só então zera o contador.
+  function abrirNovidades() {
+    setDestaqueAte(vistoAte)
+    const agora = Date.now()
+    setVistoAte(agora)
+    try {
+      localStorage.setItem(CHAVE_NOVIDADES, String(agora))
+    } catch {
+      // navegador sem localStorage: o contador só não sobrevive ao recarregar
+    }
+    setAba('novidades')
+  }
 
   const minhaPorcentagem = livro
     ? pctDoProgresso(porUsuario[userId], livro.totalPaginas)
@@ -239,7 +301,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
 
         {livro && <RelogioCiclo livro={livro} />}
 
-        {/* Abas: leitura (pista/estante + notas) e resenhas. */}
+        {/* Abas: leitura (pista/estante + notas), novidades e resenhas. */}
         <nav className="abas" role="tablist" aria-label="Seções do clube">
           <button
             role="tab"
@@ -248,6 +310,19 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
             onClick={() => setAba('leitura')}
           >
             <IconeLivroAberto size={18} /> Leitura
+          </button>
+          <button
+            role="tab"
+            aria-selected={aba === 'novidades'}
+            className={`aba${aba === 'novidades' ? ' ativa' : ''}`}
+            onClick={abrirNovidades}
+          >
+            <IconeSino size={18} /> Novidades
+            {naoVistas > 0 && (
+              <span className="aba-selo" aria-label={`${naoVistas} novidades`}>
+                {naoVistas > 9 ? '9+' : naoVistas}
+              </span>
+            )}
           </button>
           <button
             role="tab"
@@ -341,6 +416,12 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
 
             <Historico membrosPorId={membrosPorId} />
           </>
+        ) : aba === 'novidades' ? (
+          <Atividades
+            atividades={atividades}
+            membrosPorId={membrosPorId}
+            vistoAte={destaqueAte}
+          />
         ) : (
           <Resenhas
             userId={userId}
