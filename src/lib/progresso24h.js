@@ -104,6 +104,14 @@ export function pctAntesDaJanela(progresso, pctAtual, agora = Date.now()) {
   return Math.max(0, Math.min(base, pctAtual))
 }
 
+// Quando o membro cruzou os 100% pela primeira vez, segundo a trilha de
+// marcações. Progresso antigo (gravado antes da trilha existir) não sabe
+// dizer: devolve null e quem chama cai no `atualizadoEm` do documento.
+export function quandoTerminou(progresso) {
+  const marca = ordenarHistorico(progresso?.historico).find((m) => m.pct >= 100)
+  return marca ? new Date(marca.em) : null
+}
+
 // Divide a % atual nas duas faixas desenhadas na barra:
 //   base    — progresso acumulado, na cor do membro
 //   recente — o que ele avançou nas últimas 24 h, em dourado

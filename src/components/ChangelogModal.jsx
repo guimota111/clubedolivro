@@ -3,33 +3,27 @@ import { IconeLivroAberto } from './Icones'
 
 // Chave de versão do changelog. Ao lançar novidades futuras, troque a versão
 // para que o aviso apareça de novo uma única vez por navegador.
-export const CHANGELOG_VERSAO = 'clubedolivro:changelog:2026-08-v4'
+export const CHANGELOG_VERSAO = 'clubedolivro:changelog:2026-08-v5'
 
 // Cada item usa um ícone (Icone) OU um emoji literal (emoji).
 const NOVIDADES = [
   {
-    emoji: '⏳',
-    titulo: 'O relógio agora conta para os dois lados',
+    emoji: '🔓',
+    titulo: 'Terminou? Já dá para emendar no próximo',
     texto:
-      'Toque no relógio da página inicial para alternar entre o tempo que FALTA para o prazo e o tempo que já se PASSOU desde que o ciclo do livro começou. Toque de novo para voltar — e ele lembra da sua escolha.',
+      'Quem chega aos 100% do livro do clube destrava a área “O próximo livro”: lá dá para escolher, junto com os outros que terminaram, qual será a próxima leitura e já começar a marcar progresso nela — sem esperar o clube virar a página. A corrida do livro de agora continua igual.',
   },
   {
-    emoji: '🔔',
-    titulo: 'Aba de novidades',
+    emoji: '👑',
+    titulo: 'A troca de livro não zera mais quem se adiantou',
     texto:
-      'Uma aba nova mostra o que o clube andou fazendo: quem reagiu a que trecho, quem comentou, quem avançou. Toque num aviso para ir direto ao que ele conta — a nota, a resenha ou a corrida. O selo no nome da aba conta quantas novidades chegaram desde a sua última visita.',
+      'Quando o clube decidir virar a página, é só apertar “Tornar o livro do clube” na área do próximo livro: o atual vai para o histórico com o vencedor da rodada e quem já vinha lendo o novo mantém tudo o que andou.',
   },
   {
-    emoji: '😲',
-    titulo: 'Nota só com a reação',
+    emoji: '📚',
+    titulo: 'Aba “Já li”: a sua estante',
     texto:
-      'Agora dá para publicar uma nota parcial sem escrever nada — só o emoji. Ela vira um aviso do tipo “Fulana se surpreendeu na página 200”, sem spoiler nenhum.',
-  },
-  {
-    emoji: '📅',
-    titulo: 'Data de início do livro',
-    texto:
-      'Ao cadastrar (ou editar) o livro do clube dá para informar quando a leitura começou. Em branco, vale o dia em que o livro entrou no site.',
+      'Uma aba nova reúne os livros do clube que VOCÊ levou até o fim, do mais recente ao mais antigo, com a data em que você terminou e a sua nota. De lá dá para pular direto para a resenha de cada um.',
   },
 ]
 

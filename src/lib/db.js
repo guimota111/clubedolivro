@@ -136,6 +136,50 @@ export async function encerrarLivroAtivo() {
   }
 }
 
+// ---------- Próximo livro (a fila do clube) ----------
+//
+// O clube lê um livro por vez, mas quem termina antes não precisa parar. O
+// "próximo" mora na MESMA coleção `livroAtual`, marcado com `naFila: true` e
+// `ativo: false`: já tem id, então progresso, notas e resenhas dele funcionam
+// como as de qualquer livro — e no dia em que ele assume, nada se perde.
+
+// Coloca um livro na fila. O clube segue no livro de agora.
+export async function cadastrarProximoLivro({
+  titulo,
+  autor,
+  capaUrl,
+  dataLimite,
+  dataInicio,
+}) {
+  const ref = doc(collection(db, 'livroAtual'))
+  await setDoc(ref, {
+    titulo,
+    autor: autor || '',
+    capaUrl: capaUrl || '',
+    dataLimite: dataLimite || null,
+    dataInicio: dataInicio || null,
+    iniciadoEm: serverTimestamp(),
+    ativo: false,
+    naFila: true,
+  })
+  return ref.id
+}
+
+// Promove o livro da fila a livro do clube: encerra o atual (arquivando-o no
+// histórico com o vencedor) e tira o novo da fila. Quem já vinha lendo mantém
+// o progresso — ele está gravado por `livroId`, que não muda.
+export async function promoverProximoLivro(livroId) {
+  await encerrarLivroAtivo()
+  await updateDoc(doc(db, 'livroAtual', livroId), { ativo: true, naFila: false })
+}
+
+// Tira o livro da fila sem arquivá-lo: ele nunca chegou a ser do clube, então
+// não entra no histórico. Nada é apagado — progresso, notas e resenhas de quem
+// já tinha começado continuam gravados, só saem da tela.
+export async function tirarProximoLivroDaFila(livroId) {
+  await updateDoc(doc(db, 'livroAtual', livroId), { naFila: false })
+}
+
 // ---------- Progresso ----------
 
 // Salva o progresso do membro. `dados` sempre traz `porcentagem` (0-100), que

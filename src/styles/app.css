@@ -898,15 +898,8 @@ input[type='file'].escondido {
   gap: 1rem;
 }
 
-.historico-item .capinha {
-  width: 46px;
-  min-width: 46px;
-  aspect-ratio: 2 / 3;
-  object-fit: cover;
-  border-radius: 3px;
-  border: 1px solid rgba(201, 162, 39, 0.4);
-  background: var(--couro);
-}
+/* A capinha é estilizada no bloco do próximo livro, no fim deste arquivo:
+   ela aparece aqui, nas resenhas e na estante pessoal. */
 
 .historico-item .dados h4 {
   font-family: var(--fonte-titulo);
@@ -2376,4 +2369,228 @@ input[type='file'].escondido {
     animation: none;
     border-color: var(--dourado-claro);
   }
+}
+
+/* ======================================================================
+   O próximo livro (a fila do clube) e a estante de quem já leu
+   ====================================================================== */
+
+/* Com quatro abas o trilho de 420px estrangula os rótulos. Ele cresce, e em
+   telas estreitas as abas quebram em duas linhas em vez de encolher até
+   virarem reticências. */
+.abas { max-width: 560px; flex-wrap: wrap; }
+
+/* A capinha nasceu dentro do histórico, mas hoje ela aparece nas resenhas, no
+   próximo livro e na estante pessoal — o tamanho é dela, não do lugar. */
+.capinha {
+  width: 46px;
+  min-width: 46px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 3px;
+  border: 1px solid rgba(201, 162, 39, 0.4);
+  background: var(--couro);
+}
+
+/* Nome do autor sob o título, em qualquer cartão de livro. */
+.autor {
+  font-family: var(--fonte-display);
+  font-style: italic;
+  color: var(--papel-suave);
+}
+
+/* ---------- Área do próximo livro ---------- */
+
+.proximo-livro { margin-top: 1.6rem; }
+.proximo-intro { margin-top: 0; }
+
+/* Trancada: contorno pontilhado e tudo mais discreto — dá para ver que existe
+   algo ali sem que pareça disponível. */
+.proximo-trancado {
+  border-style: dashed;
+  background: linear-gradient(180deg, rgba(58, 40, 24, 0.5), rgba(36, 24, 18, 0.6));
+}
+.proximo-trancado .secao-titulo { color: var(--papel-tenue); }
+.proximo-trancado .resenha-trancada { padding-top: 0; }
+
+.proximo-vazio { padding: 0.6rem 0 0.2rem; }
+.proximo-vazio p { margin-top: 0; }
+
+.proximo-cabecalho {
+  display: flex;
+  gap: 0.9rem;
+  align-items: center;
+  margin: 0.4rem 0 1rem;
+}
+.proximo-cabecalho h3 {
+  font-family: var(--fonte-titulo);
+  font-size: 1.3rem;
+  color: var(--papel);
+}
+.capinha-proximo { width: 60px; min-width: 60px; }
+
+/* Selo do livro que está na fila — irmão de .selo-atual, em tom de espera. */
+.resenha-selo.selo-fila {
+  color: var(--dourado-claro);
+  border-color: rgba(201, 162, 39, 0.55);
+  border-style: dashed;
+}
+
+.proximo-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-top: 1.1rem;
+}
+.proximo-acoes .btn { flex: 1 1 220px; justify-content: center; }
+.proximo-acoes-secundarias {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  margin-top: 0.8rem;
+}
+.proximo-acoes-secundarias .btn-texto {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+}
+.proximo-rodape {
+  margin: 1rem 0 0;
+  font-size: 0.86rem;
+  font-style: italic;
+  line-height: 1.5;
+  border-top: 1px solid rgba(201, 162, 39, 0.2);
+  padding-top: 0.8rem;
+}
+.proximo-sem-leitores { font-style: italic; margin: 0; }
+
+/* ---------- Quem já começou o livro da fila ---------- */
+
+.fila-leitores {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+.fila-leitor {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.45rem 0.6rem;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(201, 162, 39, 0.18);
+}
+.fila-leitor.eu { border-color: rgba(201, 162, 39, 0.45); }
+.fila-avatar {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--dourado);
+}
+.fila-inicial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--madeira-clara);
+  color: var(--dourado-claro);
+  font-family: var(--fonte-titulo);
+}
+.fila-dados { flex: 1; min-width: 0; }
+.fila-nome {
+  display: block;
+  font-family: var(--fonte-titulo);
+  font-size: 0.98rem;
+  color: var(--papel);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.fila-eu { color: var(--papel-tenue); font-size: 0.85rem; }
+
+/* Mesma gramática das outras barras do site: a cor do leitor no acumulado, o
+   dourado no que ele avançou nas últimas 24 h. */
+.fila-barra {
+  display: flex;
+  height: 8px;
+  margin-top: 0.3rem;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(201, 162, 39, 0.2);
+}
+.fila-barra-base { transition: width var(--transicao); }
+.fila-barra-recente {
+  background: linear-gradient(90deg, var(--dourado), var(--dourado-brilho));
+  transition: width var(--transicao);
+}
+.fila-pct {
+  font-family: var(--fonte-display);
+  font-size: 1.05rem;
+  color: var(--dourado-claro);
+  min-width: 3ch;
+  text-align: right;
+}
+
+/* ---------- Aba "Já li": a estante pessoal ---------- */
+
+.estante-pessoal, .estante-pessoal-vazia { margin-top: 1rem; }
+.estante-pessoal-vazia .selo-secao { display: flex; margin-bottom: 0.4rem; }
+.estante-pessoal-vazia p { max-width: 46ch; margin: 0 auto; }
+
+.estante-pessoal-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+.lido-item {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  padding: 0.7rem 0.8rem;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid rgba(201, 162, 39, 0.22);
+}
+.lido-dados { flex: 1; min-width: 0; }
+.lido-dados h4 {
+  font-family: var(--fonte-titulo);
+  font-size: 1.1rem;
+  margin: 0;
+  color: var(--papel);
+}
+.lido-meta {
+  margin-top: 0.15rem;
+  font-size: 0.85rem;
+  font-style: italic;
+  color: var(--papel-tenue);
+}
+.lido-selos {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.lido-selos .resenha-selo { margin-top: 0.4rem; }
+.lido-nota {
+  margin-top: 0.4rem;
+  color: var(--dourado-brilho);
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+}
+.lido-nota-vazia { color: rgba(201, 162, 39, 0.3); }
+.lido-acao { flex-shrink: 0; }
+
+@media (max-width: 560px) {
+  /* No celular o botão desce para a linha de baixo e ocupa a largura toda —
+     empurrado para a direita ele espremeria o título do livro. */
+  .lido-item { flex-wrap: wrap; }
+  .lido-acao { width: 100%; justify-content: center; }
+  .proximo-acoes .btn { flex-basis: 100%; }
 }

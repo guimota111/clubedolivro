@@ -133,6 +133,50 @@ export function IconeSino({ size = 24, ...props }) {
   )
 }
 
+// Pilha de livros — a estante de quem já leu.
+export function IconePilha({ size = 24, ...props }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <rect x="3" y="16.4" width="18" height="4.6" rx="1.1" />
+      <rect x="4.6" y="11.2" width="14.8" height="4.6" rx="1.1" />
+      <rect x="6.2" y="6" width="11.6" height="4.6" rx="1.1" />
+      <path d="M6.4 18.7h2.6M8 13.5h2.6M9.6 8.3h2.6" opacity="0.55" />
+    </svg>
+  )
+}
+
+// Cadeado — o que ainda não liberou.
+export function IconeCadeado({ size = 24, ...props }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <rect x="4.5" y="10.2" width="15" height="10.8" rx="2.2" />
+      <path d="M8 10.2V7.6a4 4 0 0 1 8 0v2.6" />
+      <circle cx="12" cy="14.9" r="1.35" fill="currentColor" stroke="none" />
+      <path d="M12 16.2v1.8" />
+    </svg>
+  )
+}
+
 // Seta de expandir/recolher. Aponta para baixo; o CSS gira quando abre.
 export function IconeSeta({ size = 24, ...props }) {
   return (

@@ -7,10 +7,11 @@ import { useVerFoto } from './FotoContext'
 import Comentarios from './Comentarios'
 
 // Aba de Resenhas: liberada por livro para quem chegou a 100%.
-// Junta o livro atual (se terminado) e os livros já encerrados no histórico.
+// Junta o livro atual, o que está na fila e os já encerrados no histórico.
 export default function Resenhas({
   userId,
   livroAtual,
+  proximo,
   historico,
   meuProgressoPorLivro,
   resenhasPorLivro,
@@ -18,34 +19,32 @@ export default function Resenhas({
   membrosPorId,
   foco,
 }) {
-  // Monta a lista de livros "resenhaveis": atual + histórico (sem duplicar).
+  // Quem veio da estante clicando num livro chega com ele em foco.
+  const livroEmFoco = useFoco(foco, 'livro')
+
+  // Monta a lista de livros "resenhaveis": atual + fila + histórico (sem
+  // duplicar). O da fila entra porque quem já o terminou tem o que dizer,
+  // mesmo antes de ele virar o livro oficial do clube.
   const livros = useMemo(() => {
     const lista = []
     const vistos = new Set()
-    if (livroAtual) {
+    const juntar = (livro, situacao) => {
+      if (!livro || vistos.has(livro.id)) return
+      vistos.add(livro.id)
       lista.push({
-        id: livroAtual.id,
-        titulo: livroAtual.titulo,
-        autor: livroAtual.autor,
-        capaUrl: livroAtual.capaUrl,
-        totalPaginas: livroAtual.totalPaginas,
-        atual: true,
+        id: livro.id,
+        titulo: livro.titulo,
+        autor: livro.autor,
+        capaUrl: livro.capaUrl,
+        totalPaginas: livro.totalPaginas,
+        situacao,
       })
-      vistos.add(livroAtual.id)
     }
-    historico.forEach((h) => {
-      if (vistos.has(h.id)) return
-      lista.push({
-        id: h.id,
-        titulo: h.titulo,
-        autor: h.autor,
-        capaUrl: h.capaUrl,
-        atual: false,
-      })
-      vistos.add(h.id)
-    })
+    juntar(livroAtual, 'atual')
+    juntar(proximo, 'fila')
+    historico.forEach((h) => juntar(h, 'encerrado'))
     return lista
-  }, [livroAtual, historico])
+  }, [livroAtual, proximo, historico])
 
   if (!livros.length) {
     return (
@@ -69,7 +68,11 @@ export default function Resenhas({
         const resenhas = resenhasPorLivro[livro.id] || []
         const minhaResenha = resenhas.find((r) => r.userId === userId)
         return (
-          <section className="painel resenha-livro" key={livro.id}>
+          <section
+            id={`foco-livro-${livro.id}`}
+            className={`painel resenha-livro${livroEmFoco === livro.id ? ' em-foco' : ''}`}
+            key={livro.id}
+          >
             <div className="resenha-livro-topo">
               {livro.capaUrl ? (
                 <img className="capinha" src={livro.capaUrl} alt={`Capa de ${livro.titulo}`} />
@@ -81,8 +84,20 @@ export default function Resenhas({
               <div>
                 <h3 style={{ margin: 0 }}>{livro.titulo}</h3>
                 {livro.autor && <div className="autor">{livro.autor}</div>}
-                <span className={`resenha-selo${livro.atual ? ' selo-atual' : ''}`}>
-                  {livro.atual ? 'Lendo agora' : 'Já encerrado'}
+                <span
+                  className={`resenha-selo${
+                    livro.situacao === 'atual'
+                      ? ' selo-atual'
+                      : livro.situacao === 'fila'
+                        ? ' selo-fila'
+                        : ''
+                  }`}
+                >
+                  {livro.situacao === 'atual'
+                    ? 'Lendo agora'
+                    : livro.situacao === 'fila'
+                      ? 'Na fila'
+                      : 'Já encerrado'}
                 </span>
               </div>
             </div>
