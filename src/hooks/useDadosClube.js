@@ -31,6 +31,25 @@ export function useLivroAtual() {
   return { livro, carregando }
 }
 
+// Assina o livro que está na fila para ser o próximo do clube. Ele vive na
+// mesma coleção do livro atual, marcado com `naFila` — documentos antigos não
+// têm o campo, e por isso ficam de fora da consulta.
+export function useProximoLivro() {
+  const { docs, carregando } = useColecaoAoVivo(
+    () => query(collection(db, 'livroAtual'), where('naFila', '==', true)),
+    []
+  )
+  // Se houver mais de um na fila por acaso, vale o mais recente.
+  const proximo = useMemo(() => {
+    if (!docs.length) return null
+    const ordenados = [...docs].sort(
+      (a, b) => (b.iniciadoEm?.seconds || 0) - (a.iniciadoEm?.seconds || 0)
+    )
+    return ordenados[0]
+  }, [docs])
+  return { proximo, carregando }
+}
+
 // Assina o progresso de todos para um livro específico.
 export function useProgresso(livroId) {
   const { docs, carregando } = useColecaoAoVivo(

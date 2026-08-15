@@ -1,12 +1,23 @@
 import { useState, useRef } from 'react'
 import Modal from './Modal'
-import { cadastrarLivro } from '../lib/db'
+import { cadastrarLivro, cadastrarProximoLivro } from '../lib/db'
 import { enviarImagem } from '../lib/storage'
 import { IconeLivro } from './Icones'
 
-// Formulário para cadastrar o livro atual do clube.
-// Ao criar um novo, o livro anterior é arquivado e o progresso zerado.
-export default function CadastrarLivroModal({ temLivroAtual, onFechar, aoCadastrar }) {
+// Formulário de livro do clube, nos dois modos em que ele é usado:
+//   'clube' — o livro que todo mundo está lendo. Ao criar um novo, o anterior
+//             é arquivado no histórico e o progresso de todos recomeça.
+//   'fila'  — o PRÓXIMO livro, escolhido por quem já terminou o de agora. Ele
+//             entra sem encerrar nada: o clube segue no livro atual até alguém
+//             promover este na área do próximo livro.
+export default function CadastrarLivroModal({
+  modo = 'clube',
+  temLivroAtual,
+  proximoNaFila,
+  onFechar,
+  aoCadastrar,
+}) {
+  const paraFila = modo === 'fila'
   const [titulo, setTitulo] = useState('')
   const [autor, setAutor] = useState('')
   const [dataLimite, setDataLimite] = useState('')
@@ -49,13 +60,16 @@ export default function CadastrarLivroModal({ temLivroAtual, onFechar, aoCadastr
       if (arquivo) {
         urlFinal = await enviarImagem('capas', arquivo, 'capa')
       }
-      const livroId = await cadastrarLivro({
+      const dados = {
         titulo: tituloLimpo,
         autor: autor.trim(),
         capaUrl: urlFinal,
         dataLimite: dataLimite || null,
         dataInicio: dataInicio || null,
-      })
+      }
+      const livroId = paraFila
+        ? await cadastrarProximoLivro(dados)
+        : await cadastrarLivro(dados)
       aoCadastrar?.(livroId)
       onFechar()
     } catch (err) {
@@ -66,12 +80,34 @@ export default function CadastrarLivroModal({ temLivroAtual, onFechar, aoCadastr
   }
 
   return (
-    <Modal titulo="Livro do clube" onFechar={onFechar}>
-      {temLivroAtual && (
-        <div className="aviso">
-          Já existe um livro em leitura. Ao cadastrar um novo, o atual será
-          encerrado e arquivado no histórico, e o progresso de todos recomeça do zero.
-        </div>
+    <Modal
+      titulo={paraFila ? 'Próximo livro do clube' : 'Livro do clube'}
+      onFechar={onFechar}
+    >
+      {paraFila ? (
+        <p className="texto-suave" style={{ marginTop: 0 }}>
+          Este livro entra na <strong>fila</strong>: o clube continua no livro de
+          agora, mas quem já terminou pode começar a ler e marcar progresso desde
+          já. Quando alguém o tornar o livro do clube, nada do que foi lido se
+          perde.
+        </p>
+      ) : (
+        <>
+          {temLivroAtual && (
+            <div className="aviso">
+              Já existe um livro em leitura. Ao cadastrar um novo, o atual será
+              encerrado e arquivado no histórico, e o progresso de todos recomeça do zero.
+            </div>
+          )}
+          {proximoNaFila && (
+            <div className="aviso">
+              O clube já tem <strong>{proximoNaFila.titulo}</strong> na fila. Se é
+              dele que você está falando, feche isto e use “Tornar o livro do
+              clube” na área do próximo livro — assim o progresso de quem já
+              começou é aproveitado.
+            </div>
+          )}
+        </>
       )}
 
       <form onSubmit={aoEnviar} style={{ marginTop: '1rem' }}>
@@ -108,8 +144,9 @@ export default function CadastrarLivroModal({ temLivroAtual, onFechar, aoCadastr
             onChange={(e) => setDataInicio(e.target.value)}
           />
           <span className="campo-dica">
-            Em branco, vale a data de hoje. É a partir daqui que conta o tempo
-            decorrido do ciclo.
+            {paraFila
+              ? 'É daqui que o relógio do ciclo vai contar quando ele virar o livro do clube. Em branco, vale o dia em que ele entrou na fila.'
+              : 'Em branco, vale a data de hoje. É a partir daqui que conta o tempo decorrido do ciclo.'}
           </span>
         </div>
 
@@ -122,7 +159,9 @@ export default function CadastrarLivroModal({ temLivroAtual, onFechar, aoCadastr
             onChange={(e) => setDataLimite(e.target.value)}
           />
           <span className="campo-dica">
-            Aparece como contagem regressiva na página inicial.
+            {paraFila
+              ? 'A contagem regressiva só aparece quando ele virar o livro do clube.'
+              : 'Aparece como contagem regressiva na página inicial.'}
           </span>
         </div>
 
@@ -177,7 +216,13 @@ export default function CadastrarLivroModal({ temLivroAtual, onFechar, aoCadastr
         {erro && <div className="erro">{erro}</div>}
 
         <button className="btn" type="submit" disabled={enviando} style={{ width: '100%' }}>
-          {enviando ? 'Salvando…' : temLivroAtual ? 'Encerrar atual e iniciar novo' : 'Iniciar leitura'}
+          {enviando
+            ? 'Salvando…'
+            : paraFila
+              ? 'Colocar na fila'
+              : temLivroAtual
+                ? 'Encerrar atual e iniciar novo'
+                : 'Iniciar leitura'}
         </button>
       </form>
     </Modal>

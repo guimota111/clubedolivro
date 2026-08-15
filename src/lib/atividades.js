@@ -5,20 +5,13 @@
 // não há uma coleção de eventos para manter em dia, e o aviso nunca discorda do
 // resto da tela.
 
-import { ondeNoLivro, limitarPct } from './formato'
+import { ondeNoLivro, limitarPct, emMilissegundos as emMs } from './formato'
 import { verboReacao } from './reacoes'
 
 const TETO = 60
 
-// Timestamps do Firestore viram milissegundos; o que não tiver data fica de
-// fora (documento recém-criado ainda sem o carimbo do servidor).
-function emMs(ts) {
-  if (!ts) return null
-  if (typeof ts.toMillis === 'function') return ts.toMillis()
-  if (typeof ts.seconds === 'number') return ts.seconds * 1000
-  if (ts instanceof Date) return ts.getTime()
-  return null
-}
+// Timestamps viram milissegundos (`emMs`); o que não tiver data fica de fora
+// dos avisos — documento recém-criado ainda sem o carimbo do servidor.
 
 function nomeDe(membrosPorId, userId) {
   return membrosPorId[userId]?.nome || 'Alguém'

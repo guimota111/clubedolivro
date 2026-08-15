@@ -5,6 +5,7 @@ import { buscarUsuario, garantirCoresDosMembros } from './lib/db'
 import {
   useMembros,
   useLivroAtual,
+  useProximoLivro,
   useProgresso,
   useMural,
   useNotas,
@@ -28,6 +29,8 @@ import Resenhas from './components/Resenhas'
 import Mural from './components/Mural'
 import Historico from './components/Historico'
 import Atividades from './components/Atividades'
+import ProximoLivro from './components/ProximoLivro'
+import MinhaEstante from './components/MinhaEstante'
 import CadastrarLivroModal from './components/CadastrarLivroModal'
 import EditarLivroModal from './components/EditarLivroModal'
 import EditarPerfilModal from './components/EditarPerfilModal'
@@ -40,6 +43,7 @@ import {
   IconeLivroAberto,
   IconePena,
   IconeSino,
+  IconePilha,
   DivisoriaOrnamentada,
 } from './components/Icones'
 
@@ -113,7 +117,12 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
   const [modalEditar, setModalEditar] = useState(false)
   const [modalPerfil, setModalPerfil] = useState(false)
   const [modalProgresso, setModalProgresso] = useState(false)
-  const [aba, setAba] = useState('leitura') // 'leitura' | 'novidades' | 'resenhas'
+  // Os mesmos formulários, apontados para o livro que está na fila.
+  const [modalProximo, setModalProximo] = useState(false)
+  const [modalEditarProximo, setModalEditarProximo] = useState(false)
+  const [modalProgressoProximo, setModalProgressoProximo] = useState(false)
+  // 'leitura' | 'novidades' | 'resenhas' | 'estante'
+  const [aba, setAba] = useState('leitura')
   const verFoto = useVerFoto()
 
   // Como o progresso aparece no celular: barras (a estante) ou a pista de
@@ -178,7 +187,9 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
 
   const { membros } = useMembros()
   const { livro } = useLivroAtual()
+  const { proximo } = useProximoLivro()
   const { progresso, porUsuario } = useProgresso(livro?.id)
+  const { porUsuario: porUsuarioProximo } = useProgresso(proximo?.id)
   const { recados } = useMural()
   const { notas } = useNotas(livro?.id)
   const { resenhas, porLivro: resenhasPorLivro } = useResenhas()
@@ -214,8 +225,9 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
       mapa[h.id] = h.titulo
     })
     if (livro) mapa[livro.id] = livro.titulo
+    if (proximo) mapa[proximo.id] = proximo.titulo
     return mapa
-  }, [historico, livro])
+  }, [historico, livro, proximo])
 
   const livrosResenhaveis = useMemo(() => {
     const conjunto = new Set()
@@ -270,6 +282,19 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
   const minhaPorcentagem = livro
     ? pctDoProgresso(porUsuario[userId], livro.totalPaginas)
     : 0
+  const minhaPctProximo = proximo
+    ? pctDoProgresso(porUsuarioProximo[userId], 0)
+    : 0
+
+  // Quantos já cruzaram os 100% do livro de agora — é esse número que diz ao
+  // clube se está na hora de virar a página.
+  const quantosTerminaram = useMemo(
+    () =>
+      membros.filter(
+        (m) => pctDoProgresso(porUsuario[m.id], livro?.totalPaginas) >= 100
+      ).length,
+    [membros, porUsuario, livro]
+  )
 
   // Usa o doc ao vivo (onSnapshot) como fonte do perfil, com fallback para o
   // que foi carregado no início — assim edições de nome/foto aparecem na hora.
@@ -331,7 +356,8 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
 
         {livro && <RelogioCiclo livro={livro} />}
 
-        {/* Abas: leitura (pista/estante + notas), novidades e resenhas. */}
+        {/* Abas: leitura (pista/estante + notas), novidades, resenhas e a
+            estante pessoal de quem já leu. */}
         <nav className="abas" role="tablist" aria-label="Seções do clube">
           <button
             role="tab"
@@ -361,6 +387,14 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
             onClick={() => setAba('resenhas')}
           >
             <IconePena size={18} /> Resenhas
+          </button>
+          <button
+            role="tab"
+            aria-selected={aba === 'estante'}
+            className={`aba${aba === 'estante' ? ' ativa' : ''}`}
+            onClick={() => setAba('estante')}
+          >
+            <IconePilha size={18} /> Já li
           </button>
         </nav>
 
@@ -431,6 +465,19 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
               </section>
             )}
 
+            <ProximoLivro
+              userId={userId}
+              membros={membros}
+              livroAtual={livro}
+              proximo={proximo}
+              porUsuario={porUsuarioProximo}
+              minhaPct={minhaPorcentagem}
+              quantosTerminaram={quantosTerminaram}
+              aoEscolher={() => setModalProximo(true)}
+              aoEditar={() => setModalEditarProximo(true)}
+              aoAtualizarProgresso={() => setModalProgressoProximo(true)}
+            />
+
             {livro && (
               <NotasParciais
                 userId={userId}
@@ -454,16 +501,29 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
             vistoAte={destaqueAte}
             aoIrPara={irPara}
           />
-        ) : (
+        ) : aba === 'resenhas' ? (
           <Resenhas
             userId={userId}
             livroAtual={livro}
+            proximo={proximo}
             historico={historico}
             meuProgressoPorLivro={meuProgressoPorLivro}
             resenhasPorLivro={resenhasPorLivro}
             comentariosPorAlvo={comentariosPorAlvo}
             membrosPorId={membrosPorId}
             foco={foco}
+          />
+        ) : (
+          <MinhaEstante
+            userId={userId}
+            livroAtual={livro}
+            proximo={proximo}
+            historico={historico}
+            meuProgressoPorLivro={meuProgressoPorLivro}
+            resenhasPorLivro={resenhasPorLivro}
+            aoVerResenhas={(livroId) =>
+              irPara({ aba: 'resenhas', tipo: 'livro', id: livroId })
+            }
           />
         )}
       </main>
@@ -490,12 +550,28 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
       {modalLivro && (
         <CadastrarLivroModal
           temLivroAtual={!!livro}
+          proximoNaFila={proximo}
           onFechar={() => setModalLivro(false)}
+        />
+      )}
+
+      {modalProximo && (
+        <CadastrarLivroModal
+          modo="fila"
+          onFechar={() => setModalProximo(false)}
         />
       )}
 
       {modalEditar && livro && (
         <EditarLivroModal livro={livro} onFechar={() => setModalEditar(false)} />
+      )}
+
+      {modalEditarProximo && proximo && (
+        <EditarLivroModal
+          livro={proximo}
+          naFila
+          onFechar={() => setModalEditarProximo(false)}
+        />
       )}
 
       {modalPerfil && (
@@ -514,6 +590,16 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
           porcentagemInicial={minhaPorcentagem}
           progressoAtual={porUsuario[userId]}
           onFechar={() => setModalProgresso(false)}
+        />
+      )}
+
+      {modalProgressoProximo && proximo && (
+        <AtualizarProgressoModal
+          userId={userId}
+          livro={proximo}
+          porcentagemInicial={minhaPctProximo}
+          progressoAtual={porUsuarioProximo[userId]}
+          onFechar={() => setModalProgressoProximo(false)}
         />
       )}
 

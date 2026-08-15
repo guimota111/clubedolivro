@@ -4,9 +4,10 @@ import { atualizarLivro } from '../lib/db'
 import { enviarImagem } from '../lib/storage'
 import { IconeLivro } from './Icones'
 
-// Edita o livro atual (título, autor, total de páginas, capa) SEM encerrá-lo
-// nem zerar o progresso de ninguém. Serve para corrigir dados.
-export default function EditarLivroModal({ livro, onFechar }) {
+// Edita um livro do clube (título, autor, capa, datas) SEM encerrá-lo nem
+// zerar o progresso de ninguém. Serve para corrigir dados — tanto do livro em
+// leitura quanto do que está na fila (`naFila`).
+export default function EditarLivroModal({ livro, naFila = false, onFechar }) {
   const [titulo, setTitulo] = useState(livro.titulo || '')
   const [autor, setAutor] = useState(livro.autor || '')
   const [dataLimite, setDataLimite] = useState(livro.dataLimite || '')
@@ -64,9 +65,11 @@ export default function EditarLivroModal({ livro, onFechar }) {
   }
 
   return (
-    <Modal titulo="Editar livro" onFechar={onFechar}>
+    <Modal titulo={naFila ? 'Editar o próximo livro' : 'Editar livro'} onFechar={onFechar}>
       <p className="texto-suave" style={{ marginTop: 0 }}>
-        Corrija os dados do livro em leitura. O progresso de todos é mantido.
+        {naFila
+          ? 'Corrija os dados do livro que está na fila. Ele continua na fila e o progresso de quem já começou é mantido.'
+          : 'Corrija os dados do livro em leitura. O progresso de todos é mantido.'}
       </p>
 
       <form onSubmit={aoEnviar} style={{ marginTop: '1rem' }}>

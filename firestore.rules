@@ -22,11 +22,15 @@ service cloud.firestore {
                     && corValida(request.resource.data);
     }
 
-    // Livro atual do clube. Qualquer membro pode cadastrar/encerrar.
+    // Livros do clube: o que está em leitura (`ativo`) e o que está na fila
+    // para ser o próximo (`naFila`). Qualquer membro pode cadastrar, promover
+    // o da fila ou encerrar.
     match /livroAtual/{livroId} {
       allow read: if true;
       allow write: if request.resource.data.titulo is string
-                   && request.resource.data.titulo.size() > 0;
+                   && request.resource.data.titulo.size() > 0
+                   && (!('naFila' in request.resource.data.keys())
+                       || request.resource.data.naFila is bool);
       allow delete: if true;
     }
 

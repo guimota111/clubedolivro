@@ -39,6 +39,21 @@ tipografia serifada e dourado como cor de destaque.
 - **Livro do clube:** qualquer membro cadastra o livro atual (título, autor,
   total de páginas, capa por upload ou URL). Ao trocar de livro, o anterior é
   arquivado no histórico com o vencedor e o progresso de todos zera.
+- **O próximo livro:** o clube lê um livro por vez, mas quem termina antes não
+  fica parado. Ao cruzar os 100%, o leitor destrava uma área onde ele — junto
+  com os outros que já terminaram — escolhe o **próximo** livro e começa a ler
+  e a marcar progresso desde já. O livro fica "na fila": a corrida do livro de
+  agora não muda. Quando o clube decide virar a página, "Tornar o livro do
+  clube" arquiva o atual no histórico com o vencedor e promove o da fila —
+  quem se adiantou **mantém** o que já andou, porque o progresso está gravado
+  pelo id do livro, que não muda na promoção. Quem ainda não terminou vê a
+  área trancada, com quanto falta.
+- **Aba "Já li":** a estante pessoal de cada membro — os livros do clube que
+  **ele** levou até o fim, do mais recente ao mais antigo, com a data em que
+  terminou (tirada da trilha de marcações do progresso), a nota que deu e um
+  atalho para a resenha. É pessoal por definição: quem nunca terminou um livro
+  encerrado não o vê ali. O histórico coletivo do clube continua na aba de
+  leitura.
 - **Atualizar progresso:** o membro informa apenas a página atual; a % é
   calculada. Botão flutuante fixo, acessível no celular.
 - **Novidades:** aba que reúne o que o clube andou fazendo — reações em pontos
@@ -164,6 +179,8 @@ src/
 │   ├── PistaCorrida.jsx
 │   ├── RelogioCiclo.jsx     # relógio restante / decorrido
 │   ├── Atividades.jsx       # aba de novidades
+│   ├── ProximoLivro.jsx     # o livro da fila, destravado a quem terminou
+│   ├── MinhaEstante.jsx     # aba "Já li": os livros que EU terminei
 │   ├── SeletorCor.jsx       # escolha da cor do membro + prévia da barra
 │   ├── AtualizarProgressoModal.jsx
 │   ├── Mural.jsx
@@ -180,12 +197,22 @@ src/
 | Coleção            | Documento             | Campos principais                                             |
 | ------------------ | --------------------- | ------------------------------------------------------------- |
 | `users`            | `{userId}`            | `nome`, `avatarUrl`, `cor`, `criadoEm`                        |
-| `livroAtual`       | `{livroId}`           | `titulo`, `autor`, `capaUrl`, `dataLimite`, `dataInicio`, `ativo`, `iniciadoEm` |
+| `livroAtual`       | `{livroId}`           | `titulo`, `autor`, `capaUrl`, `dataLimite`, `dataInicio`, `ativo`, `naFila`, `iniciadoEm` |
 | `progresso`        | `{userId}_{livroId}`  | `userId`, `livroId`, `porcentagem`, `paginaAtual`, `totalPaginas`, `modo`, `historico`, `atualizadoEm` |
 | `notas`            | `{notaId}`            | `userId`, `livroId`, `texto`, `desbloqueioPct`, `desbloqueioTipo`, `desbloqueioValor`, `totalPaginas`, `criadoEm` |
 | `resenhas`         | `{userId}_{livroId}`  | `userId`, `livroId`, `texto`, `nota`, `atualizadoEm`         |
 | `mural`            | `{mensagemId}`        | `userId`, `texto`, `criadoEm`                                 |
 | `historicoLivros`  | `{livroId}`           | `titulo`, `autor`, `capaUrl`, `vencedorUserId`, `encerradoEm` |
+
+O **próximo livro** mora na mesma coleção `livroAtual`, e é isso que faz a
+promoção não custar nada: ele nasce com `ativo: false` e `naFila: true`, já com
+um `livroId` próprio, então progresso, notas e resenhas dele funcionam como as
+de qualquer livro. Promover é trocar dois booleanos (`ativo: true`,
+`naFila: false`) depois de arquivar o atual — nenhum documento é reescrito e
+ninguém perde o que já leu. Documentos antigos não têm o campo `naFila`, e por
+isso ficam de fora da consulta `where('naFila', '==', true)`. Tirar da fila
+também só mexe no booleano: o livro some da tela, mas o que já foi escrito
+sobre ele continua gravado.
 
 Uma nota parcial pode ser **só a reação**, sem texto: o emoji já diz o que a
 pessoa sentiu, e o ponto do livro vem no selo ao lado. Nota assim não tranca —

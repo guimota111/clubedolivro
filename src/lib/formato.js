@@ -22,6 +22,17 @@ export function formatarData(ts) {
   })
 }
 
+// Converte em milissegundos o que o app usa como data: Timestamp do Firestore,
+// Date ou nada. Serve para ordenar listas que misturam as três formas — o que
+// não tiver data devolve null e fica por último em quem chama.
+export function emMilissegundos(ts) {
+  if (!ts) return null
+  if (typeof ts.toMillis === 'function') return ts.toMillis()
+  if (typeof ts.seconds === 'number') return ts.seconds * 1000
+  if (ts instanceof Date) return ts.getTime()
+  return null
+}
+
 // Calcula a porcentagem de leitura a partir de páginas (usado só como
 // fallback para progresso antigo que ainda guardava paginaAtual).
 export function calcularPct(paginaAtual, totalPaginas) {
