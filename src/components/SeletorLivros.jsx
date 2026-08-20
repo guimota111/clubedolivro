@@ -23,6 +23,8 @@ export default function SeletorLivros({
 }) {
   if (livros.length < 2) return null
 
+  const emLeitura = livros.filter((l) => l.ativo === true).length
+
   return (
     <section className="painel seletor-livros">
       <div className="seletor-livros-topo">
@@ -30,7 +32,14 @@ export default function SeletorLivros({
           <IconePilha size={20} /> {serie || 'Livros em leitura'}
         </h2>
         <p className="texto-suave">
-          O clube está lendo {livros.length} livros desta série ao mesmo tempo.
+          {emLeitura === livros.length ? (
+            <>O clube está lendo {livros.length} livros desta série ao mesmo tempo.</>
+          ) : (
+            <>
+              {livros.length} volumes desta série na estante do clube
+              {emLeitura > 0 && <> — {emLeitura} em leitura</>}.
+            </>
+          )}{' '}
           Escolha em qual <strong>você</strong> está — a corrida e as notas
           abaixo são sempre as do livro escolhido.
         </p>
@@ -44,12 +53,17 @@ export default function SeletorLivros({
           ).length
           const escolhido = livro.id === selecionadoId
           const volume = rotuloVolume(livro)
+          // Encerrado não é sumido: o volume continua no trilho, só que
+          // marcado — quem ainda o está lendo não perde o lugar dele.
+          const encerrado = livro.ativo !== true
           return (
             <button
               key={livro.id}
               role="tab"
               aria-selected={escolhido}
-              className={`livro-pastilha${escolhido ? ' ativa' : ''}`}
+              className={`livro-pastilha${escolhido ? ' ativa' : ''}${
+                encerrado ? ' encerrada' : ''
+              }`}
               onClick={() => aoSelecionar(livro.id)}
             >
               {livro.capaUrl ? (
@@ -65,7 +79,16 @@ export default function SeletorLivros({
                 </span>
               )}
               <span className="livro-pastilha-dados">
-                {volume && <span className="livro-pastilha-volume">{volume}</span>}
+                {(volume || encerrado) && (
+                  <span className="livro-pastilha-volume">
+                    {volume}
+                    {encerrado && (
+                      <span className="livro-pastilha-encerrado">
+                        {volume ? ' · ' : ''}encerrado
+                      </span>
+                    )}
+                  </span>
+                )}
                 <span className="livro-pastilha-titulo">{livro.titulo}</span>
                 <span
                   className="livro-pastilha-regua"

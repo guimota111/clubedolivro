@@ -3,11 +3,19 @@ import { collection, query, orderBy, onSnapshot } from 'firebase/firestore'
 import { db } from '../firebase'
 import { formatarData, inicial } from '../lib/formato'
 import { rotuloSerie } from '../lib/series'
+import { descobrirVencedor } from '../lib/vencedor'
 import { IconeLivro, IconeCoroa } from './Icones'
 import { useVerFoto } from './FotoContext'
 
 // Histórico dos livros já lidos, com o vencedor de cada rodada.
-export default function Historico({ membrosPorId }) {
+//
+// O vencedor é recalculado aqui a partir do progresso, e não lido do campo
+// gravado no fim da rodada: por muito tempo ele foi decidido só pela maior
+// porcentagem, e com o clube inteiro em 100% isso empatava todo mundo — a
+// coroa acabava indo para o primeiro documento que o banco devolvia. Quem
+// vence é quem chegou primeiro, e a trilha de marcações sabe disso. O campo
+// gravado fica como reserva, para rodada cujo progresso não esteja mais à mão.
+export default function Historico({ membrosPorId, progressoPorLivro = {} }) {
   const verFoto = useVerFoto()
   const [itens, setItens] = useState([])
 
@@ -30,7 +38,10 @@ export default function Historico({ membrosPorId }) {
       </h2>
       <div className="historico-lista">
         {itens.map((livro) => {
-          const vencedor = membrosPorId[livro.vencedorUserId]
+          const doLivro = Object.values(progressoPorLivro[livro.id] || {})
+          const apurado = descobrirVencedor(doLivro, livro.totalPaginas || 0)
+          const vencedor =
+            membrosPorId[apurado?.userId] || membrosPorId[livro.vencedorUserId]
           return (
             <div className="historico-item" key={livro.id}>
               {livro.capaUrl ? (
