@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore'
 import { db } from '../firebase'
 import { formatarData, inicial } from '../lib/formato'
+import { rotuloSerie } from '../lib/series'
 import { IconeLivro, IconeCoroa } from './Icones'
 import { useVerFoto } from './FotoContext'
 
@@ -43,6 +44,9 @@ export default function Historico({ membrosPorId }) {
                 </div>
               )}
               <div className="dados">
+                {rotuloSerie(livro) && (
+                  <div className="livro-serie">{rotuloSerie(livro)}</div>
+                )}
                 <h4>{livro.titulo}</h4>
                 <div className="meta">
                   {livro.autor ? `${livro.autor} · ` : ''}

@@ -2,6 +2,11 @@ import { useMemo } from 'react'
 import { collection, query, where, orderBy } from 'firebase/firestore'
 import { db } from '../firebase'
 import { useColecaoAoVivo } from './useColecaoAoVivo'
+import { ordenarSerie } from '../lib/series'
+
+// O operador `in` do Firestore aceita no máximo 30 valores por consulta — de
+// sobra para uma série, mas o corte fica explícito para não virar erro mudo.
+const TETO_IN = 30
 
 // Assina todos os membros do clube.
 export function useMembros() {
@@ -12,23 +17,16 @@ export function useMembros() {
   return { membros: docs, carregando }
 }
 
-// Assina o livro atualmente ativo (pega o mais recente marcado como ativo).
-export function useLivroAtual() {
+// Assina os livros em leitura. Normalmente é um só; quando o clube está numa
+// série, são vários ao mesmo tempo — e aí vêm na ordem dos volumes, do
+// primeiro ao último, que é como o leitor os procura na tela.
+export function useLivrosAtuais() {
   const { docs, carregando } = useColecaoAoVivo(
     () => query(collection(db, 'livroAtual'), where('ativo', '==', true)),
     []
   )
-  // Se houver mais de um ativo por acaso, usa o mais recente.
-  const livro = useMemo(() => {
-    if (!docs.length) return null
-    const ordenados = [...docs].sort((a, b) => {
-      const ta = a.iniciadoEm?.seconds || 0
-      const tb = b.iniciadoEm?.seconds || 0
-      return tb - ta
-    })
-    return ordenados[0]
-  }, [docs])
-  return { livro, carregando }
+  const livros = useMemo(() => ordenarSerie(docs), [docs])
+  return { livros, carregando }
 }
 
 // Assina o livro que está na fila para ser o próximo do clube. Ele vive na
@@ -50,24 +48,29 @@ export function useProximoLivro() {
   return { proximo, carregando }
 }
 
-// Assina o progresso de todos para um livro específico.
-export function useProgresso(livroId) {
+// Assina o progresso de todos nos livros indicados — os que estão em leitura
+// (podem ser vários, se for uma série) mais o que está na fila. Uma consulta
+// só para todos eles: o clube é pequeno e assim a corrida de cada volume, a
+// régua do seletor e a aba de novidades bebem da mesma fonte.
+export function useProgressoDeLivros(livroIds = []) {
+  const ids = livroIds.filter(Boolean).slice(0, TETO_IN)
+  const chave = ids.join(',')
   const { docs, carregando } = useColecaoAoVivo(
     () =>
-      livroId
-        ? query(collection(db, 'progresso'), where('livroId', '==', livroId))
+      ids.length
+        ? query(collection(db, 'progresso'), where('livroId', 'in', ids))
         : null,
-    [livroId]
+    [chave]
   )
-  // Mapa userId -> documento de progresso (porcentagem/paginaAtual) completo.
-  const porUsuario = useMemo(() => {
+  // Mapa livroId -> (userId -> documento de progresso completo).
+  const porLivro = useMemo(() => {
     const mapa = {}
     docs.forEach((d) => {
-      mapa[d.userId] = d
+      ;(mapa[d.livroId] = mapa[d.livroId] || {})[d.userId] = d
     })
     return mapa
   }, [docs])
-  return { progresso: docs, porUsuario, carregando }
+  return { progresso: docs, porLivro, carregando }
 }
 
 // Assina o mural de recados, do mais recente ao mais antigo.
@@ -104,14 +107,19 @@ export function useResenhas() {
   return { resenhas: docs, porLivro, carregando }
 }
 
-// Assina as notas parciais de um livro, da mais recente à mais antiga.
-export function useNotas(livroId) {
+// Assina as notas parciais dos livros indicados, da mais recente à mais antiga.
+// São vários porque uma série tem vários livros abertos ao mesmo tempo: cada um
+// guarda as suas notas, e o mapa por livro entrega a lista certa a quem está
+// olhando aquele volume.
+export function useNotasDeLivros(livroIds = []) {
+  const ids = livroIds.filter(Boolean).slice(0, TETO_IN)
+  const chave = ids.join(',')
   const { docs, carregando } = useColecaoAoVivo(
     () =>
-      livroId
-        ? query(collection(db, 'notas'), where('livroId', '==', livroId))
+      ids.length
+        ? query(collection(db, 'notas'), where('livroId', 'in', ids))
         : null,
-    [livroId]
+    [chave]
   )
   const ordenadas = useMemo(
     () =>
@@ -120,7 +128,14 @@ export function useNotas(livroId) {
       ),
     [docs]
   )
-  return { notas: ordenadas, carregando }
+  const porLivro = useMemo(() => {
+    const mapa = {}
+    ordenadas.forEach((n) => {
+      ;(mapa[n.livroId] = mapa[n.livroId] || []).push(n)
+    })
+    return mapa
+  }, [ordenadas])
+  return { notas: ordenadas, porLivro, carregando }
 }
 
 // Assina todos os comentários (o clube é pequeno). Mapa alvoId -> lista

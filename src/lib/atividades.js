@@ -19,19 +19,23 @@ function nomeDe(membrosPorId, userId) {
 
 // Uma nota vira o aviso mais expressivo do feed: a reação conta o que a pessoa
 // sentiu e onde. Sem reação conhecida, sobra o aviso seco de que há nota nova.
-function textoDaNota(nota, nome) {
+//
+// `livro` só entra quando o clube tem mais de um aberto: numa série, "40%" sem
+// dizer de qual volume não localiza ninguém.
+function textoDaNota(nota, nome, livro) {
   const onde = ondeNoLivro(nota)
+  const em = livro ? ` de ${livro}` : ''
   const verbo = verboReacao(nota.emoji)
   const temTexto = !!(nota.texto || '').trim()
 
   if (verbo) {
     return temTexto
-      ? `${nome} ${verbo} ${onde} e deixou uma nota.`
-      : `${nome} ${verbo} ${onde}.`
+      ? `${nome} ${verbo} ${onde}${em} e deixou uma nota.`
+      : `${nome} ${verbo} ${onde}${em}.`
   }
   return temTexto
-    ? `${nome} deixou uma nota ${onde}.`
-    : `${nome} reagiu ${onde}.`
+    ? `${nome} deixou uma nota ${onde}${em}.`
+    : `${nome} reagiu ${onde}${em}.`
 }
 
 // Para onde cada aviso leva ao ser clicado. `null` = aviso sem destino, que o
@@ -46,8 +50,16 @@ function destinoDoComentario(c, notasNaTela, resenhasPorId, livrosResenhaveis) {
     if (!alvo || !livrosResenhaveis.has(alvo.livroId)) return null
     return { aba: 'resenhas', tipo: 'resenha', id: c.alvoId, comentarios: true }
   }
-  if (!notasNaTela.has(c.alvoId)) return null
-  return { aba: 'leitura', tipo: 'nota', id: c.alvoId, comentarios: true }
+  const nota = notasNaTela.get(c.alvoId)
+  if (!nota) return null
+  // `livroId` faz a tela trocar para o volume da nota antes de rolar até ela.
+  return {
+    aba: 'leitura',
+    tipo: 'nota',
+    id: c.alvoId,
+    livroId: nota.livroId,
+    comentarios: true,
+  }
 }
 
 export function montarAtividades({
@@ -56,14 +68,17 @@ export function montarAtividades({
   comentarios = [],
   progresso = [],
   membrosPorId = {},
-  livroAtual = null,
   tituloPorLivroId = {},
   livrosResenhaveis = new Set(),
+  // Com uma série aberta, cada aviso diz de qual livro está falando. Com um
+  // livro só, dizer o título em toda linha seria repetição.
+  nomearLivro = false,
 }) {
   const eventos = []
-  // Comentário em nota de livro antigo não tem para onde levar: a lista de
-  // notas só mostra as do livro atual.
-  const notasNaTela = new Set(notas.map((n) => n.id))
+  // Comentário em nota de livro que saiu de cartaz não tem para onde levar: a
+  // lista de notas só mostra as dos livros abertos.
+  const notasNaTela = new Map(notas.map((n) => [n.id, n]))
+  const tituloDe = (livroId) => (nomearLivro ? tituloPorLivroId[livroId] || '' : '')
   const resenhasPorId = {}
   resenhas.forEach((r) => {
     resenhasPorId[r.id] = r
@@ -78,8 +93,8 @@ export function montarAtividades({
       em,
       userId: n.userId,
       emoji: n.emoji || '',
-      texto: textoDaNota(n, nomeDe(membrosPorId, n.userId)),
-      destino: { aba: 'leitura', tipo: 'nota', id: n.id },
+      texto: textoDaNota(n, nomeDe(membrosPorId, n.userId), tituloDe(n.livroId)),
+      destino: { aba: 'leitura', tipo: 'nota', id: n.id, livroId: n.livroId },
     })
   })
 
@@ -128,6 +143,9 @@ export function montarAtividades({
       typeof p.porcentagem === 'number' ? p.porcentagem : 0
     )
     const nome = nomeDe(membrosPorId, p.userId)
+    // No fim da leitura o título vai sempre — é a frase que o clube comemora.
+    const titulo = tituloPorLivroId[p.livroId] || ''
+    const onde = tituloDe(p.livroId)
     eventos.push({
       id: `progresso-${p.id}`,
       tipo: 'progresso',
@@ -136,9 +154,9 @@ export function montarAtividades({
       emoji: pct >= 100 ? '🏁' : '📖',
       texto:
         pct >= 100
-          ? `${nome} terminou${livroAtual?.titulo ? ` ${livroAtual.titulo}` : ' o livro'}!`
-          : `${nome} chegou a ${pct}% da leitura.`,
-      destino: { aba: 'leitura', tipo: 'corrida', id: 'corrida' },
+          ? `${nome} terminou${titulo ? ` ${titulo}` : ' o livro'}!`
+          : `${nome} chegou a ${pct}%${onde ? ` de ${onde}` : ' da leitura'}.`,
+      destino: { aba: 'leitura', tipo: 'corrida', id: 'corrida', livroId: p.livroId },
     })
   })
 

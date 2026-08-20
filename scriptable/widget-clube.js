@@ -229,16 +229,18 @@ try {
     listar('livroAtual'),
   ])
 
+  // O clube pode ter VÁRIOS livros abertos ao mesmo tempo, quando são de uma
+  // mesma série. Num widget não cabem três corridas: ele mostra a do volume
+  // mais lido — o que tem mais gente com progresso — e diz qual é no rodapé.
   const ativos = livros
     .filter((l) => l.ativo)
     .sort((a, b) => (b.iniciadoEm || 0) - (a.iniciadoEm || 0))
-  const livro = ativos[0]
+  const { livro, progressos } = await escolherVolume(ativos)
 
   if (!livro) {
     titulo('Clube do Livro')
     recado('Nenhum livro em leitura agora.')
   } else {
-    const progressos = await progressoDoLivro(livro.id)
     const porUsuario = {}
     progressos.forEach((p) => {
       porUsuario[p.userId] = p
@@ -264,14 +266,45 @@ try {
       })
 
       const sobraram = linhas.length - mostradas.length
+      const restoDaSerie = ativos.length - 1
       w.addSpacer(4)
-      rodape(sobraram > 0 ? `+${sobraram} leitor${sobraram > 1 ? 'es' : ''}` : '')
+      rodape(
+        [
+          sobraram > 0 ? `+${sobraram} leitor${sobraram > 1 ? 'es' : ''}` : '',
+          restoDaSerie > 0
+            ? `+${restoDaSerie} livro${restoDaSerie > 1 ? 's' : ''} da série`
+            : '',
+        ]
+          .filter(Boolean)
+          .join(' · ')
+      )
     }
   }
 } catch (e) {
   titulo('Clube do Livro')
   recado('Não consegui carregar agora.')
   rodape(String(e.message || e).slice(0, 60))
+}
+
+// Com uma série aberta, o widget mostra o volume em que mais gente está
+// lendo. Empate (ou um livro só) resolve pelo mais recente, que é a ordem em
+// que os ativos já chegam aqui.
+async function escolherVolume(ativos) {
+  if (!ativos.length) return { livro: null, progressos: [] }
+  if (ativos.length === 1) {
+    return { livro: ativos[0], progressos: await progressoDoLivro(ativos[0].id) }
+  }
+  let escolhido = { livro: ativos[0], progressos: [] }
+  let maisLeitores = -1
+  for (const candidato of ativos) {
+    const progressos = await progressoDoLivro(candidato.id)
+    const leitores = progressos.filter((p) => Number(p.porcentagem) > 0).length
+    if (leitores > maisLeitores) {
+      maisLeitores = leitores
+      escolhido = { livro: candidato, progressos }
+    }
+  }
+  return escolhido
 }
 
 function titulo(txt) {

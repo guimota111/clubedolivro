@@ -5,6 +5,7 @@ import {
   emMilissegundos,
 } from '../lib/formato'
 import { quandoTerminou } from '../lib/progresso24h'
+import { rotuloSerie } from '../lib/series'
 import { IconePilha, IconeLivro, IconePena } from './Icones'
 
 // Aba "Já li": a estante pessoal do membro — os livros do clube que ELE levou
@@ -15,7 +16,7 @@ import { IconePilha, IconeLivro, IconePena } from './Icones'
 // chegou ao fim de um livro encerrado não o vê — o histórico do clube, esse
 // sim coletivo, continua na aba de leitura.
 export default function MinhaEstante({
-  livroAtual,
+  livrosAtuais = [],
   proximo,
   historico,
   meuProgressoPorLivro,
@@ -34,12 +35,13 @@ export default function MinhaEstante({
         titulo: livro.titulo,
         autor: livro.autor,
         capaUrl: livro.capaUrl,
+        serie: rotuloSerie(livro),
         situacao,
         encerradoEm,
       })
     }
 
-    juntar(livroAtual, 'atual')
+    livrosAtuais.forEach((l) => juntar(l, 'atual'))
     juntar(proximo, 'fila')
     historico.forEach((h) => juntar(h, 'encerrado', h.encerradoEm))
 
@@ -60,7 +62,7 @@ export default function MinhaEstante({
           (emMilissegundos(b.terminadoEm) || 0) -
           (emMilissegundos(a.terminadoEm) || 0)
       )
-  }, [livroAtual, proximo, historico, meuProgressoPorLivro])
+  }, [livrosAtuais, proximo, historico, meuProgressoPorLivro])
 
   if (!lidos.length) {
     return (
@@ -112,6 +114,7 @@ export default function MinhaEstante({
               )}
 
               <div className="lido-dados">
+                {livro.serie && <div className="livro-serie">{livro.serie}</div>}
                 <h4>{livro.titulo}</h4>
                 {livro.autor && <div className="autor">{livro.autor}</div>}
 

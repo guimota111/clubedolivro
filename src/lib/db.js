@@ -14,6 +14,7 @@ import {
 } from 'firebase/firestore'
 import { db } from '../firebase'
 import { normalizarCor, sortearCoresFaltantes, sortearCorLivre } from './cores'
+import { normalizarSerie, ordemValida } from './series'
 
 // ---------- Usuários ----------
 
@@ -58,11 +59,36 @@ export async function garantirCoresDosMembros(membros) {
   return faltantes.length
 }
 
-// ---------- Livro atual ----------
+// ---------- Livros do clube ----------
+//
+// O clube lê UM livro por vez — a não ser que os livros sejam de uma mesma
+// série. Aí ele aceita vários ativos ao mesmo tempo (`ativo: true` em mais de
+// um documento), porque a leitura de uma série se espalha naturalmente: um já
+// está no terceiro volume, outro ainda no segundo. Cada volume tem a sua
+// corrida, as suas notas e as suas resenhas, e o membro escolhe na tela em
+// qual deles está.
 
-export async function cadastrarLivro({ titulo, autor, capaUrl, dataLimite, dataInicio }) {
-  // Encerra o livro ativo anterior (arquiva no histórico) antes de criar o novo.
-  await encerrarLivroAtivo()
+// Campos de série, sempre gravados no mesmo formato: nome aparado e volume
+// inteiro (ou null quando o livro é avulso / não numerado).
+function camposDeSerie({ serie, serieOrdem }) {
+  return {
+    serie: normalizarSerie(serie),
+    serieOrdem: ordemValida(serieOrdem),
+  }
+}
+
+// Cadastra um livro para o clube ler.
+//
+// `juntarASerie` decide o que acontece com o que já está em leitura: com ele
+// ligado, o livro novo entra AO LADO dos atuais (é outro volume da mesma
+// série) e ninguém perde nada; desligado, o comportamento de sempre — os
+// livros em leitura são encerrados e arquivados no histórico, e a rodada
+// recomeça do zero.
+export async function cadastrarLivro(
+  { titulo, autor, capaUrl, dataLimite, dataInicio, serie, serieOrdem },
+  { juntarASerie = false } = {}
+) {
+  if (!juntarASerie) await encerrarLivroAtivo()
 
   const ref = doc(collection(db, 'livroAtual'))
   await setDoc(ref, {
@@ -74,6 +100,7 @@ export async function cadastrarLivro({ titulo, autor, capaUrl, dataLimite, dataI
     // Quando o ciclo começou. Em branco, vale `iniciadoEm` (agora) — é o caso
     // de todo livro cadastrado antes deste campo existir.
     dataInicio: dataInicio || null,
+    ...camposDeSerie({ serie, serieOrdem }),
     iniciadoEm: serverTimestamp(),
     ativo: true,
   })
@@ -86,7 +113,54 @@ export async function atualizarLivro(livroId, dados) {
   await updateDoc(doc(db, 'livroAtual', livroId), dados)
 }
 
-// Marca o livro ativo como encerrado e o copia para o histórico com o vencedor.
+// Encerra UM livro: arquiva no histórico com o vencedor da rodada e o tira de
+// leitura. É a peça que permite o clube aposentar um volume da série sem mexer
+// nos outros que continuam abertos.
+export async function encerrarLivro(livroId) {
+  const livroSnap = await getDoc(doc(db, 'livroAtual', livroId))
+  if (!livroSnap.exists()) return
+  const livro = livroSnap.data()
+
+  // Descobre o vencedor: maior porcentagem no progresso desse livro
+  // (com fallback para paginaAtual/totalPaginas do modelo antigo).
+  const progQuery = query(
+    collection(db, 'progresso'),
+    where('livroId', '==', livroId)
+  )
+  const progSnaps = await getDocs(progQuery)
+  let vencedorUserId = ''
+  let maiorPct = -1
+  progSnaps.forEach((p) => {
+    const d = p.data()
+    let pct = null
+    if (typeof d.porcentagem === 'number') {
+      pct = d.porcentagem
+    } else if (typeof d.paginaAtual === 'number' && livro.totalPaginas > 0) {
+      pct = (d.paginaAtual / livro.totalPaginas) * 100
+    }
+    if (pct != null && pct > maiorPct) {
+      maiorPct = pct
+      vencedorUserId = d.userId
+    }
+  })
+
+  // Arquiva no histórico. A série vai junto: é o que mantém os volumes
+  // reconhecíveis como uma coisa só depois de encerrados.
+  await setDoc(doc(db, 'historicoLivros', livroId), {
+    titulo: livro.titulo || '',
+    autor: livro.autor || '',
+    capaUrl: livro.capaUrl || '',
+    serie: normalizarSerie(livro.serie),
+    serieOrdem: ordemValida(livro.serieOrdem),
+    vencedorUserId,
+    encerradoEm: serverTimestamp(),
+  })
+
+  // Desativa o livro.
+  await updateDoc(doc(db, 'livroAtual', livroId), { ativo: false })
+}
+
+// Encerra TODOS os livros em leitura (um por um, cada qual com o seu vencedor).
 export async function encerrarLivroAtivo() {
   const ativoQuery = query(
     collection(db, 'livroAtual'),
@@ -96,43 +170,7 @@ export async function encerrarLivroAtivo() {
   if (snaps.empty) return
 
   for (const livroSnap of snaps.docs) {
-    const livro = livroSnap.data()
-    const livroId = livroSnap.id
-
-    // Descobre o vencedor: maior porcentagem no progresso desse livro
-    // (com fallback para paginaAtual/totalPaginas do modelo antigo).
-    const progQuery = query(
-      collection(db, 'progresso'),
-      where('livroId', '==', livroId)
-    )
-    const progSnaps = await getDocs(progQuery)
-    let vencedorUserId = ''
-    let maiorPct = -1
-    progSnaps.forEach((p) => {
-      const d = p.data()
-      let pct = null
-      if (typeof d.porcentagem === 'number') {
-        pct = d.porcentagem
-      } else if (typeof d.paginaAtual === 'number' && livro.totalPaginas > 0) {
-        pct = (d.paginaAtual / livro.totalPaginas) * 100
-      }
-      if (pct != null && pct > maiorPct) {
-        maiorPct = pct
-        vencedorUserId = d.userId
-      }
-    })
-
-    // Arquiva no histórico.
-    await setDoc(doc(db, 'historicoLivros', livroId), {
-      titulo: livro.titulo || '',
-      autor: livro.autor || '',
-      capaUrl: livro.capaUrl || '',
-      vencedorUserId,
-      encerradoEm: serverTimestamp(),
-    })
-
-    // Desativa o livro.
-    await updateDoc(doc(db, 'livroAtual', livroId), { ativo: false })
+    await encerrarLivro(livroSnap.id)
   }
 }
 
@@ -150,6 +188,8 @@ export async function cadastrarProximoLivro({
   capaUrl,
   dataLimite,
   dataInicio,
+  serie,
+  serieOrdem,
 }) {
   const ref = doc(collection(db, 'livroAtual'))
   await setDoc(ref, {
@@ -158,6 +198,7 @@ export async function cadastrarProximoLivro({
     capaUrl: capaUrl || '',
     dataLimite: dataLimite || null,
     dataInicio: dataInicio || null,
+    ...camposDeSerie({ serie, serieOrdem }),
     iniciadoEm: serverTimestamp(),
     ativo: false,
     naFila: true,
@@ -165,11 +206,15 @@ export async function cadastrarProximoLivro({
   return ref.id
 }
 
-// Promove o livro da fila a livro do clube: encerra o atual (arquivando-o no
-// histórico com o vencedor) e tira o novo da fila. Quem já vinha lendo mantém
-// o progresso — ele está gravado por `livroId`, que não muda.
-export async function promoverProximoLivro(livroId) {
-  await encerrarLivroAtivo()
+// Promove o livro da fila a livro do clube. Quem já vinha lendo mantém o
+// progresso — ele está gravado por `livroId`, que não muda.
+//
+// `juntarASerie` distingue as duas formas de virar a página: sendo ele outro
+// volume da mesma série em leitura, entra AO LADO dos atuais e nada é
+// encerrado; caso contrário, é a troca de sempre — o que estava em leitura vai
+// para o histórico com o vencedor da rodada.
+export async function promoverProximoLivro(livroId, { juntarASerie = false } = {}) {
+  if (!juntarASerie) await encerrarLivroAtivo()
   await updateDoc(doc(db, 'livroAtual', livroId), { ativo: true, naFila: false })
 }
 

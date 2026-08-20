@@ -27,9 +27,15 @@ function ReacaoNoPonto({ nota }) {
 // Notas parciais: cada membro pode deixar uma anotação "trancada" até uma
 // página/porcentagem. Os outros só leem quando o próprio progresso alcança
 // esse ponto. Serve para comentar trechos sem estragar a leitura de ninguém.
+//
+// As notas são SEMPRE de um livro só — o que o membro escolheu lá em cima.
+// Numa série isso é o essencial: a página 200 de "O Jogo do Anjo" não é a
+// página 200 de "O Prisioneiro do Céu", e misturar as duas seria spoiler
+// disfarçado de nota.
 export default function NotasParciais({
   userId,
   livro,
+  quantosAbertos = 1,
   notas,
   comentariosPorAlvo,
   membrosPorId,
@@ -202,6 +208,12 @@ export default function NotasParciais({
         Comente um trecho sem spoiler: a nota fica trancada até a página ou % que
         você escolher — os outros só leem quando chegam lá.
       </p>
+      {quantosAbertos > 1 && (
+        <p className="texto-tenue centro notas-de-qual" style={{ marginTop: 0 }}>
+          Você está vendo (e escrevendo) as notas de <strong>{livro.titulo}</strong>.
+          Cada livro da série tem as suas — troque lá em cima para ver as dos outros.
+        </p>
+      )}
 
       {!aberto ? (
         <div className="centro">

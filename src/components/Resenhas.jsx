@@ -2,15 +2,17 @@ import { useMemo, useState } from 'react'
 import { useFoco } from '../hooks/useFoco'
 import { salvarResenha } from '../lib/db'
 import { pctDoProgresso, formatarData, inicial } from '../lib/formato'
+import { rotuloSerie } from '../lib/series'
 import { IconeLivro, IconePena, IconeLivroAberto } from './Icones'
 import { useVerFoto } from './FotoContext'
 import Comentarios from './Comentarios'
 
 // Aba de Resenhas: liberada por livro para quem chegou a 100%.
-// Junta o livro atual, o que está na fila e os já encerrados no histórico.
+// Junta os livros em leitura (vários, quando o clube está numa série), o que
+// está na fila e os já encerrados no histórico.
 export default function Resenhas({
   userId,
-  livroAtual,
+  livrosAtuais = [],
   proximo,
   historico,
   meuProgressoPorLivro,
@@ -22,8 +24,8 @@ export default function Resenhas({
   // Quem veio da estante clicando num livro chega com ele em foco.
   const livroEmFoco = useFoco(foco, 'livro')
 
-  // Monta a lista de livros "resenhaveis": atual + fila + histórico (sem
-  // duplicar). O da fila entra porque quem já o terminou tem o que dizer,
+  // Monta a lista de livros "resenhaveis": os em leitura + fila + histórico
+  // (sem duplicar). O da fila entra porque quem já o terminou tem o que dizer,
   // mesmo antes de ele virar o livro oficial do clube.
   const livros = useMemo(() => {
     const lista = []
@@ -37,14 +39,15 @@ export default function Resenhas({
         autor: livro.autor,
         capaUrl: livro.capaUrl,
         totalPaginas: livro.totalPaginas,
+        serie: rotuloSerie(livro),
         situacao,
       })
     }
-    juntar(livroAtual, 'atual')
+    livrosAtuais.forEach((l) => juntar(l, 'atual'))
     juntar(proximo, 'fila')
     historico.forEach((h) => juntar(h, 'encerrado'))
     return lista
-  }, [livroAtual, proximo, historico])
+  }, [livrosAtuais, proximo, historico])
 
   if (!livros.length) {
     return (
@@ -82,6 +85,7 @@ export default function Resenhas({
                 </div>
               )}
               <div>
+                {livro.serie && <div className="livro-serie">{livro.serie}</div>}
                 <h3 style={{ margin: 0 }}>{livro.titulo}</h3>
                 {livro.autor && <div className="autor">{livro.autor}</div>}
                 <span

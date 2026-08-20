@@ -117,6 +117,21 @@ export function IconeMarcador({ size = 24, ...props }) {
   )
 }
 
+// Cruz de somar — juntar mais um volume da série à leitura do clube.
+export function IconeMais({ size = 24, ...props }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      {...props}
+    >
+      <path d="M10.9 4h2.2v6.9H20v2.2h-6.9V20h-2.2v-6.9H4v-2.2h6.9V4Z" />
+    </svg>
+  )
+}
+
 // Sino das novidades.
 export function IconeSino({ size = 24, ...props }) {
   return (

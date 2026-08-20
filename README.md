@@ -1,7 +1,8 @@
 # 📖 Clube do Livro
 
 Site para um clube do livro entre amigos, onde todos leem o mesmo livro ao mesmo
-tempo e competem visualmente para ver quem avança mais rápido — sem login/senha.
+tempo — ou os vários volumes de uma mesma série — e competem visualmente para
+ver quem avança mais rápido, sem login/senha.
 Tudo gira em torno de uma **estante viva** que mostra o progresso de cada membro em
 tempo real.
 
@@ -37,8 +38,21 @@ tipografia serifada e dourado como cor de destaque.
   no `localStorage`. Sem hover no celular, nome e % saem do cartão flutuante e
   viram uma ficha fixa acima de cada trilho.
 - **Livro do clube:** qualquer membro cadastra o livro atual (título, autor,
-  total de páginas, capa por upload ou URL). Ao trocar de livro, o anterior é
-  arquivado no histórico com o vencedor e o progresso de todos zera.
+  série, capa por upload ou URL). Ao trocar de livro, o anterior é arquivado no
+  histórico com o vencedor e o progresso de todos zera.
+- **Séries: vários livros abertos ao mesmo tempo.** Uma série não se lê em fila
+  indiana — parte do clube já está no terceiro volume enquanto outra parte
+  termina o segundo. Por isso o clube aceita **mais de um livro em leitura**,
+  desde que todos sejam da **mesma série**: basta cadastrar o volume novo com o
+  mesmo nome de série dos que já estão abertos e ele entra *ao lado* deles, sem
+  encerrar nada nem zerar ninguém. Um trilho abaixo da capa deixa o membro
+  escolher em qual volume ele está, e a página inteira passa a ser daquele
+  livro — a corrida, o relógio do ciclo e as notas parciais. A escolha fica no
+  `localStorage`; na primeira visita vale o livro onde a pessoa marcou
+  progresso por último. Livro avulso (sem série) continua sendo um por vez.
+  Quando o clube termina um volume antes dos outros, "Encerrar só este livro"
+  (na edição do livro) o manda para o histórico com o vencedor da rodada e
+  deixa os demais abertos.
 - **O próximo livro:** o clube lê um livro por vez, mas quem termina antes não
   fica parado. Ao cruzar os 100%, o leitor destrava uma área onde ele — junto
   com os outros que já terminaram — escolhe o **próximo** livro e começa a ler
@@ -140,6 +154,10 @@ para o app [Scriptable](https://scriptable.app). Mostra o livro atual e a
 corrida da leitura — cada membro na sua cor, com o avanço das últimas 24 h em
 dourado, igual ao site.
 
+Com uma série aberta o widget não tenta caber três corridas: mostra a do volume
+em que mais gente está lendo e diz no rodapé quantos outros livros da série
+estão abertos.
+
 Ele lê o Firestore pela **API REST**, sem SDK e sem login: as regras já liberam
 leitura para todo mundo, e a chave usada é a mesma chave web pública do site.
 Só lê — nada no widget altera o clube.
@@ -166,6 +184,7 @@ src/
 │   ├── progresso24h.js      # histórico de leitura e ganho das últimas 24 h
 │   ├── atividades.js        # monta a aba de novidades a partir dos dados vivos
 │   ├── reacoes.js           # emojis e como descrevê-los por extenso
+│   ├── series.js            # séries: chave, ordem dos volumes e quem entra junto
 │   └── formato.js           # datas, % e utilidades
 ├── hooks/
 │   ├── useColecaoAoVivo.js  # wrapper de onSnapshot
@@ -180,6 +199,7 @@ src/
 │   ├── RelogioCiclo.jsx     # relógio restante / decorrido
 │   ├── Atividades.jsx       # aba de novidades
 │   ├── ProximoLivro.jsx     # o livro da fila, destravado a quem terminou
+│   ├── SeletorLivros.jsx    # o trilho que troca o volume da série em foco
 │   ├── MinhaEstante.jsx     # aba "Já li": os livros que EU terminei
 │   ├── SeletorCor.jsx       # escolha da cor do membro + prévia da barra
 │   ├── AtualizarProgressoModal.jsx
@@ -197,19 +217,37 @@ src/
 | Coleção            | Documento             | Campos principais                                             |
 | ------------------ | --------------------- | ------------------------------------------------------------- |
 | `users`            | `{userId}`            | `nome`, `avatarUrl`, `cor`, `criadoEm`                        |
-| `livroAtual`       | `{livroId}`           | `titulo`, `autor`, `capaUrl`, `dataLimite`, `dataInicio`, `ativo`, `naFila`, `iniciadoEm` |
+| `livroAtual`       | `{livroId}`           | `titulo`, `autor`, `capaUrl`, `dataLimite`, `dataInicio`, `serie`, `serieOrdem`, `ativo`, `naFila`, `iniciadoEm` |
 | `progresso`        | `{userId}_{livroId}`  | `userId`, `livroId`, `porcentagem`, `paginaAtual`, `totalPaginas`, `modo`, `historico`, `atualizadoEm` |
 | `notas`            | `{notaId}`            | `userId`, `livroId`, `texto`, `desbloqueioPct`, `desbloqueioTipo`, `desbloqueioValor`, `totalPaginas`, `criadoEm` |
 | `resenhas`         | `{userId}_{livroId}`  | `userId`, `livroId`, `texto`, `nota`, `atualizadoEm`         |
 | `mural`            | `{mensagemId}`        | `userId`, `texto`, `criadoEm`                                 |
-| `historicoLivros`  | `{livroId}`           | `titulo`, `autor`, `capaUrl`, `vencedorUserId`, `encerradoEm` |
+| `historicoLivros`  | `{livroId}`           | `titulo`, `autor`, `capaUrl`, `serie`, `serieOrdem`, `vencedorUserId`, `encerradoEm` |
+
+A **série** é o que autoriza mais de um `ativo: true` ao mesmo tempo. `serie` é
+o nome dela (vazio = livro avulso) e `serieOrdem` o número do volume, usado só
+para ordenar. A comparação entre séries é feita por uma chave sem acento, sem
+caixa e sem espaço sobrando (`chaveSerie`), então "Cemiterio dos Livros
+Esquecidos" e "O Cemitério dos Livros Esquecidos" **não** se juntam por engano,
+mas erros de acento sim. O invariante — *todos os livros abertos são da mesma
+série* — é mantido no cliente: o cadastro só entra ao lado dos outros quando a
+série bate, e a edição tranca o campo de série enquanto houver mais de um livro
+aberto. Como todo o resto do app, isso é experiência, não segurança; as regras
+validam apenas o formato.
+
+Nada disso muda a chave do que já existe: progresso, notas e resenhas são
+gravados por `livroId`, então cada volume tem naturalmente a sua corrida, as
+suas notas parciais (com o cadeado medindo a % *daquele* livro) e as suas
+resenhas.
 
 O **próximo livro** mora na mesma coleção `livroAtual`, e é isso que faz a
 promoção não custar nada: ele nasce com `ativo: false` e `naFila: true`, já com
 um `livroId` próprio, então progresso, notas e resenhas dele funcionam como as
 de qualquer livro. Promover é trocar dois booleanos (`ativo: true`,
 `naFila: false`) depois de arquivar o atual — nenhum documento é reescrito e
-ninguém perde o que já leu. Documentos antigos não têm o campo `naFila`, e por
+ninguém perde o que já leu. Sendo ele outro volume da série em leitura, nem o
+arquivamento acontece: os booleanos viram e o livro passa a conviver com os
+outros. Documentos antigos não têm o campo `naFila`, e por
 isso ficam de fora da consulta `where('naFila', '==', true)`. Tirar da fila
 também só mexe no booleano: o livro some da tela, mas o que já foi escrito
 sobre ele continua gravado.

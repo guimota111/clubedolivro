@@ -4,18 +4,23 @@ import { obterOuCriarUserId, limparIdentidade } from './lib/identity'
 import { buscarUsuario, garantirCoresDosMembros } from './lib/db'
 import {
   useMembros,
-  useLivroAtual,
+  useLivrosAtuais,
   useProximoLivro,
-  useProgresso,
+  useProgressoDeLivros,
   useMural,
-  useNotas,
+  useNotasDeLivros,
   useResenhas,
   useComentarios,
   useHistorico,
   useMeuProgresso,
 } from './hooks/useDadosClube'
-import { inicial, pctDoProgresso } from './lib/formato'
+import { inicial, pctDoProgresso, emMilissegundos } from './lib/formato'
 import { corDoMembro } from './lib/cores'
+import {
+  mesmaSerie,
+  seriesConhecidas as listarSeries,
+  serieEmLeitura,
+} from './lib/series'
 import { montarAtividades, contarNaoVistas } from './lib/atividades'
 import { useFoco } from './hooks/useFoco'
 
@@ -30,6 +35,7 @@ import Mural from './components/Mural'
 import Historico from './components/Historico'
 import Atividades from './components/Atividades'
 import ProximoLivro from './components/ProximoLivro'
+import SeletorLivros from './components/SeletorLivros'
 import MinhaEstante from './components/MinhaEstante'
 import CadastrarLivroModal from './components/CadastrarLivroModal'
 import EditarLivroModal from './components/EditarLivroModal'
@@ -44,6 +50,7 @@ import {
   IconePena,
   IconeSino,
   IconePilha,
+  IconeMais,
   DivisoriaOrnamentada,
 } from './components/Icones'
 
@@ -51,6 +58,12 @@ import {
 const CHAVE_VISTA = 'clubedolivro:vista-mobile'
 // Até quando o membro já viu as novidades (milissegundos).
 const CHAVE_NOVIDADES = 'clubedolivro:novidades-vistas'
+// Qual dos livros abertos este navegador está lendo (quando o clube está numa
+// série e há mais de um).
+const CHAVE_LIVRO = 'clubedolivro:livro-escolhido'
+// Mapa vazio reaproveitado: um objeto novo a cada render reiniciaria os
+// `useMemo` que dependem dele à toa.
+const VAZIO = {}
 
 export default function App() {
   const [userId] = useState(() => obterOuCriarUserId())
@@ -114,6 +127,9 @@ export default function App() {
 // Vista principal, já com identidade definida.
 function ClubeLogado({ userId, usuario, onTrocar }) {
   const [modalLivro, setModalLivro] = useState(false)
+  // O mesmo formulário de livro, aberto já com a série preenchida — quem clica
+  // ali quer somar um volume, não trocar a leitura do clube.
+  const [modalLivroNaSerie, setModalLivroNaSerie] = useState(false)
   const [modalEditar, setModalEditar] = useState(false)
   const [modalPerfil, setModalPerfil] = useState(false)
   const [modalProgresso, setModalProgresso] = useState(false)
@@ -164,6 +180,13 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
 
   function irPara(destino) {
     if (!destino) return
+    // Um aviso pode ser de outro volume da série. Levar a tela até ele sem
+    // trocar o livro escolhido mostraria a corrida errada — ou nota nenhuma.
+    // Só troca para livro que ainda está aberto: guardar um id encerrado
+    // faria o site cair no palpite automático na próxima visita.
+    if (destino.livroId && idsAbertos.includes(destino.livroId)) {
+      escolherLivro(destino.livroId)
+    }
     setAba(destino.aba)
     setFoco({ ...destino, marca: Date.now() })
   }
@@ -186,16 +209,91 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
   }
 
   const { membros } = useMembros()
-  const { livro } = useLivroAtual()
+  // Normalmente um livro; numa série, vários abertos ao mesmo tempo.
+  const { livros: livrosAtuais } = useLivrosAtuais()
   const { proximo } = useProximoLivro()
-  const { progresso, porUsuario } = useProgresso(livro?.id)
-  const { porUsuario: porUsuarioProximo } = useProgresso(proximo?.id)
   const { recados } = useMural()
-  const { notas } = useNotas(livro?.id)
   const { resenhas, porLivro: resenhasPorLivro } = useResenhas()
   const { comentarios, porAlvo: comentariosPorAlvo } = useComentarios()
   const { historico } = useHistorico()
   const { porLivro: meuProgressoPorLivro } = useMeuProgresso(userId)
+
+  // Os livros abertos e, junto deles, o da fila: o progresso de todos vem numa
+  // assinatura só, que alimenta a corrida de cada volume, a régua do seletor e
+  // a lista de quem já começou o da fila.
+  const idsAbertos = useMemo(() => livrosAtuais.map((l) => l.id), [livrosAtuais])
+  const idsNaTela = useMemo(
+    () => [...idsAbertos, proximo?.id].filter(Boolean),
+    [idsAbertos, proximo]
+  )
+  const { progresso, porLivro: progressoPorLivro } = useProgressoDeLivros(idsNaTela)
+  // Notas só dos livros abertos: são os únicos que a tela sabe mostrar, e um
+  // aviso de novidades tem de ter para onde levar.
+  const { notas: notasDosAbertos, porLivro: notasPorLivro } =
+    useNotasDeLivros(idsAbertos)
+
+  // Qual dos livros abertos ESTE membro está lendo. A escolha fica no
+  // navegador; sem escolha, o site adivinha pelo lugar onde ele mexeu por
+  // último — quem está no terceiro volume não quer cair no primeiro toda vez
+  // que abre o site.
+  const [livroEscolhidoId, setLivroEscolhidoId] = useState(() => {
+    try {
+      return localStorage.getItem(CHAVE_LIVRO) || ''
+    } catch {
+      return ''
+    }
+  })
+  function escolherLivro(id) {
+    setLivroEscolhidoId(id)
+    try {
+      localStorage.setItem(CHAVE_LIVRO, id)
+    } catch {
+      // navegador sem localStorage: a escolha só não sobrevive ao recarregar
+    }
+  }
+
+  const livro = useMemo(() => {
+    if (!livrosAtuais.length) return null
+    const escolhido = livrosAtuais.find((l) => l.id === livroEscolhidoId)
+    if (escolhido) return escolhido
+    // Sem escolha válida (primeira visita, ou o livro escolhido foi encerrado):
+    // vale aquele em que este membro marcou progresso por último.
+    const meu = [...livrosAtuais].sort(
+      (a, b) =>
+        (emMilissegundos(meuProgressoPorLivro[b.id]?.atualizadoEm) || 0) -
+        (emMilissegundos(meuProgressoPorLivro[a.id]?.atualizadoEm) || 0)
+    )[0]
+    return meu || livrosAtuais[0]
+  }, [livrosAtuais, livroEscolhidoId, meuProgressoPorLivro])
+
+  const porUsuario = progressoPorLivro[livro?.id] || VAZIO
+  const porUsuarioProximo = progressoPorLivro[proximo?.id] || VAZIO
+  const notas = useMemo(
+    () => (livro ? notasPorLivro[livro.id] || [] : []),
+    [notasPorLivro, livro]
+  )
+
+  // O da fila fica de fora das novidades: ele não está na corrida de ninguém,
+  // e um aviso sobre ele não teria para onde levar.
+  const progressoDosAbertos = useMemo(
+    () => progresso.filter((p) => idsAbertos.includes(p.livroId)),
+    [progresso, idsAbertos]
+  )
+
+  // A série em leitura (só existe se TODOS os livros abertos forem dela) e as
+  // séries que o clube já conhece, para sugerir nos formulários.
+  const serieDoClube = useMemo(() => serieEmLeitura(livrosAtuais), [livrosAtuais])
+  const seriesConhecidas = useMemo(
+    () => listarSeries(livrosAtuais, proximo ? [proximo] : [], historico),
+    [livrosAtuais, proximo, historico]
+  )
+  // Promover o livro da fila encerra o que está aberto — a não ser que ele seja
+  // outro volume da mesma série, e aí só se junta aos demais.
+  const proximoEntraNaSerie = !!(
+    proximo &&
+    livrosAtuais.length &&
+    livrosAtuais.every((l) => mesmaSerie(l, proximo))
+  )
 
   const membrosPorId = useMemo(() => {
     const mapa = {}
@@ -217,17 +315,20 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
     )
   }, [membros])
 
-  // Títulos de todos os livros (atual + histórico) para nomear a resenha no
-  // aviso de novidades.
+  // Títulos de todos os livros (abertos + fila + histórico) para nomear o livro
+  // nos avisos de novidades — com vários volumes abertos, "fulano chegou a 40%"
+  // sem dizer de quê não conta nada.
   const tituloPorLivroId = useMemo(() => {
     const mapa = {}
     historico.forEach((h) => {
       mapa[h.id] = h.titulo
     })
-    if (livro) mapa[livro.id] = livro.titulo
+    livrosAtuais.forEach((l) => {
+      mapa[l.id] = l.titulo
+    })
     if (proximo) mapa[proximo.id] = proximo.titulo
     return mapa
-  }, [historico, livro, proximo])
+  }, [historico, livrosAtuais, proximo])
 
   const livrosResenhaveis = useMemo(() => {
     const conjunto = new Set()
@@ -237,27 +338,30 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
     return conjunto
   }, [meuProgressoPorLivro])
 
+  // As novidades cobrem TODOS os livros abertos, não só o que este membro
+  // escolheu: quem está no segundo volume quer saber que o resto do clube
+  // avançou no terceiro.
   const atividades = useMemo(
     () =>
       montarAtividades({
-        notas,
+        notas: notasDosAbertos,
         resenhas,
         comentarios,
-        progresso,
+        progresso: progressoDosAbertos,
         membrosPorId,
-        livroAtual: livro,
         tituloPorLivroId,
         livrosResenhaveis,
+        nomearLivro: livrosAtuais.length > 1,
       }),
     [
-      notas,
+      notasDosAbertos,
       resenhas,
       comentarios,
-      progresso,
+      progressoDosAbertos,
       membrosPorId,
-      livro,
       tituloPorLivroId,
       livrosResenhaveis,
+      livrosAtuais,
     ]
   )
 
@@ -350,8 +454,21 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
       <main className="conteudo container">
         <LivroAtualCard
           livro={livro}
+          quantosAbertos={livrosAtuais.length}
           aoAbrirCadastro={() => setModalLivro(true)}
           aoEditar={() => setModalEditar(true)}
+          aoAdicionarNaSerie={() => setModalLivroNaSerie(true)}
+        />
+
+        <SeletorLivros
+          livros={livrosAtuais}
+          selecionadoId={livro?.id}
+          meuProgressoPorLivro={meuProgressoPorLivro}
+          progressoPorLivro={progressoPorLivro}
+          minhaCor={minhaCor}
+          serie={serieDoClube}
+          aoSelecionar={escolherLivro}
+          aoAdicionar={serieDoClube ? () => setModalLivroNaSerie(true) : null}
         />
 
         {livro && <RelogioCiclo livro={livro} />}
@@ -457,7 +574,16 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
                     />
                   )}
                 </div>
-                <div className="centro" style={{ marginTop: '2rem' }}>
+                <div className="centro trocar-livro" style={{ marginTop: '2rem' }}>
+                  {serieDoClube && (
+                    <button
+                      className="btn btn-fantasma"
+                      onClick={() => setModalLivroNaSerie(true)}
+                    >
+                      <IconeMais size={16} />
+                      Abrir outro livro da série
+                    </button>
+                  )}
                   <button className="btn btn-fantasma" onClick={() => setModalLivro(true)}>
                     Trocar o livro do clube
                   </button>
@@ -470,6 +596,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
               membros={membros}
               livroAtual={livro}
               proximo={proximo}
+              entraNaSerie={proximoEntraNaSerie}
               porUsuario={porUsuarioProximo}
               minhaPct={minhaPorcentagem}
               quantosTerminaram={quantosTerminaram}
@@ -482,6 +609,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
               <NotasParciais
                 userId={userId}
                 livro={livro}
+                quantosAbertos={livrosAtuais.length}
                 notas={notas}
                 comentariosPorAlvo={comentariosPorAlvo}
                 membrosPorId={membrosPorId}
@@ -504,7 +632,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
         ) : aba === 'resenhas' ? (
           <Resenhas
             userId={userId}
-            livroAtual={livro}
+            livrosAtuais={livrosAtuais}
             proximo={proximo}
             historico={historico}
             meuProgressoPorLivro={meuProgressoPorLivro}
@@ -516,7 +644,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
         ) : (
           <MinhaEstante
             userId={userId}
-            livroAtual={livro}
+            livrosAtuais={livrosAtuais}
             proximo={proximo}
             historico={historico}
             meuProgressoPorLivro={meuProgressoPorLivro}
@@ -549,27 +677,51 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
 
       {modalLivro && (
         <CadastrarLivroModal
-          temLivroAtual={!!livro}
+          livrosAtuais={livrosAtuais}
           proximoNaFila={proximo}
+          seriesConhecidas={seriesConhecidas}
           onFechar={() => setModalLivro(false)}
+          aoCadastrar={escolherLivro}
+        />
+      )}
+
+      {/* O mesmo formulário, já com a série preenchida: é o caminho de quem
+          quer só abrir mais um volume ao lado dos que o clube lê. */}
+      {modalLivroNaSerie && (
+        <CadastrarLivroModal
+          livrosAtuais={livrosAtuais}
+          proximoNaFila={proximo}
+          seriesConhecidas={seriesConhecidas}
+          serieInicial={serieDoClube || livro?.serie || ''}
+          onFechar={() => setModalLivroNaSerie(false)}
+          aoCadastrar={escolherLivro}
         />
       )}
 
       {modalProximo && (
         <CadastrarLivroModal
           modo="fila"
+          livrosAtuais={livrosAtuais}
+          seriesConhecidas={seriesConhecidas}
+          serieInicial={serieDoClube}
           onFechar={() => setModalProximo(false)}
         />
       )}
 
       {modalEditar && livro && (
-        <EditarLivroModal livro={livro} onFechar={() => setModalEditar(false)} />
+        <EditarLivroModal
+          livro={livro}
+          livrosAtuais={livrosAtuais}
+          seriesConhecidas={seriesConhecidas}
+          onFechar={() => setModalEditar(false)}
+        />
       )}
 
       {modalEditarProximo && proximo && (
         <EditarLivroModal
           livro={proximo}
           naFila
+          seriesConhecidas={seriesConhecidas}
           onFechar={() => setModalEditarProximo(false)}
         />
       )}
