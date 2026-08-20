@@ -17,52 +17,55 @@ export function useMembros() {
   return { membros: docs, carregando }
 }
 
-// Assina os livros em leitura. Normalmente é um só; quando o clube está numa
-// série, são vários ao mesmo tempo — e aí vêm na ordem dos volumes, do
-// primeiro ao último, que é como o leitor os procura na tela.
-export function useLivrosAtuais() {
+// Assina a coleção de livros do clube inteira — ela tem um documento por livro
+// que o clube já leu, então é pequena — e separa os três papéis que um livro
+// pode ter: em leitura (`ativo`), na fila para ser o próximo (`naFila`) ou já
+// encerrado.
+//
+// Vale uma assinatura só porque os encerrados também aparecem na tela: um
+// volume que o clube terminou continua no trilho da série, marcado como tal —
+// sumir dali seria perder de vista metade da leitura.
+export function useLivrosDoClube() {
   const { docs, carregando } = useColecaoAoVivo(
-    () => query(collection(db, 'livroAtual'), where('ativo', '==', true)),
+    () => collection(db, 'livroAtual'),
     []
   )
-  const livros = useMemo(() => ordenarSerie(docs), [docs])
-  return { livros, carregando }
-}
 
-// Assina o livro que está na fila para ser o próximo do clube. Ele vive na
-// mesma coleção do livro atual, marcado com `naFila` — documentos antigos não
-// têm o campo, e por isso ficam de fora da consulta.
-export function useProximoLivro() {
-  const { docs, carregando } = useColecaoAoVivo(
-    () => query(collection(db, 'livroAtual'), where('naFila', '==', true)),
-    []
+  // Em leitura, na ordem dos volumes — do primeiro ao último, que é como o
+  // leitor os procura na tela.
+  const abertos = useMemo(
+    () => ordenarSerie(docs.filter((l) => l.ativo === true)),
+    [docs]
   )
+
+  const encerrados = useMemo(
+    () => docs.filter((l) => l.ativo !== true && l.naFila !== true),
+    [docs]
+  )
+
   // Se houver mais de um na fila por acaso, vale o mais recente.
   const proximo = useMemo(() => {
-    if (!docs.length) return null
-    const ordenados = [...docs].sort(
+    const naFila = docs.filter((l) => l.naFila === true)
+    if (!naFila.length) return null
+    return naFila.sort(
       (a, b) => (b.iniciadoEm?.seconds || 0) - (a.iniciadoEm?.seconds || 0)
-    )
-    return ordenados[0]
+    )[0]
   }, [docs])
-  return { proximo, carregando }
+
+  return { livros: docs, abertos, encerrados, proximo, carregando }
 }
 
-// Assina o progresso de todos nos livros indicados — os que estão em leitura
-// (podem ser vários, se for uma série) mais o que está na fila. Uma consulta
-// só para todos eles: o clube é pequeno e assim a corrida de cada volume, a
-// régua do seletor e a aba de novidades bebem da mesma fonte.
-export function useProgressoDeLivros(livroIds = []) {
-  const ids = livroIds.filter(Boolean).slice(0, TETO_IN)
-  const chave = ids.join(',')
+// Assina o progresso do clube inteiro: um documento por membro por livro. São
+// poucos (um clube de amigos, alguns livros) e ter todos à mão é o que permite
+// desenhar a corrida de cada volume, a régua do seletor, a estante pessoal e —
+// no histórico — dizer quem venceu cada rodada sem depender do que ficou
+// gravado lá atrás.
+export function useProgresso() {
   const { docs, carregando } = useColecaoAoVivo(
-    () =>
-      ids.length
-        ? query(collection(db, 'progresso'), where('livroId', 'in', ids))
-        : null,
-    [chave]
+    () => collection(db, 'progresso'),
+    []
   )
-  // Mapa livroId -> (userId -> documento de progresso completo).
+  // livroId -> (userId -> documento completo)
   const porLivro = useMemo(() => {
     const mapa = {}
     docs.forEach((d) => {
@@ -70,7 +73,15 @@ export function useProgressoDeLivros(livroIds = []) {
     })
     return mapa
   }, [docs])
-  return { progresso: docs, porLivro, carregando }
+  // userId -> (livroId -> documento completo)
+  const porMembro = useMemo(() => {
+    const mapa = {}
+    docs.forEach((d) => {
+      ;(mapa[d.userId] = mapa[d.userId] || {})[d.livroId] = d
+    })
+    return mapa
+  }, [docs])
+  return { progresso: docs, porLivro, porMembro, carregando }
 }
 
 // Assina o mural de recados, do mais recente ao mais antigo.
@@ -157,24 +168,4 @@ export function useComentarios() {
   }, [docs])
   // A lista plana alimenta a aba de novidades; o mapa, as threads.
   return { comentarios: docs, porAlvo, carregando }
-}
-
-// Assina o progresso do membro atual em TODOS os livros (para saber quais ele
-// já terminou, na aba de resenhas).
-export function useMeuProgresso(userId) {
-  const { docs, carregando } = useColecaoAoVivo(
-    () =>
-      userId
-        ? query(collection(db, 'progresso'), where('userId', '==', userId))
-        : null,
-    [userId]
-  )
-  const porLivro = useMemo(() => {
-    const mapa = {}
-    docs.forEach((p) => {
-      mapa[p.livroId] = p
-    })
-    return mapa
-  }, [docs])
-  return { porLivro, carregando }
 }

@@ -15,6 +15,7 @@ import {
 import { db } from '../firebase'
 import { normalizarCor, sortearCoresFaltantes, sortearCorLivre } from './cores'
 import { normalizarSerie, ordemValida } from './series'
+import { vencedorUserId } from './vencedor'
 
 // ---------- Usuários ----------
 
@@ -121,28 +122,16 @@ export async function encerrarLivro(livroId) {
   if (!livroSnap.exists()) return
   const livro = livroSnap.data()
 
-  // Descobre o vencedor: maior porcentagem no progresso desse livro
-  // (com fallback para paginaAtual/totalPaginas do modelo antigo).
+  // Descobre o vencedor: quem foi mais longe e, no empate, quem chegou antes.
   const progQuery = query(
     collection(db, 'progresso'),
     where('livroId', '==', livroId)
   )
   const progSnaps = await getDocs(progQuery)
-  let vencedorUserId = ''
-  let maiorPct = -1
-  progSnaps.forEach((p) => {
-    const d = p.data()
-    let pct = null
-    if (typeof d.porcentagem === 'number') {
-      pct = d.porcentagem
-    } else if (typeof d.paginaAtual === 'number' && livro.totalPaginas > 0) {
-      pct = (d.paginaAtual / livro.totalPaginas) * 100
-    }
-    if (pct != null && pct > maiorPct) {
-      maiorPct = pct
-      vencedorUserId = d.userId
-    }
-  })
+  const vencedor = vencedorUserId(
+    progSnaps.docs.map((p) => p.data()),
+    livro.totalPaginas || 0
+  )
 
   // Arquiva no histórico. A série vai junto: é o que mantém os volumes
   // reconhecíveis como uma coisa só depois de encerrados.
@@ -152,7 +141,7 @@ export async function encerrarLivro(livroId) {
     capaUrl: livro.capaUrl || '',
     serie: normalizarSerie(livro.serie),
     serieOrdem: ordemValida(livro.serieOrdem),
-    vencedorUserId,
+    vencedorUserId: vencedor,
     encerradoEm: serverTimestamp(),
   })
 
@@ -172,6 +161,19 @@ export async function encerrarLivroAtivo() {
   for (const livroSnap of snaps.docs) {
     await encerrarLivro(livroSnap.id)
   }
+}
+
+// Devolve à leitura um volume que havia sido encerrado. É o desfazer de
+// `encerrarLivro`: o livro volta ao lado dos outros da série e sai do
+// histórico, porque a rodada dele não acabou de verdade — encerrar um volume
+// enquanto metade do clube ainda o está lendo é fácil de fazer sem querer
+// (basta promover o da fila), e ficar sem volta seria cruel.
+//
+// Nada é reescrito: progresso, notas e resenhas nunca saíram do lugar, estão
+// gravados pelo `livroId`, que não muda.
+export async function reabrirLivro(livroId) {
+  await updateDoc(doc(db, 'livroAtual', livroId), { ativo: true, naFila: false })
+  await deleteDoc(doc(db, 'historicoLivros', livroId))
 }
 
 // ---------- Próximo livro (a fila do clube) ----------

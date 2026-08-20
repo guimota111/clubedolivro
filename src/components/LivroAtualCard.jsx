@@ -13,6 +13,7 @@ export default function LivroAtualCard({
   aoAbrirCadastro,
   aoEditar,
   aoAdicionarNaSerie,
+  aoReabrir,
 }) {
   if (!livro) {
     return (
@@ -30,9 +31,13 @@ export default function LivroAtualCard({
   }
 
   const serie = rotuloSerie(livro)
+  // Volume que o clube encerrou, mas que continua na estante da série: dá para
+  // reler as notas e a corrida dele — e, se foi encerrado cedo demais, devolvê-lo
+  // à leitura.
+  const encerrado = livro.ativo !== true
 
   return (
-    <section className="painel livro-atual">
+    <section className={`painel livro-atual${encerrado ? ' livro-encerrado' : ''}`}>
       {livro.capaUrl ? (
         <img className="capa" src={livro.capaUrl} alt={`Capa de ${livro.titulo}`} />
       ) : (
@@ -43,12 +48,28 @@ export default function LivroAtualCard({
       <div className="info">
         <div className="selo-secao" style={{ fontSize: '0.85rem', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
           <IconeLivroAberto size={16} />{' '}
-          {quantosAbertos > 1 ? 'Você está lendo' : 'Lendo agora'}
+          {encerrado
+            ? 'Volume encerrado'
+            : quantosAbertos > 1
+              ? 'Você está lendo'
+              : 'Lendo agora'}
         </div>
         {serie && <div className="livro-serie">{serie}</div>}
         <h3>{livro.titulo}</h3>
         {livro.autor && <div className="autor">{livro.autor}</div>}
+        {encerrado && (
+          <p className="texto-tenue livro-encerrado-nota">
+            O clube encerrou este volume — ele está no histórico. A corrida, as
+            notas e as resenhas dele continuam aqui, inteiras.
+          </p>
+        )}
         <div className="livro-atual-acoes">
+          {encerrado && aoReabrir && (
+            <button className="btn-texto" onClick={aoReabrir}>
+              <IconeLivroAberto size={14} />
+              Reabrir este volume
+            </button>
+          )}
           {aoEditar && (
             <button className="btn-texto" onClick={aoEditar}>
               <IconePena size={14} />
@@ -58,7 +79,7 @@ export default function LivroAtualCard({
           {/* Só faz sentido oferecer o "mais um volume" a quem já tem série: é
               ela que autoriza dois livros abertos ao mesmo tempo. Com vários
               abertos o convite já está no seletor, e repetir aqui seria ruído. */}
-          {aoAdicionarNaSerie && livro.serie && quantosAbertos < 2 && (
+          {!encerrado && aoAdicionarNaSerie && livro.serie && quantosAbertos < 2 && (
             <button className="btn-texto" onClick={aoAdicionarNaSerie}>
               <IconeMais size={14} />
               Abrir outro livro desta série

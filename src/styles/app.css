@@ -2769,3 +2769,33 @@ input[type='file'].escondido {
   padding-top: 1.1rem;
   border-top: 1px solid rgba(201, 162, 39, 0.25);
 }
+
+/* ---------- Volume encerrado, ainda na estante da série ---------- */
+
+/* Um volume que o clube encerrou não sai do trilho: fica ali, apagado e com o
+   selo, porque quem ainda o está lendo precisa achá-lo — e porque a conversa
+   dele continua valendo. */
+.livro-pastilha.encerrada {
+  opacity: 0.72;
+  border-style: dashed;
+}
+.livro-pastilha.encerrada:hover,
+.livro-pastilha.encerrada.ativa {
+  opacity: 1;
+}
+.livro-pastilha-encerrado {
+  color: var(--papel-tenue);
+  letter-spacing: 0.08em;
+}
+
+.livro-atual.livro-encerrado {
+  border-style: dashed;
+}
+.livro-atual.livro-encerrado .capa {
+  filter: grayscale(0.35);
+}
+.livro-encerrado-nota {
+  margin: 0.5rem 0 0;
+  font-size: 0.9rem;
+  max-width: 46ch;
+}

@@ -52,7 +52,10 @@ tipografia serifada e dourado como cor de destaque.
   progresso por último. Livro avulso (sem série) continua sendo um por vez.
   Quando o clube termina um volume antes dos outros, "Encerrar só este livro"
   (na edição do livro) o manda para o histórico com o vencedor da rodada e
-  deixa os demais abertos.
+  deixa os demais abertos. **Encerrado não é sumido:** o volume continua no
+  trilho da série, marcado como tal, com a corrida e as notas dele inteiras —
+  e "Reabrir este volume" o devolve à leitura (e o tira do histórico) quando
+  ele foi fechado cedo demais, com parte do clube ainda lendo.
 - **O próximo livro:** o clube lê um livro por vez, mas quem termina antes não
   fica parado. Ao cruzar os 100%, o leitor destrava uma área onde ele — junto
   com os outros que já terminaram — escolhe o **próximo** livro e começa a ler
@@ -83,7 +86,13 @@ tipografia serifada e dourado como cor de destaque.
   há quanto tempo a leitura começou. O começo vem de `dataInicio` (informável
   ao cadastrar/editar o livro) ou, na falta dele, de `iniciadoEm`.
 - **Mural de recados:** post-its que qualquer membro pode deixar.
-- **Histórico:** livros já lidos e quem venceu cada rodada.
+- **Histórico:** livros já lidos e quem venceu cada rodada. **Vence quem
+  chegou primeiro:** só a maior porcentagem não decide nada quando o clube
+  inteiro termina o livro — empatados em 100%, ganha quem cruzou a linha antes,
+  segundo a trilha de marcações do progresso (`src/lib/vencedor.js`). O
+  histórico apura o vencedor na hora de mostrar, e não confia no campo gravado
+  no fim da rodada: rodadas encerradas antes desta regra existir apareciam com
+  a coroa em quem por acaso o banco devolvia primeiro, e agora aparecem certas.
 
 ## Rodando localmente
 
@@ -184,11 +193,12 @@ src/
 │   ├── progresso24h.js      # histórico de leitura e ganho das últimas 24 h
 │   ├── atividades.js        # monta a aba de novidades a partir dos dados vivos
 │   ├── reacoes.js           # emojis e como descrevê-los por extenso
+│   ├── vencedor.js          # quem venceu a rodada: mais longe e, no empate, antes
 │   ├── series.js            # séries: chave, ordem dos volumes e quem entra junto
 │   └── formato.js           # datas, % e utilidades
 ├── hooks/
 │   ├── useColecaoAoVivo.js  # wrapper de onSnapshot
-│   ├── useDadosClube.js     # membros, livro atual, progresso, mural
+│   ├── useDadosClube.js     # membros, livros do clube, progresso, mural
 │   └── useFoco.js           # rola até o item apontado por um aviso
 ├── components/
 │   ├── Cadastro.jsx
@@ -238,7 +248,16 @@ validam apenas o formato.
 Nada disso muda a chave do que já existe: progresso, notas e resenhas são
 gravados por `livroId`, então cada volume tem naturalmente a sua corrida, as
 suas notas parciais (com o cadeado medindo a % *daquele* livro) e as suas
-resenhas.
+resenhas. É também por isso que encerrar e reabrir um volume custa um
+booleano: `encerrarLivro` grava o arquivo em `historicoLivros` e põe
+`ativo: false`; `reabrirLivro` desfaz os dois. Nenhum documento de leitura é
+tocado nas duas operações.
+
+As coleções `livroAtual` e `progresso` são assinadas **inteiras** (um documento
+por livro que o clube já leu; um por membro por livro). São poucos, e ter todos
+à mão é o que permite manter no trilho os volumes encerrados da série, desenhar
+a régua de cada pastilha e apurar o vencedor de rodadas antigas sem uma consulta
+por livro.
 
 O **próximo livro** mora na mesma coleção `livroAtual`, e é isso que faz a
 promoção não custar nada: ele nasce com `ativo: false` e `naFila: true`, já com
