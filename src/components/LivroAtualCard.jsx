@@ -1,7 +1,19 @@
-import { IconeLivro, IconeLivroAberto, IconePena } from './Icones'
+import { rotuloSerie } from '../lib/series'
+import { IconeLivro, IconeLivroAberto, IconePena, IconeMais } from './Icones'
 
-// Card do livro atual em destaque no topo — ou convite para cadastrar um.
-export default function LivroAtualCard({ livro, aoAbrirCadastro, aoEditar }) {
+// Card do livro em leitura, em destaque no topo — ou convite para cadastrar um.
+//
+// Quando o clube está numa série, este card mostra o volume ESCOLHIDO pelo
+// membro (o seletor logo abaixo troca qual é), e diz de qual série ele é: sem
+// isso, "O Prisioneiro do Céu" no topo e "O Jogo do Anjo" no de outra pessoa
+// pareceriam dois clubes diferentes.
+export default function LivroAtualCard({
+  livro,
+  quantosAbertos = 0,
+  aoAbrirCadastro,
+  aoEditar,
+  aoAdicionarNaSerie,
+}) {
   if (!livro) {
     return (
       <section className="painel sem-livro">
@@ -17,6 +29,8 @@ export default function LivroAtualCard({ livro, aoAbrirCadastro, aoEditar }) {
     )
   }
 
+  const serie = rotuloSerie(livro)
+
   return (
     <section className="painel livro-atual">
       {livro.capaUrl ? (
@@ -28,20 +42,29 @@ export default function LivroAtualCard({ livro, aoAbrirCadastro, aoEditar }) {
       )}
       <div className="info">
         <div className="selo-secao" style={{ fontSize: '0.85rem', letterSpacing: '0.12em', textTransform: 'uppercase' }}>
-          <IconeLivroAberto size={16} /> Lendo agora
+          <IconeLivroAberto size={16} />{' '}
+          {quantosAbertos > 1 ? 'Você está lendo' : 'Lendo agora'}
         </div>
+        {serie && <div className="livro-serie">{serie}</div>}
         <h3>{livro.titulo}</h3>
         {livro.autor && <div className="autor">{livro.autor}</div>}
-        {aoEditar && (
-          <button
-            className="btn-texto"
-            onClick={aoEditar}
-            style={{ marginTop: '0.6rem', display: 'inline-flex', alignItems: 'center', gap: '0.35em' }}
-          >
-            <IconePena size={14} />
-            Corrigir dados do livro
-          </button>
-        )}
+        <div className="livro-atual-acoes">
+          {aoEditar && (
+            <button className="btn-texto" onClick={aoEditar}>
+              <IconePena size={14} />
+              Corrigir dados do livro
+            </button>
+          )}
+          {/* Só faz sentido oferecer o "mais um volume" a quem já tem série: é
+              ela que autoriza dois livros abertos ao mesmo tempo. Com vários
+              abertos o convite já está no seletor, e repetir aqui seria ruído. */}
+          {aoAdicionarNaSerie && livro.serie && quantosAbertos < 2 && (
+            <button className="btn-texto" onClick={aoAdicionarNaSerie}>
+              <IconeMais size={14} />
+              Abrir outro livro desta série
+            </button>
+          )}
+        </div>
       </div>
     </section>
   )

@@ -24,6 +24,7 @@ export default function ProximoLivro({
   membros,
   livroAtual,
   proximo,
+  entraNaSerie = false,
   porUsuario,
   minhaPct,
   quantosTerminaram,
@@ -69,17 +70,24 @@ export default function ProximoLivro({
   }
 
   async function promover() {
+    // Sendo outro volume da mesma série, ele ENTRA AO LADO do que já está em
+    // leitura: ninguém é obrigado a largar o livro em que está para o clube
+    // avançar.
     const ok = window.confirm(
-      `Tornar “${proximo.titulo}” o livro do clube?\n\n` +
-        `“${livroAtual.titulo}” será encerrado e arquivado no histórico com o ` +
-        `vencedor da rodada. Quem já começou o novo mantém o progresso; quem ` +
-        `ainda não começou entra em 0%.`
+      entraNaSerie
+        ? `Abrir “${proximo.titulo}” para o clube?\n\n` +
+            `Ele é da mesma série, então entra ao lado de “${livroAtual.titulo}” — ` +
+            `nada é encerrado e quem ainda está no livro de agora continua nele.`
+        : `Tornar “${proximo.titulo}” o livro do clube?\n\n` +
+            `“${livroAtual.titulo}” será encerrado e arquivado no histórico com o ` +
+            `vencedor da rodada. Quem já começou o novo mantém o progresso; quem ` +
+            `ainda não começou entra em 0%.`
     )
     if (!ok) return
     setErro('')
     setOcupado('promover')
     try {
-      await promoverProximoLivro(proximo.id)
+      await promoverProximoLivro(proximo.id, { juntarASerie: entraNaSerie })
     } catch (err) {
       console.error(err)
       setErro('Não foi possível trocar o livro do clube. Tente novamente.')
@@ -177,7 +185,13 @@ export default function ProximoLivro({
               disabled={!!ocupado}
             >
               <IconeCoroa size={18} />
-              {ocupado === 'promover' ? 'Trocando…' : 'Tornar o livro do clube'}
+              {ocupado === 'promover'
+                ? entraNaSerie
+                  ? 'Abrindo…'
+                  : 'Trocando…'
+                : entraNaSerie
+                  ? 'Abrir junto com a série'
+                  : 'Tornar o livro do clube'}
             </button>
           </div>
           <div className="proximo-acoes-secundarias">
@@ -195,8 +209,19 @@ export default function ProximoLivro({
           <p className="texto-tenue proximo-rodape">
             Enquanto ele estiver na fila, o clube continua em{' '}
             <strong>{livroAtual.titulo}</strong> — a corrida lá em cima não muda.
-            Ao tornar este o livro do clube, o atual é arquivado no histórico e
-            todo mundo passa a correr por aqui.
+            {entraNaSerie ? (
+              <>
+                {' '}
+                Como ele é da mesma série, abri-lo para o clube não encerra nada:
+                os dois ficam disponíveis e cada um lê no seu ritmo.
+              </>
+            ) : (
+              <>
+                {' '}
+                Ao tornar este o livro do clube, o atual é arquivado no histórico
+                e todo mundo passa a correr por aqui.
+              </>
+            )}
           </p>
         </>
       )}

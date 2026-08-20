@@ -2594,3 +2594,178 @@ input[type='file'].escondido {
   .lido-acao { width: 100%; justify-content: center; }
   .proximo-acoes .btn { flex-basis: 100%; }
 }
+
+/* ======================================================================
+   Séries: vários livros abertos ao mesmo tempo
+   ====================================================================== */
+
+/* O nome da série, acima do título em qualquer cartão de livro. Discreto de
+   propósito: quem lê procura o título, a série só o situa. */
+.livro-serie {
+  font-family: var(--fonte-display);
+  font-style: italic;
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  color: var(--dourado-claro);
+  opacity: 0.85;
+  margin-bottom: 0.1rem;
+}
+
+.livro-atual-acoes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 1rem;
+  margin-top: 0.6rem;
+}
+.livro-atual-acoes .btn-texto {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+}
+
+/* Aviso de boas notícias: mesma caixa do aviso comum, em dourado em vez de
+   vermelho — aqui nada vai ser encerrado. */
+.aviso.aviso-bom {
+  border-color: rgba(201, 162, 39, 0.5);
+  background: rgba(201, 162, 39, 0.1);
+  color: var(--papel);
+}
+
+/* ---------- Trilho dos livros em leitura ---------- */
+
+.seletor-livros { margin-top: 1.2rem; }
+.seletor-livros-topo { margin-bottom: 0.9rem; }
+/* Nome de série é comprido ("O Cemitério dos Livros Esquecidos"): um corpo
+   menor evita que ele quebre em duas linhas e desencontre do ícone. */
+.seletor-livros-topo .secao-titulo {
+  margin-bottom: 0.3rem;
+  font-size: clamp(1.1rem, 4.5vw, 1.4rem);
+  align-items: flex-start;
+  text-align: center;
+}
+.seletor-livros-topo .secao-titulo svg { flex: none; margin-top: 0.15em; }
+.seletor-livros-topo p { margin: 0; font-size: 0.95rem; }
+
+/* Rola de lado no celular: com três ou quatro volumes, empilhar viraria uma
+   parede antes da corrida. */
+.livros-trilho {
+  display: flex;
+  gap: 0.7rem;
+  overflow-x: auto;
+  padding-bottom: 0.4rem;
+  scrollbar-width: thin;
+}
+
+.livro-pastilha {
+  flex: 1 1 190px;
+  min-width: 190px;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.6rem 0.75rem;
+  text-align: left;
+  border-radius: 8px;
+  border: 1px solid rgba(201, 162, 39, 0.28);
+  background: rgba(0, 0, 0, 0.24);
+  color: var(--papel-suave);
+  cursor: pointer;
+  transition: border-color var(--transicao), background var(--transicao),
+    color var(--transicao), transform var(--transicao);
+}
+.livro-pastilha:hover {
+  border-color: var(--dourado);
+  color: var(--papel);
+  transform: translateY(-1px);
+}
+.livro-pastilha.ativa {
+  border-color: var(--dourado);
+  background: linear-gradient(180deg, rgba(201, 162, 39, 0.18), rgba(0, 0, 0, 0.3));
+  color: var(--papel);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.45);
+}
+
+.livro-pastilha-capa {
+  width: 34px;
+  min-width: 34px;
+  aspect-ratio: 2 / 3;
+  object-fit: cover;
+  border-radius: 3px;
+  border: 1px solid rgba(201, 162, 39, 0.4);
+  background: var(--couro);
+}
+.livro-pastilha-capa-vazia {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--papel-tenue);
+}
+
+.livro-pastilha-dados {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1;
+}
+.livro-pastilha-volume {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--dourado-claro);
+}
+.livro-pastilha-titulo {
+  font-family: var(--fonte-titulo);
+  font-size: 1rem;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.livro-pastilha-meta {
+  font-size: 0.75rem;
+  color: var(--papel-tenue);
+}
+
+/* A régua é o progresso de QUEM ESTÁ OLHANDO — é o que responde "em qual eu
+   estou?" sem precisar abrir o livro. */
+.livro-pastilha-regua {
+  display: block;
+  height: 4px;
+  margin: 0.2rem 0 0.15rem;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.45);
+  overflow: hidden;
+}
+.livro-pastilha-regua-cheio {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  transition: width var(--transicao);
+}
+
+.livro-pastilha-adicionar {
+  flex: 0 1 190px;
+  justify-content: center;
+  border-style: dashed;
+  font-family: var(--fonte-titulo);
+  color: var(--dourado-claro);
+}
+
+/* Dois botões lado a lado embaixo da corrida: somar um volume ou trocar tudo. */
+.trocar-livro {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.7rem;
+}
+
+.notas-de-qual { margin-bottom: 1rem; }
+
+/* Encerrar um volume só, no fim do modal de edição: separado do "salvar" por
+   uma linha, porque é ação de outra natureza. */
+.encerrar-volume {
+  margin-top: 1.4rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid rgba(201, 162, 39, 0.25);
+}

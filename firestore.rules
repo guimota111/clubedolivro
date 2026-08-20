@@ -25,12 +25,25 @@ service cloud.firestore {
     // Livros do clube: o que está em leitura (`ativo`) e o que está na fila
     // para ser o próximo (`naFila`). Qualquer membro pode cadastrar, promover
     // o da fila ou encerrar.
+    //
+    // `serie`/`serieOrdem` ligam os volumes de uma mesma série — é o que
+    // permite mais de um livro ativo ao mesmo tempo. A regra de "só juntos se
+    // forem da mesma série" é aplicada no cliente, como todo o resto: aqui só
+    // se valida o formato.
+    function serieValida(dados) {
+      return (!('serie' in dados.keys()) || (dados.serie is string && dados.serie.size() <= 140))
+             && (!('serieOrdem' in dados.keys())
+                 || dados.serieOrdem == null
+                 || (dados.serieOrdem is int && dados.serieOrdem > 0 && dados.serieOrdem <= 999));
+    }
+
     match /livroAtual/{livroId} {
       allow read: if true;
       allow write: if request.resource.data.titulo is string
                    && request.resource.data.titulo.size() > 0
                    && (!('naFila' in request.resource.data.keys())
-                       || request.resource.data.naFila is bool);
+                       || request.resource.data.naFila is bool)
+                   && serieValida(request.resource.data);
       allow delete: if true;
     }
 

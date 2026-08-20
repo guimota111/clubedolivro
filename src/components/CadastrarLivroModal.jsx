@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import Modal from './Modal'
 import { cadastrarLivro, cadastrarProximoLivro } from '../lib/db'
 import { enviarImagem } from '../lib/storage'
+import { chaveSerie, podeEntrarJunto, serieEmLeitura } from '../lib/series'
 import { IconeLivro } from './Icones'
 
 // Formulário de livro do clube, nos dois modos em que ele é usado:
@@ -10,16 +11,27 @@ import { IconeLivro } from './Icones'
 //   'fila'  — o PRÓXIMO livro, escolhido por quem já terminou o de agora. Ele
 //             entra sem encerrar nada: o clube segue no livro atual até alguém
 //             promover este na área do próximo livro.
+//
+// A série é o que decide o destino do que já está em leitura. Cadastrar um
+// livro da MESMA série dos que estão abertos não encerra nada: ele entra ao
+// lado deles, e o clube passa a ler os dois (ou três) ao mesmo tempo. Qualquer
+// outro livro é uma rodada nova — e aí a troca é a de sempre.
 export default function CadastrarLivroModal({
   modo = 'clube',
-  temLivroAtual,
+  livrosAtuais = [],
   proximoNaFila,
+  seriesConhecidas = [],
+  serieInicial = '',
   onFechar,
   aoCadastrar,
 }) {
   const paraFila = modo === 'fila'
+  const temLivroAtual = livrosAtuais.length > 0
+  const serieDaCasa = serieEmLeitura(livrosAtuais)
   const [titulo, setTitulo] = useState('')
   const [autor, setAutor] = useState('')
+  const [serie, setSerie] = useState(serieInicial)
+  const [serieOrdem, setSerieOrdem] = useState('')
   const [dataLimite, setDataLimite] = useState('')
   const [dataInicio, setDataInicio] = useState('')
   const [capaUrl, setCapaUrl] = useState('')
@@ -28,6 +40,12 @@ export default function CadastrarLivroModal({
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState('')
   const inputFile = useRef(null)
+
+  // O livro entra AO LADO do que já está aberto quando é outro volume da mesma
+  // série. É a única forma de o clube ter vários livros ativos — e a razão de
+  // este formulário ter dois botões diferentes no fim.
+  const juntarASerie =
+    !paraFila && temLivroAtual && !!chaveSerie(serie) && podeEntrarJunto(livrosAtuais, serie)
 
   function aoEscolherCapa(e) {
     const f = e.target.files?.[0]
@@ -66,10 +84,12 @@ export default function CadastrarLivroModal({
         capaUrl: urlFinal,
         dataLimite: dataLimite || null,
         dataInicio: dataInicio || null,
+        serie: serie.trim(),
+        serieOrdem,
       }
       const livroId = paraFila
         ? await cadastrarProximoLivro(dados)
-        : await cadastrarLivro(dados)
+        : await cadastrarLivro(dados, { juntarASerie })
       aoCadastrar?.(livroId)
       onFechar()
     } catch (err) {
@@ -93,11 +113,37 @@ export default function CadastrarLivroModal({
         </p>
       ) : (
         <>
-          {temLivroAtual && (
-            <div className="aviso">
-              Já existe um livro em leitura. Ao cadastrar um novo, o atual será
-              encerrado e arquivado no histórico, e o progresso de todos recomeça do zero.
+          {juntarASerie ? (
+            <div className="aviso aviso-bom">
+              Este livro é de <strong>{serieDaCasa}</strong>, a mesma série que o
+              clube já está lendo: ele entra <strong>ao lado</strong> de{' '}
+              {listarTitulos(livrosAtuais)}. Nada é encerrado e ninguém perde
+              progresso — quem quiser passa a alternar entre os livros lá em cima.
             </div>
+          ) : (
+            temLivroAtual && (
+              <div className="aviso">
+                O clube já está lendo {listarTitulos(livrosAtuais)}. Ao cadastrar
+                um livro de fora da série, {livrosAtuais.length > 1 ? 'esses livros são' : 'esse livro é'}{' '}
+                encerrado e arquivado no histórico, e o progresso de todos recomeça do zero.
+                {serieDaCasa ? (
+                  <>
+                    {' '}
+                    Se você quer só emendar outro volume, escreva{' '}
+                    <strong>{serieDaCasa}</strong> no campo de série — aí os dois
+                    ficam abertos ao mesmo tempo.
+                  </>
+                ) : (
+                  <>
+                    {' '}
+                    Se os dois são da mesma série e você quer lê-los ao mesmo
+                    tempo, primeiro informe a série em{' '}
+                    {listarTitulos(livrosAtuais)} (em “Corrigir dados do livro”) e
+                    depois cadastre este com a mesma série.
+                  </>
+                )}
+              </div>
+            )
           )}
           {proximoNaFila && (
             <div className="aviso">
@@ -133,6 +179,48 @@ export default function CadastrarLivroModal({
             onChange={(e) => setAutor(e.target.value)}
             placeholder="Ex.: Machado de Assis"
           />
+        </div>
+
+        <div className="campo">
+          <label htmlFor="serie">Série (opcional)</label>
+          <input
+            id="serie"
+            type="text"
+            list="series-do-clube"
+            value={serie}
+            maxLength={140}
+            onChange={(e) => setSerie(e.target.value)}
+            placeholder="Ex.: O Cemitério dos Livros Esquecidos"
+          />
+          <datalist id="series-do-clube">
+            {seriesConhecidas.map((nome) => (
+              <option key={nome} value={nome} />
+            ))}
+          </datalist>
+          <span className="campo-dica">
+            {paraFila
+              ? 'Sendo da mesma série dos livros em leitura, ele poderá entrar ao lado deles em vez de encerrá-los.'
+              : juntarASerie
+                ? 'Mesma série do que já está aberto: os livros vão conviver.'
+                : 'Livros da mesma série podem ser lidos ao mesmo tempo pelo clube — é o que deixa cada um no seu volume.'}
+          </span>
+        </div>
+
+        <div className="campo">
+          <label htmlFor="serie-ordem">Número na série (opcional)</label>
+          <input
+            id="serie-ordem"
+            type="number"
+            min="1"
+            max="999"
+            value={serieOrdem}
+            onChange={(e) => setSerieOrdem(e.target.value)}
+            placeholder="Ex.: 2"
+            style={{ maxWidth: 140 }}
+          />
+          <span className="campo-dica">
+            É por ele que os volumes aparecem na ordem certa.
+          </span>
         </div>
 
         <div className="campo">
@@ -220,11 +308,21 @@ export default function CadastrarLivroModal({
             ? 'Salvando…'
             : paraFila
               ? 'Colocar na fila'
-              : temLivroAtual
-                ? 'Encerrar atual e iniciar novo'
-                : 'Iniciar leitura'}
+              : juntarASerie
+                ? 'Adicionar à série'
+                : temLivroAtual
+                  ? 'Encerrar o que está aberto e iniciar novo'
+                  : 'Iniciar leitura'}
         </button>
       </form>
     </Modal>
   )
+}
+
+// "A Sombra do Vento e O Jogo do Anjo" — a lista dos livros abertos escrita
+// como se fala, para caber no meio de uma frase de aviso.
+function listarTitulos(livros) {
+  const titulos = livros.map((l) => `“${l.titulo}”`)
+  if (titulos.length <= 1) return titulos[0] || ''
+  return `${titulos.slice(0, -1).join(', ')} e ${titulos[titulos.length - 1]}`
 }
