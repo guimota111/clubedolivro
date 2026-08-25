@@ -113,11 +113,16 @@ npm run preview   # pré-visualiza o build
 
 ## Deploy (Firebase Hosting)
 
+O site no ar é <https://clube-do-livro-16073.web.app> (o mesmo conteúdo também
+responde em <https://clube-do-livro-16073.firebaseapp.com>). É esse endereço que
+o clube usa — ele é atualizado a cada publicação.
+
 ### Automático (GitHub Actions)
 
 O workflow `.github/workflows/publicar.yml` publica **o site e as regras** a
-cada mudança na branch principal. Também dá para rodar na mão pelo navegador,
-sem terminal: aba **Actions** → **Publicar no Firebase** → **Run workflow**.
+cada mudança na branch principal (`main`). Também dá para rodar na mão pelo
+navegador, sem terminal: aba **Actions** → **Publicar no Firebase** →
+**Run workflow**.
 
 Site e regras vão juntos de propósito — assim nunca fica uma regra nova no ar
 sem o código que a usa (ou o contrário).
@@ -137,7 +142,7 @@ sem o código que a usa (ou o contrário).
 O papel *Firebase Admin* cobre Hosting e regras sem dar acesso ao resto do
 Google Cloud. A chave é um segredo de verdade: não a coloque em nenhum commit —
 os secrets do GitHub não são expostos em PRs vindos de forks, e este workflow só
-roda na branch principal ou quando alguém com acesso de escrita o dispara.
+roda na branch principal (`main`) ou quando alguém com acesso de escrita o dispara.
 
 ### Manual (Firebase CLI)
 

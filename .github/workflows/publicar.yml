@@ -1,6 +1,6 @@
 # Publica o site no Firebase Hosting e as regras do Firestore/Storage.
 #
-# Dispara sozinho a cada mudança na branch principal e também pode ser rodado
+# Dispara sozinho a cada mudança na branch principal (`main`) e também pode ser rodado
 # na mão pelo GitHub (aba "Actions" -> "Publicar no Firebase" -> "Run workflow"),
 # sem precisar de terminal.
 #
@@ -11,7 +11,7 @@ name: Publicar no Firebase
 
 on:
   push:
-    branches: [claude/clube-do-livro-spec-dkjmgh]
+    branches: [main]
   workflow_dispatch:
 
 # Só uma publicação por vez: se dois merges caírem juntos, o mais novo espera
