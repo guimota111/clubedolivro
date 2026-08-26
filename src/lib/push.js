@@ -25,7 +25,7 @@ import { db } from '../firebase'
 // isso em vez de oferecer um botão que não faz nada.
 
 // Chave pública do par VAPID, gerada por `node worker/gerar-chaves.mjs`.
-const CHAVE_VAPID = ''
+const CHAVE_VAPID = 'BOZKW-IGYa7WMH2fta3Fgl5_JU0G-sVsktXcTPgGsQErC60eFAF_5jhbSJAV9vR-_yAudRybkpXbNOSybvZOR68'
 // Endereço do worker publicado, ex.: 'https://patoteca-avisos.SEU-USUARIO.workers.dev'
 const ENVIO = ''
 // Mesmo valor do secret `TOKEN_DE_ENVIO` do worker. Ele viaja no bundle do

@@ -14,7 +14,7 @@ compatibility_date = "2024-11-01"
 PROJETO_FIREBASE = "clube-do-livro-16073"
 CHAVE_FIREBASE = "AIzaSyC13IYCYsIJohGhmEj-kCQixQsA49Dr4d8"
 # Chave PÚBLICA do par VAPID (a mesma que está em src/lib/push.js).
-VAPID_PUBLICA = ""
+VAPID_PUBLICA = "BOZKW-IGYa7WMH2fta3Fgl5_JU0G-sVsktXcTPgGsQErC60eFAF_5jhbSJAV9vR-_yAudRybkpXbNOSybvZOR68"
 # Endereço de contato exigido pelo padrão: é para onde a Apple ou o Google
 # escrevem se algo der errado com os seus envios.
 CONTATO = "mailto:guimota1@gmail.com"
