@@ -1,17 +1,29 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useFoco } from '../hooks/useFoco'
 import { salvarResenha } from '../lib/db'
 import { anunciar, meuNome } from '../lib/push'
 import { textoDaResenha } from '../lib/atividades'
 import { pctDoProgresso, formatarData, inicial } from '../lib/formato'
 import { rotuloSerie } from '../lib/series'
-import { IconeLivro, IconePena, IconeLivroAberto } from './Icones'
+import {
+  IconeLivro,
+  IconePena,
+  IconeLivroAberto,
+  IconeCadeado,
+  IconeSeta,
+} from './Icones'
 import { useVerFoto } from './FotoContext'
 import Comentarios from './Comentarios'
 
-// Aba de Resenhas: liberada por livro para quem chegou a 100%.
-// Junta os livros em leitura (vários, quando o clube está numa série), o que
-// está na fila e os já encerrados no histórico.
+// Aba de Resenhas, em dois andares.
+//
+// A PRATELEIRA mostra as capas de todos os livros do clube. Quem terminou um
+// livro entra nele; quem não terminou vê o cadeado e o quanto falta.
+//
+// Escolhido um livro, a tela vira SÓ dele: o formulário e as resenhas daquele
+// título. Uma lista única com tudo junto ficava confusa — as resenhas de três
+// livros diferentes, uma embaixo da outra, sem que ninguém tivesse pedido para
+// ler nenhuma delas.
 export default function Resenhas({
   userId,
   livrosAtuais = [],
@@ -23,9 +35,6 @@ export default function Resenhas({
   membrosPorId,
   foco,
 }) {
-  // Quem veio da estante clicando num livro chega com ele em foco.
-  const livroEmFoco = useFoco(foco, 'livro')
-
   // Monta a lista de livros "resenhaveis": os em leitura + fila + histórico
   // (sem duplicar). O da fila entra porque quem já o terminou tem o que dizer,
   // mesmo antes de ele virar o livro oficial do clube.
@@ -51,6 +60,22 @@ export default function Resenhas({
     return lista
   }, [livrosAtuais, proximo, historico])
 
+  const [escolhidoId, setEscolhidoId] = useState(null)
+
+  // Quem chega por um aviso ou pela estante já vem com um livro em mente: a
+  // prateleira sai da frente e a tela abre direto nele. `livroId` acompanha
+  // todo destino que aponta para cá (ver `lib/atividades.js`); um destino
+  // antigo, sem ele, ao menos abre a prateleira.
+  useEffect(() => {
+    if (!foco || foco.aba !== 'resenhas') return
+    const alvo = foco.tipo === 'livro' ? foco.id : foco.livroId
+    if (alvo) setEscolhidoId(alvo)
+  }, [foco])
+
+  // O livro escolhido pode sair do ar (o clube reabriu um volume, por exemplo).
+  // Aí a prateleira volta, em vez de a tela ficar em branco.
+  const escolhido = livros.find((l) => l.id === escolhidoId) || null
+
   if (!livros.length) {
     return (
       <section className="painel">
@@ -62,81 +87,192 @@ export default function Resenhas({
     )
   }
 
-  return (
-    <div className="resenhas-view">
-      {livros.map((livro) => {
-        const minhaPct = pctDoProgresso(
-          meuProgressoPorLivro[livro.id],
-          livro.totalPaginas || 0
-        )
-        const terminei = minhaPct >= 100
-        const resenhas = resenhasPorLivro[livro.id] || []
-        const minhaResenha = resenhas.find((r) => r.userId === userId)
-        return (
-          <section
-            id={`foco-livro-${livro.id}`}
-            className={`painel resenha-livro${livroEmFoco === livro.id ? ' em-foco' : ''}`}
-            key={livro.id}
-          >
-            <div className="resenha-livro-topo">
-              {livro.capaUrl ? (
-                <img className="capinha" src={livro.capaUrl} alt={`Capa de ${livro.titulo}`} />
-              ) : (
-                <div className="capinha capinha-vazia">
-                  <IconeLivro size={20} />
-                </div>
-              )}
-              <div>
-                {livro.serie && <div className="livro-serie">{livro.serie}</div>}
-                <h3 style={{ margin: 0 }}>{livro.titulo}</h3>
-                {livro.autor && <div className="autor">{livro.autor}</div>}
-                <span
-                  className={`resenha-selo${
-                    livro.situacao === 'atual'
-                      ? ' selo-atual'
-                      : livro.situacao === 'fila'
-                        ? ' selo-fila'
-                        : ''
-                  }`}
-                >
-                  {livro.situacao === 'atual'
-                    ? 'Lendo agora'
-                    : livro.situacao === 'fila'
-                      ? 'Na fila'
-                      : 'Já encerrado'}
-                </span>
-              </div>
-            </div>
+  if (escolhido) {
+    return (
+      <LivroEscolhido
+        livro={escolhido}
+        userId={userId}
+        minhaPct={pctDoProgresso(
+          meuProgressoPorLivro[escolhido.id],
+          escolhido.totalPaginas || 0
+        )}
+        resenhas={resenhasPorLivro[escolhido.id] || []}
+        comentariosPorAlvo={comentariosPorAlvo}
+        membrosPorId={membrosPorId}
+        foco={foco}
+        aoVoltar={() => setEscolhidoId(null)}
+      />
+    )
+  }
 
-            {!terminei ? (
-              <div className="resenha-trancada">
-                <IconeLivroAberto size={20} />
-                <span>
-                  As resenhas deste livro liberam quando você termina (100%). Você
-                  está em {minhaPct}%.
-                </span>
-              </div>
-            ) : (
-              <>
-                <FormResenha
-                  userId={userId}
-                  livroId={livro.id}
-                  tituloDoLivro={livro.titulo}
-                  resenhaExistente={minhaResenha}
-                />
-                <ListaResenhas
-                  resenhas={resenhas}
-                  membrosPorId={membrosPorId}
-                  comentariosPorAlvo={comentariosPorAlvo}
-                  meuUserId={userId}
-                  foco={foco}
-                />
-              </>
+  return (
+    <section className="painel estante-resenhas">
+      <h2 className="secao-titulo">
+        <IconePena size={22} /> Resenhas
+      </h2>
+      <p className="texto-suave" style={{ marginTop: 0 }}>
+        Escolha um livro para ler e escrever as resenhas dele. Cada um abre
+        quando você chega ao fim — assim ninguém tropeça em spoiler.
+      </p>
+
+      <div className="estante-resenhas-capas">
+        {livros.map((livro) => (
+          <CapaNaPrateleira
+            key={livro.id}
+            livro={livro}
+            userId={userId}
+            minhaPct={pctDoProgresso(
+              meuProgressoPorLivro[livro.id],
+              livro.totalPaginas || 0
             )}
-          </section>
-        )
-      })}
+            resenhas={resenhasPorLivro[livro.id] || []}
+            aoEscolher={() => setEscolhidoId(livro.id)}
+          />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+// ---------- A prateleira ----------
+
+function Capa({ livro }) {
+  return livro.capaUrl ? (
+    <img src={livro.capaUrl} alt={`Capa de ${livro.titulo}`} />
+  ) : (
+    <div className="capa-sem-imagem">
+      <IconeLivro size={28} />
     </div>
+  )
+}
+
+function SeloDaSituacao({ situacao }) {
+  if (situacao === 'atual') {
+    return <span className="resenha-selo selo-atual">Lendo agora</span>
+  }
+  if (situacao === 'fila') {
+    return <span className="resenha-selo selo-fila">Na fila</span>
+  }
+  return null
+}
+
+function CapaNaPrateleira({ livro, userId, minhaPct, resenhas, aoEscolher }) {
+  const terminei = minhaPct >= 100
+  const minhaResenha = resenhas.find((r) => r.userId === userId)
+
+  const legenda = (
+    <div className="capa-legenda">
+      {livro.serie && <div className="livro-serie">{livro.serie}</div>}
+      <strong className="capa-titulo">{livro.titulo}</strong>
+      {livro.autor && <div className="autor capa-autor">{livro.autor}</div>}
+      <SeloDaSituacao situacao={livro.situacao} />
+      <div className="capa-meta">
+        {!terminei ? (
+          `Abre aos 100% — você está em ${minhaPct}%`
+        ) : resenhas.length === 0 ? (
+          'Ninguém resenhou ainda'
+        ) : (
+          <>
+            {resenhas.length === 1 ? '1 resenha' : `${resenhas.length} resenhas`}
+            {minhaResenha && <span className="capa-minha"> · a sua está lá</span>}
+          </>
+        )}
+      </div>
+    </div>
+  )
+
+  // Livro trancado não é botão: um botão desativado não responde ao toque e
+  // deixa a pessoa achando que a tela travou. O cadeado e a porcentagem já
+  // dizem o que está acontecendo e o que falta.
+  if (!terminei) {
+    return (
+      <div className="capa-item capa-trancada">
+        <div className="capa-moldura">
+          <Capa livro={livro} />
+          <div className="capa-tranca">
+            <IconeCadeado size={26} />
+            <span>{minhaPct}%</span>
+          </div>
+        </div>
+        {legenda}
+      </div>
+    )
+  }
+
+  return (
+    <button type="button" className="capa-item" onClick={aoEscolher}>
+      <div className="capa-moldura">
+        <Capa livro={livro} />
+      </div>
+      {legenda}
+    </button>
+  )
+}
+
+// ---------- O livro escolhido ----------
+
+function LivroEscolhido({
+  livro,
+  userId,
+  minhaPct,
+  resenhas,
+  comentariosPorAlvo,
+  membrosPorId,
+  foco,
+  aoVoltar,
+}) {
+  const minhaResenha = resenhas.find((r) => r.userId === userId)
+  const terminei = minhaPct >= 100
+
+  return (
+    <section className="painel resenha-livro">
+      <button type="button" className="btn-texto voltar-prateleira" onClick={aoVoltar}>
+        <IconeSeta size={16} aria-hidden="true" />
+        Todos os livros
+      </button>
+
+      <div className="resenha-livro-topo">
+        {livro.capaUrl ? (
+          <img className="capinha" src={livro.capaUrl} alt={`Capa de ${livro.titulo}`} />
+        ) : (
+          <div className="capinha capinha-vazia">
+            <IconeLivro size={20} />
+          </div>
+        )}
+        <div>
+          {livro.serie && <div className="livro-serie">{livro.serie}</div>}
+          <h3 style={{ margin: 0 }}>{livro.titulo}</h3>
+          {livro.autor && <div className="autor">{livro.autor}</div>}
+          <SeloDaSituacao situacao={livro.situacao} />
+        </div>
+      </div>
+
+      {!terminei ? (
+        <div className="resenha-trancada">
+          <IconeLivroAberto size={20} />
+          <span>
+            As resenhas deste livro liberam quando você termina (100%). Você está
+            em {minhaPct}%.
+          </span>
+        </div>
+      ) : (
+        <>
+          <FormResenha
+            userId={userId}
+            livroId={livro.id}
+            tituloDoLivro={livro.titulo}
+            resenhaExistente={minhaResenha}
+          />
+          <ListaResenhas
+            resenhas={resenhas}
+            membrosPorId={membrosPorId}
+            comentariosPorAlvo={comentariosPorAlvo}
+            meuUserId={userId}
+            foco={foco}
+          />
+        </>
+      )}
+    </section>
   )
 }
 

@@ -48,7 +48,15 @@ function destinoDoComentario(c, notasNaTela, resenhasPorId, livrosResenhaveis) {
   if (c.alvoTipo === 'resenha') {
     const alvo = resenhasPorId[c.alvoId]
     if (!alvo || !livrosResenhaveis.has(alvo.livroId)) return null
-    return { aba: 'resenhas', tipo: 'resenha', id: c.alvoId, comentarios: true }
+    // `livroId` diz à aba de resenhas qual livro abrir: ela mostra uma
+    // prateleira de capas, e sem isso o aviso pararia na prateleira.
+    return {
+      aba: 'resenhas',
+      tipo: 'resenha',
+      id: c.alvoId,
+      livroId: alvo.livroId,
+      comentarios: true,
+    }
   }
   const nota = notasNaTela.get(c.alvoId)
   if (!nota) return null
@@ -130,7 +138,7 @@ export function montarAtividades({
       emoji: '📝',
       texto: textoDaResenha(nomeDe(membrosPorId, r.userId), titulo),
       destino: livrosResenhaveis.has(r.livroId)
-        ? { aba: 'resenhas', tipo: 'resenha', id: r.id }
+        ? { aba: 'resenhas', tipo: 'resenha', id: r.id, livroId: r.livroId }
         : null,
     })
   })
