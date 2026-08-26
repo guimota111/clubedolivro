@@ -27,11 +27,11 @@ import { db } from '../firebase'
 // Chave pública do par VAPID, gerada por `node worker/gerar-chaves.mjs`.
 const CHAVE_VAPID = 'BOZKW-IGYa7WMH2fta3Fgl5_JU0G-sVsktXcTPgGsQErC60eFAF_5jhbSJAV9vR-_yAudRybkpXbNOSybvZOR68'
 // Endereço do worker publicado, ex.: 'https://patoteca-avisos.SEU-USUARIO.workers.dev'
-const ENVIO = ''
+const ENVIO = 'https://patoteca-avisos.guimota1.workers.dev'
 // Mesmo valor do secret `TOKEN_DE_ENVIO` do worker. Ele viaja no bundle do
 // site, então não é senha: serve para o worker ignorar o tráfego de quem
 // simplesmente achou a URL, não para impedir quem lê este arquivo.
-const TOKEN = ''
+const TOKEN = 'pato-le-livro-2026'
 
 // ---------- Quem está escrevendo ----------
 //
