@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useFoco } from '../hooks/useFoco'
 import { salvarNota, atualizarNota, excluirNota } from '../lib/db'
+import { anunciar, meuNome } from '../lib/push'
+import { textoDaNota } from '../lib/atividades'
 import { calcularPct, limitarPct, formatarData, inicial, posicaoDaNota } from '../lib/formato'
 import { IconeMarcador, IconePena, IconeSeta, DivisoriaOrnamentada } from './Icones'
 import { useVerFoto } from './FotoContext'
@@ -183,9 +185,12 @@ export default function NotasParciais({
     setErro('')
     try {
       if (editandoId) {
+        // Editar não avisa ninguém: o clube já foi avisado quando a nota
+        // nasceu, e um retoque de vírgula não merece uma notificação.
         await atualizarNota(editandoId, dados)
       } else {
-        await salvarNota(userId, livro.id, dados)
+        const notaId = await salvarNota(userId, livro.id, dados)
+        anunciar(`nota-${notaId}`, textoDaNota(dados, meuNome(), livro.titulo))
       }
       limpar()
     } catch (err) {

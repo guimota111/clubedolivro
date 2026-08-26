@@ -97,7 +97,7 @@ export default function Cadastro({ userId, aoConcluir }) {
           <IconeLivroAberto size={52} />
         </div>
         <h1 className="centro" style={{ color: 'var(--dourado-claro)' }}>
-          Clube do Livro
+          Patoteca
         </h1>
         <p className="centro texto-suave" style={{ fontStyle: 'italic', marginTop: 0 }}>
           Junte-se à leitura. Ocupe seu lugar na estante.

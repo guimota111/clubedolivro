@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useFoco } from '../hooks/useFoco'
 import { salvarResenha } from '../lib/db'
+import { anunciar, meuNome } from '../lib/push'
+import { textoDaResenha } from '../lib/atividades'
 import { pctDoProgresso, formatarData, inicial } from '../lib/formato'
 import { rotuloSerie } from '../lib/series'
 import { IconeLivro, IconePena, IconeLivroAberto } from './Icones'
@@ -119,6 +121,7 @@ export default function Resenhas({
                 <FormResenha
                   userId={userId}
                   livroId={livro.id}
+                  tituloDoLivro={livro.titulo}
                   resenhaExistente={minhaResenha}
                 />
                 <ListaResenhas
@@ -158,7 +161,7 @@ function Estrelas({ valor, onChange, leitura = false }) {
   )
 }
 
-function FormResenha({ userId, livroId, resenhaExistente }) {
+function FormResenha({ userId, livroId, tituloDoLivro, resenhaExistente }) {
   const [texto, setTexto] = useState(resenhaExistente?.texto || '')
   const [nota, setNota] = useState(resenhaExistente?.nota || 0)
   const [salvando, setSalvando] = useState(false)
@@ -176,6 +179,14 @@ function FormResenha({ userId, livroId, resenhaExistente }) {
     setErro('')
     try {
       await salvarResenha(userId, livroId, { texto: limpo.slice(0, 4999), nota })
+      // Só a primeira versão avisa o clube. Reescrever a própria resenha é
+      // comum e não é novidade para ninguém.
+      if (!resenhaExistente) {
+        anunciar(
+          `resenha-${userId}_${livroId}`,
+          textoDaResenha(meuNome(), tituloDoLivro)
+        )
+      }
       setOk(true)
       setTimeout(() => setOk(false), 2500)
     } catch (err) {

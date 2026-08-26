@@ -277,7 +277,7 @@ export async function salvarNota(
   livroId,
   { texto, emoji, desbloqueioPct, desbloqueioTipo, desbloqueioValor, totalPaginas }
 ) {
-  await addDoc(collection(db, 'notas'), {
+  const ref = await addDoc(collection(db, 'notas'), {
     userId,
     livroId,
     texto,
@@ -289,6 +289,7 @@ export async function salvarNota(
     totalPaginas: totalPaginas || null,
     criadoEm: serverTimestamp(),
   })
+  return ref.id
 }
 
 // Edita uma nota existente (apenas o autor, validado no cliente + regras).
@@ -311,23 +312,25 @@ export async function excluirNota(notaId) {
 
 // Um comentário aponta para um "alvo" (uma resenha ou uma nota) pelo id.
 export async function publicarComentario(userId, { alvoTipo, alvoId, texto }) {
-  await addDoc(collection(db, 'comentarios'), {
+  const ref = await addDoc(collection(db, 'comentarios'), {
     userId,
     alvoTipo, // 'resenha' | 'nota'
     alvoId,
     texto,
     criadoEm: serverTimestamp(),
   })
+  return ref.id
 }
 
 // ---------- Mural ----------
 
 export async function publicarRecado(userId, texto) {
-  await addDoc(collection(db, 'mural'), {
+  const ref = await addDoc(collection(db, 'mural'), {
     userId,
     texto,
     criadoEm: serverTimestamp(),
   })
+  return ref.id
 }
 
 // ---------- Histórico ----------

@@ -114,5 +114,30 @@ service cloud.firestore {
       allow read: if true;
       allow write: if true;
     }
+
+    // Inscrições de aviso no celular: uma por aparelho que ligou as
+    // notificações. O id do documento é o resumo do `endpoint`, então o mesmo
+    // aparelho reinscrevendo sobrescreve o próprio registro.
+    //
+    // A leitura é aberta porque quem lê daqui é o worker que entrega os avisos
+    // (`worker/index.js`), e ele usa a mesma chave pública do site. Isso não
+    // deixa ninguém mandar notificação para o clube: sem a chave privada VAPID,
+    // que só existe no worker, o serviço de push recusa a entrega.
+    //
+    // `delete` liberado porque duas pessoas precisam apagar: o membro que
+    // desliga os avisos e o worker, quando o serviço de push responde que a
+    // inscrição morreu.
+    match /inscricoesPush/{inscricaoId} {
+      allow read: if true;
+      allow write: if request.resource.data.userId is string
+                   && request.resource.data.endpoint is string
+                   && request.resource.data.endpoint.matches('^https://.*')
+                   && request.resource.data.endpoint.size() < 2000
+                   && request.resource.data.p256dh is string
+                   && request.resource.data.p256dh.size() < 200
+                   && request.resource.data.auth is string
+                   && request.resource.data.auth.size() < 100;
+      allow delete: if true;
+    }
   }
 }

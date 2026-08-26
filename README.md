@@ -1,6 +1,6 @@
-# 📖 Clube do Livro
+# 🦆 Patoteca
 
-Site para um clube do livro entre amigos, onde todos leem o mesmo livro ao mesmo
+Site para um clube do livro entre amigos — a Patoteca —, onde todos leem o mesmo livro ao mesmo
 tempo — ou os vários volumes de uma mesma série — e competem visualmente para
 ver quem avança mais rápido, sem login/senha.
 Tudo gira em torno de uma **estante viva** que mostra o progresso de cada membro em
@@ -15,6 +15,9 @@ tipografia serifada e dourado como cor de destaque.
 - **Dados:** Firebase Firestore (tempo real via `onSnapshot`)
 - **Imagens:** Firebase Storage (avatares e capas)
 - **Hospedagem:** Firebase Hosting
+- **App instalável (PWA):** manifest + service worker, para ficar na tela de
+  início do celular como um app de verdade
+- **Avisos no celular:** Web Push, entregue por um Cloudflare Worker (`worker/`)
 - **Sem Firebase Authentication** — a identidade é um UUID salvo no `localStorage`
   do navegador, associado a um documento em `users/{userId}`.
 
@@ -94,6 +97,11 @@ tipografia serifada e dourado como cor de destaque.
   no fim da rodada: rodadas encerradas antes desta regra existir apareciam com
   a coroa em quem por acaso o banco devolvia primeiro, e agora aparecem certas.
 
+- **Avisos no celular:** quem quiser recebe uma notificação quando alguém deixa
+  uma nota, comenta, escreve uma resenha, termina um livro ou o clube começa
+  uma leitura nova. O toque na notificação abre o app exatamente no que ela
+  conta. Liga-se por aparelho, no "Editar perfil". Detalhes abaixo.
+
 ## Rodando localmente
 
 ```bash
@@ -172,12 +180,56 @@ leitura para todo mundo, e a chave usada é a mesma chave web pública do site.
 Só lê — nada no widget altera o clube.
 
 Para instalar: copie o arquivo para um script novo no Scriptable com o nome
-"Clube do Livro", e na tela de início adicione um widget do Scriptable
+"Patoteca", e na tela de início adicione um widget do Scriptable
 apontando para ele. Funciona nos três tamanhos (mostra 3, 4 ou 9 leitores).
 
 A lógica de cor e da janela de 24 h é uma cópia enxuta de `src/lib/cores.js` e
 `src/lib/progresso24h.js` — se mudar a paleta ou a janela lá, atualize aqui
 também.
+
+## Instalar no celular
+
+O site é um PWA: dá para deixá-lo na tela de início como um app.
+
+- **iPhone:** abra no Safari, toque em Compartilhar e em "Adicionar à Tela de
+  Início".
+- **Android:** o Chrome oferece "Instalar aplicativo" sozinho; se não oferecer,
+  está no menu de três pontos.
+
+No iPhone isso não é enfeite: **os avisos só funcionam com o app instalado na
+tela de início**. A Apple não entrega Web Push para site aberto no Safari
+comum. Exige iOS 16.4 ou mais novo.
+
+## Avisos no celular (Web Push)
+
+Como um aviso viaja, do começo ao fim:
+
+1. O membro liga os avisos no "Editar perfil". O navegador cria uma
+   **inscrição** — uma URL secreta na Apple ou no Google, a caixa postal
+   daquele aparelho — e ela vai para `inscricoesPush`.
+2. Alguém escreve uma nota. O navegador de quem escreveu chama
+   `anunciar()` (`src/lib/push.js`), que bate no worker.
+3. O worker (`worker/index.js`) lê as inscrições, **criptografa** o texto para
+   cada aparelho, assina com a chave VAPID e entrega. Nem a Apple nem o Google
+   conseguem ler o conteúdo.
+4. O service worker (`public/sw.js`) acorda no celular, mostra a notificação e,
+   no toque, abre o app no lugar certo.
+
+O que vira aviso: nota nova, comentário, primeira versão de uma resenha, alguém
+terminando um livro e o clube começando uma leitura nova. O que **não** vira:
+progresso comum (marcar 20% num domingo encheria o celular de todo mundo),
+edição de nota e reescrita de resenha.
+
+Quem escreveu nunca recebe o próprio aviso.
+
+O texto da notificação é o mesmo do feed de novidades, de propósito: as frases
+moram em `src/lib/atividades.js` e são usadas nos dois lugares, para as duas
+telas nunca contarem a mesma coisa com palavras diferentes.
+
+**Para ligar isto num clube novo**, é preciso publicar o worker uma vez: veja
+[`worker/README.md`](worker/README.md). Enquanto as três constantes no topo de
+`src/lib/push.js` estiverem vazias, o app funciona normalmente — o perfil só
+avisa que as notificações ainda não foram configuradas.
 
 ## Estrutura
 
@@ -191,7 +243,8 @@ src/
 │   ├── storage.js           # upload de imagens
 │   ├── cores.js             # paleta, cor de cada membro e sorteio
 │   ├── progresso24h.js      # histórico de leitura e ganho das últimas 24 h
-│   ├── atividades.js        # monta a aba de novidades a partir dos dados vivos
+│   ├── atividades.js        # monta a aba de novidades e as frases dos avisos
+│   ├── push.js              # avisos no celular: inscrição do aparelho e disparo
 │   ├── reacoes.js           # emojis e como descrevê-los por extenso
 │   ├── vencedor.js          # quem venceu a rodada: mais longe e, no empate, antes
 │   ├── series.js            # séries: chave, ordem dos volumes e quem entra junto
@@ -213,6 +266,7 @@ src/
 │   ├── MinhaEstante.jsx     # aba "Já li": os livros que EU terminei
 │   ├── SeletorCor.jsx       # escolha da cor do membro + prévia da barra
 │   ├── AtualizarProgressoModal.jsx
+│   ├── AvisosNoCelular.jsx  # o interruptor dos avisos, dentro do perfil
 │   ├── Mural.jsx
 │   ├── Historico.jsx
 │   ├── Modal.jsx
@@ -220,6 +274,18 @@ src/
 └── styles/
     ├── index.css            # tema/base
     └── app.css              # layout e componentes
+
+public/
+├── icone.svg                # o pato: fonte de todos os ícones
+├── icone-*.png              # gerados por scripts/gerar-icones.mjs
+├── manifest.webmanifest     # nome, cores e ícones do app instalado
+└── sw.js                    # service worker: mostra os avisos e trata o toque
+
+worker/                      # o carteiro dos avisos (Cloudflare Worker)
+├── index.js                 # recebe, lê as inscrições, entrega, limpa as mortas
+├── webpush.js               # VAPID (RFC 8292) + criptografia (RFC 8291)
+├── webpush.teste.mjs        # confere a criptografia com uma biblioteca de fora
+└── gerar-chaves.mjs         # cria o par de chaves VAPID
 ```
 
 ## Modelo de dados (Firestore)
@@ -229,6 +295,7 @@ src/
 | `users`            | `{userId}`            | `nome`, `avatarUrl`, `cor`, `criadoEm`                        |
 | `livroAtual`       | `{livroId}`           | `titulo`, `autor`, `capaUrl`, `dataLimite`, `dataInicio`, `serie`, `serieOrdem`, `ativo`, `naFila`, `iniciadoEm` |
 | `progresso`        | `{userId}_{livroId}`  | `userId`, `livroId`, `porcentagem`, `paginaAtual`, `totalPaginas`, `modo`, `historico`, `atualizadoEm` |
+| `inscricoesPush`   | `{resumo do endpoint}` | `userId`, `endpoint`, `p256dh`, `auth`, `criadoEm` — um por aparelho que ligou os avisos |
 | `notas`            | `{notaId}`            | `userId`, `livroId`, `texto`, `desbloqueioPct`, `desbloqueioTipo`, `desbloqueioValor`, `totalPaginas`, `criadoEm` |
 | `resenhas`         | `{userId}_{livroId}`  | `userId`, `livroId`, `texto`, `nota`, `atualizadoEm`         |
 | `mural`            | `{mensagemId}`        | `userId`, `texto`, `criadoEm`                                 |
@@ -301,3 +368,10 @@ Firestore. As _Security Rules_ (`firestore.rules` / `storage.rules`) validam
 apenas o **formato** dos dados para evitar escrita malformada — não impedem
 acesso. Recomendado para um clube fechado de amigos; **não** divulgue o link
 publicamente e a página já vai com `noindex` para não ser indexada.
+
+O mesmo vale para os avisos: o `TOKEN_DE_ENVIO` do worker viaja no JavaScript do
+site, então quem lê o código consegue disparar uma notificação falsa para o
+clube. Ele serve para o worker ignorar quem apenas esbarrou na URL, não como
+senha. Já o **conteúdo** dos avisos é criptografado ponta a ponta, e a chave
+privada VAPID nunca sai do worker — ninguém consegue ler os avisos alheios nem
+se passar pelo clube sem ela.

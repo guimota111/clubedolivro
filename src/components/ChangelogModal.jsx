@@ -3,33 +3,27 @@ import { IconeLivroAberto } from './Icones'
 
 // Chave de versão do changelog. Ao lançar novidades futuras, troque a versão
 // para que o aviso apareça de novo uma única vez por navegador.
-export const CHANGELOG_VERSAO = 'clubedolivro:changelog:2026-08-v6'
+export const CHANGELOG_VERSAO = 'clubedolivro:changelog:2026-08-v7'
 
 // Cada item usa um ícone (Icone) OU um emoji literal (emoji).
 const NOVIDADES = [
   {
-    emoji: '📚',
-    titulo: 'O clube pode ler uma série inteira ao mesmo tempo',
+    emoji: '🦆',
+    titulo: 'O clube agora se chama Patoteca',
     texto:
-      'Quando os livros são de uma mesma série, o clube não precisa mais andar em fila indiana. Cadastre o volume novo com o nome da série igual ao dos que já estão em leitura e ele entra AO LADO deles — ninguém é encerrado, ninguém perde progresso e quem ficou para trás continua no livro em que está.',
+      'Mesmo clube, mesmas estantes, mesmas notas — nome novo e um rosto para chamar de seu. Nada do que você já escreveu mudou de lugar.',
   },
   {
-    emoji: '🔀',
-    titulo: 'Você escolhe em qual volume está',
+    emoji: '📲',
+    titulo: 'A Patoteca cabe na tela de início',
     texto:
-      'Com mais de um livro aberto, um trilho aparece logo abaixo da capa: toque no volume que você está lendo e a página inteira passa a ser dele — a corrida, o relógio do ciclo e as notas parciais. A escolha fica guardada neste aparelho, e cada pastilha mostra em quantos por cento você está.',
+      'Dá para instalar o clube como um app de verdade, com ícone próprio e sem a barra do navegador. No iPhone: toque em Compartilhar e em "Adicionar à Tela de Início". No Android, o Chrome oferece sozinho.',
   },
   {
-    emoji: '📝',
-    titulo: 'Notas parciais em cada livro da série',
+    emoji: '🔔',
+    titulo: 'Avisos no seu celular',
     texto:
-      'Cada volume tem as suas notas, com o mesmo cadeado de sempre: elas só abrem para quem já chegou à página marcada NAQUELE livro. Nada de spoiler do terceiro volume aparecendo para quem ainda está no segundo.',
-  },
-  {
-    emoji: '🏷️',
-    titulo: 'Todo livro pode dizer de que série é',
-    texto:
-      'No cadastro e na edição há agora os campos de série e de número do volume. Eles aparecem acima do título nas resenhas, na sua estante e no histórico — e é por eles que os volumes ficam na ordem certa. Terminou um volume antes dos outros? Dá para encerrar só ele, pela edição do livro, sem mexer no resto da série.',
+      'Ligue em "Editar perfil" e o celular avisa quando alguém deixa uma nota, comenta, escreve uma resenha, termina um livro ou o clube começa uma leitura nova. Tocar no aviso abre exatamente o que ele conta. Você nunca recebe aviso do que você mesmo escreveu, e progresso comum não vira notificação — só a linha de chegada. No iPhone é preciso instalar o app na tela de início antes (veja acima).',
   },
 ]
 

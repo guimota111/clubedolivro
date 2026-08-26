@@ -6,6 +6,7 @@ import { IconePena, IconeMarcador } from './Icones'
 import { inicial } from '../lib/formato'
 import { corDoMembro, coresEmUso } from '../lib/cores'
 import SeletorCor, { PreviaBarra } from './SeletorCor'
+import AvisosNoCelular from './AvisosNoCelular'
 
 // Modal para o membro editar seu nome, sua foto e a cor da sua barra.
 export default function EditarPerfilModal({ userId, perfil, membros = [], onFechar }) {
@@ -124,6 +125,11 @@ export default function EditarPerfilModal({ userId, perfil, membros = [], onFech
           {enviando ? 'Salvando…' : 'Salvar perfil'}
         </button>
       </form>
+
+      {/* Fora do <form> de propósito: ligar os avisos não tem nada a ver com
+          salvar o perfil, e um botão aqui dentro correria o risco de enviar o
+          formulário sem querer. */}
+      <AvisosNoCelular userId={userId} />
     </Modal>
   )
 }

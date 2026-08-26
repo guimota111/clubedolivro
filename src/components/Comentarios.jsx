@@ -1,5 +1,7 @@
 import { useEffect, useId, useState } from 'react'
 import { publicarComentario } from '../lib/db'
+import { anunciar, meuNome } from '../lib/push'
+import { textoDoComentario } from '../lib/atividades'
 import { formatarData, inicial } from '../lib/formato'
 import { IconePena, IconeSeta } from './Icones'
 import { useVerFoto } from './FotoContext'
@@ -33,11 +35,12 @@ export default function Comentarios({ alvoTipo, alvoId, comentarios, membrosPorI
     setEnviando(true)
     setErro('')
     try {
-      await publicarComentario(userId, {
+      const comentarioId = await publicarComentario(userId, {
         alvoTipo,
         alvoId,
         texto: limpo.slice(0, 1999),
       })
+      anunciar(`comentario-${comentarioId}`, textoDoComentario(meuNome(), alvoTipo))
       setTexto('')
     } catch (err) {
       console.error(err)

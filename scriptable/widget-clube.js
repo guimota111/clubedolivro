@@ -3,7 +3,7 @@
 // icon-color: yellow; icon-glyph: book-open;
 
 // ============================================================
-//  Clube do Livro — widget para iPhone (app Scriptable)
+//  Patoteca — widget para iPhone (app Scriptable)
 // ============================================================
 //
 // Mostra a corrida da leitura na tela de início: cada membro com a sua barra
@@ -11,9 +11,9 @@
 //
 // Como usar:
 //   1. Instale o app Scriptable (gratuito, App Store).
-//   2. Novo script (+), cole este arquivo inteiro e dê o nome "Clube do Livro".
+//   2. Novo script (+), cole este arquivo inteiro e dê o nome "Patoteca".
 //   3. Na tela de início: segure a tela -> (+) -> Scriptable -> escolha o
-//      tamanho -> toque no widget -> em "Script" escolha "Clube do Livro".
+//      tamanho -> toque no widget -> em "Script" escolha "Patoteca".
 //
 // Ele só LÊ os dados — nada aqui altera o clube.
 
@@ -238,7 +238,7 @@ try {
   const { livro, progressos } = await escolherVolume(ativos)
 
   if (!livro) {
-    titulo('Clube do Livro')
+    titulo('Patoteca')
     recado('Nenhum livro em leitura agora.')
   } else {
     const porUsuario = {}
@@ -254,7 +254,7 @@ try {
       })
       .sort((a, b) => (b.pct !== a.pct ? b.pct - a.pct : a.nome.localeCompare(b.nome)))
 
-    titulo(livro.titulo || 'Clube do Livro')
+    titulo(livro.titulo || 'Patoteca')
 
     if (!linhas.length) {
       recado('A pista ainda está vazia.')
@@ -281,7 +281,7 @@ try {
     }
   }
 } catch (e) {
-  titulo('Clube do Livro')
+  titulo('Patoteca')
   recado('Não consegui carregar agora.')
   rodape(String(e.message || e).slice(0, 60))
 }

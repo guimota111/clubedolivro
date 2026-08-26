@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import Modal from './Modal'
 import { salvarProgresso } from '../lib/db'
+import { anunciar, meuNome } from '../lib/push'
+import { textoDoProgresso } from '../lib/atividades'
 import { limitarPct, calcularPct, pctDoProgresso } from '../lib/formato'
 import { montarHistorico, faixasDeProgresso } from '../lib/progresso24h'
 import { IconeMarcador } from './Icones'
@@ -80,6 +82,15 @@ export default function AtualizarProgressoModal({
     setSalvando(true)
     try {
       await salvarProgresso(userId, livro.id, dados)
+      // Avanço comum não avisa: quem marca 12%, 15%, 20% num domingo encheria
+      // o celular de todo mundo. A chegada aos 100%, sim — é o momento que o
+      // clube comemora, e só acontece uma vez por livro.
+      if (dados.porcentagem >= 100 && pctSalva < 100) {
+        anunciar(
+          `progresso-${userId}_${livro.id}`,
+          textoDoProgresso(meuNome(), 100, { titulo: livro.titulo })
+        )
+      }
       onFechar()
     } catch (err) {
       console.error(err)
