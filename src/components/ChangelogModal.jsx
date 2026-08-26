@@ -3,7 +3,7 @@ import { IconeLivroAberto } from './Icones'
 
 // Chave de versão do changelog. Ao lançar novidades futuras, troque a versão
 // para que o aviso apareça de novo uma única vez por navegador.
-export const CHANGELOG_VERSAO = 'clubedolivro:changelog:2026-08-v7'
+export const CHANGELOG_VERSAO = 'clubedolivro:changelog:2026-08-v8'
 
 // Cada item usa um ícone (Icone) OU um emoji literal (emoji).
 const NOVIDADES = [
@@ -11,7 +11,7 @@ const NOVIDADES = [
     emoji: '🦆',
     titulo: 'O clube agora se chama Patoteca',
     texto:
-      'Mesmo clube, mesmas estantes, mesmas notas — nome novo e um rosto para chamar de seu. Nada do que você já escreveu mudou de lugar.',
+      'Mesmo clube, mesmas estantes, mesmas notas — só o nome e o rosto mudaram. Nada do que você escreveu saiu do lugar.',
   },
   {
     emoji: '📲',
@@ -23,7 +23,13 @@ const NOVIDADES = [
     emoji: '🔔',
     titulo: 'Avisos no seu celular',
     texto:
-      'Ligue em "Editar perfil" e o celular avisa quando alguém deixa uma nota, comenta, escreve uma resenha, termina um livro ou o clube começa uma leitura nova. Tocar no aviso abre exatamente o que ele conta. Você nunca recebe aviso do que você mesmo escreveu, e progresso comum não vira notificação — só a linha de chegada. No iPhone é preciso instalar o app na tela de início antes (veja acima).',
+      'Ligue em "Editar perfil" e o celular avisa quando alguém deixa uma nota, comenta, resenha ou termina um livro. Tocar no aviso abre exatamente o que ele conta. Você não recebe aviso do que você mesmo escreveu. No iPhone é preciso instalar o app antes (veja acima).',
+  },
+  {
+    emoji: '📚',
+    titulo: 'As resenhas agora ficam por livro',
+    texto:
+      'A aba virou uma prateleira de capas: toque na do livro que você quer ler. Cada uma abre quando você chega ao fim dele — as que faltam ficam com cadeado, mostrando quanto ainda falta.',
   },
 ]
 
