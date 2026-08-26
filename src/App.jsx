@@ -22,6 +22,7 @@ import {
 } from './lib/series'
 import { montarAtividades, contarNaoVistas } from './lib/atividades'
 import { useFoco } from './hooks/useFoco'
+import { definirAutor } from './lib/push'
 
 import Cadastro from './components/Cadastro'
 import LivroAtualCard from './components/LivroAtualCard'
@@ -416,6 +417,39 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
     setAba('novidades')
   }
 
+  // O toque numa notificação do celular chega de dois jeitos: com o app
+  // fechado, o service worker abre o site com `?aviso=`; com o app aberto, ele
+  // manda o id por mensagem. Nos dois casos guardamos o id do evento e
+  // esperamos as novidades ficarem prontas para saber para onde ir.
+  const [avisoTocado, setAvisoTocado] = useState(() => {
+    const id = new URLSearchParams(window.location.search).get('aviso')
+    // Tira o `?aviso=` da barra de endereço: recarregar a página não deve
+    // fazer a tela pular de novo para a mesma nota.
+    if (id) window.history.replaceState({}, '', window.location.pathname)
+    return id || null
+  })
+
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return
+    const aoReceber = (evento) => {
+      if (evento.data?.tipo === 'aviso') setAvisoTocado(evento.data.eventoId || null)
+    }
+    navigator.serviceWorker.addEventListener('message', aoReceber)
+    return () => navigator.serviceWorker.removeEventListener('message', aoReceber)
+  }, [])
+
+  // O id do aviso é o mesmo id do evento no feed de novidades — por isso o
+  // destino do toque sai de graça: é o mesmo que o clique no feed usaria.
+  useEffect(() => {
+    if (!avisoTocado || !atividades.length) return
+    const evento = atividades.find((a) => a.id === avisoTocado)
+    setAvisoTocado(null)
+    if (evento?.destino) irPara(evento.destino)
+    // Recado do mural não é um evento do feed; ele mora na aba de leitura.
+    else if (avisoTocado.startsWith('mural-')) setAba('leitura')
+    else setAba('novidades')
+  }, [avisoTocado, atividades]) // eslint-disable-line react-hooks/exhaustive-deps
+
   useFoco(foco, 'corrida')
 
   const minhaPorcentagem = livro
@@ -440,11 +474,18 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
   const meuPerfil = membrosPorId[userId] || usuario
   const minhaCor = corDoMembro({ id: userId, ...meuPerfil })
 
+  // Os avisos no celular são montados em vários cantos do app ("Fulano
+  // comentou…"). Em vez de passar o nome por props até lá, ele fica depositado
+  // em `push.js` — e acompanha a troca de nome no perfil.
+  useEffect(() => {
+    definirAutor(userId, meuPerfil.nome)
+  }, [userId, meuPerfil.nome])
+
   return (
     <div className="app">
       <header className="cabecalho">
         <div className="container">
-          <h1 className="titulo-clube">Clube do Livro</h1>
+          <h1 className="titulo-clube">Patoteca</h1>
           <p className="subtitulo-clube">A estante viva onde lemos juntos</p>
           <DivisoriaOrnamentada className="divisoria" />
 

@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import Modal from './Modal'
 import { cadastrarLivro, cadastrarProximoLivro } from '../lib/db'
+import { anunciar } from '../lib/push'
 import { enviarImagem } from '../lib/storage'
 import { chaveSerie, podeEntrarJunto, serieEmLeitura } from '../lib/series'
 import { IconeLivro } from './Icones'
@@ -90,6 +91,11 @@ export default function CadastrarLivroModal({
       const livroId = paraFila
         ? await cadastrarProximoLivro(dados)
         : await cadastrarLivro(dados, { juntarASerie })
+      // Livro novo é a notícia mais importante que a Patoteca tem para dar.
+      // O da fila não avisa: ele ainda não é a leitura de ninguém.
+      if (!paraFila) {
+        anunciar(`livro-${livroId}`, `A Patoteca começou a ler ${tituloLimpo}.`)
+      }
       aoCadastrar?.(livroId)
       onFechar()
     } catch (err) {

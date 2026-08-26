@@ -22,7 +22,7 @@ function nomeDe(membrosPorId, userId) {
 //
 // `livro` só entra quando o clube tem mais de um aberto: numa série, "40%" sem
 // dizer de qual volume não localiza ninguém.
-function textoDaNota(nota, nome, livro) {
+export function textoDaNota(nota, nome, livro) {
   const onde = ondeNoLivro(nota)
   const em = livro ? ` de ${livro}` : ''
   const verbo = verboReacao(nota.emoji)
@@ -60,6 +60,26 @@ function destinoDoComentario(c, notasNaTela, resenhasPorId, livrosResenhaveis) {
     livroId: nota.livroId,
     comentarios: true,
   }
+}
+
+// As frases abaixo aparecem em dois lugares: aqui, no feed de novidades, e na
+// notificação que chega no celular (`src/lib/push.js`). Ficam como funções para
+// que as duas telas nunca contem a mesma coisa com palavras diferentes.
+
+export function textoDoComentario(nome, alvoTipo) {
+  return `${nome} comentou em uma ${alvoTipo === 'resenha' ? 'resenha' : 'nota parcial'}.`
+}
+
+export function textoDaResenha(nome, titulo) {
+  return titulo
+    ? `${nome} escreveu uma resenha de ${titulo}.`
+    : `${nome} escreveu uma resenha.`
+}
+
+export function textoDoProgresso(nome, pct, { titulo = '', onde = '' } = {}) {
+  return pct >= 100
+    ? `${nome} terminou${titulo ? ` ${titulo}` : ' o livro'}!`
+    : `${nome} chegou a ${pct}%${onde ? ` de ${onde}` : ' da leitura'}.`
 }
 
 export function montarAtividades({
@@ -108,9 +128,7 @@ export function montarAtividades({
       em,
       userId: r.userId,
       emoji: '📝',
-      texto: titulo
-        ? `${nomeDe(membrosPorId, r.userId)} escreveu uma resenha de ${titulo}.`
-        : `${nomeDe(membrosPorId, r.userId)} escreveu uma resenha.`,
+      texto: textoDaResenha(nomeDe(membrosPorId, r.userId), titulo),
       destino: livrosResenhaveis.has(r.livroId)
         ? { aba: 'resenhas', tipo: 'resenha', id: r.id }
         : null,
@@ -126,9 +144,7 @@ export function montarAtividades({
       em,
       userId: c.userId,
       emoji: '💬',
-      texto: `${nomeDe(membrosPorId, c.userId)} comentou em uma ${
-        c.alvoTipo === 'resenha' ? 'resenha' : 'nota parcial'
-      }.`,
+      texto: textoDoComentario(nomeDe(membrosPorId, c.userId), c.alvoTipo),
       // O clique abre a conversa direto, já que é ela o assunto do aviso.
       destino: destinoDoComentario(c, notasNaTela, resenhasPorId, livrosResenhaveis),
     })
@@ -152,10 +168,7 @@ export function montarAtividades({
       em,
       userId: p.userId,
       emoji: pct >= 100 ? '🏁' : '📖',
-      texto:
-        pct >= 100
-          ? `${nome} terminou${titulo ? ` ${titulo}` : ' o livro'}!`
-          : `${nome} chegou a ${pct}%${onde ? ` de ${onde}` : ' da leitura'}.`,
+      texto: textoDoProgresso(nome, pct, { titulo, onde }),
       destino: { aba: 'leitura', tipo: 'corrida', id: 'corrida', livroId: p.livroId },
     })
   })

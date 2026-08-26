@@ -1,0 +1,14 @@
+{
+  "name": "patoteca-avisos",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node webpush.teste.mjs",
+    "publicar": "wrangler deploy"
+  },
+  "devDependencies": {
+    "http_ece": "^1.2.1",
+    "wrangler": "^3.90.0"
+  }
+}

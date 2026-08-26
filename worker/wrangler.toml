@@ -1,0 +1,22 @@
+# Configuração do worker que entrega os avisos da Patoteca.
+#
+# Publicar:  cd worker && npx wrangler deploy
+#
+# Os dois segredos NÃO ficam aqui — vão por `wrangler secret put` (veja o
+# README). O que está neste arquivo é tudo público: o id do projeto e a mesma
+# chave de API que o site já expõe.
+
+name = "patoteca-avisos"
+main = "index.js"
+compatibility_date = "2024-11-01"
+
+[vars]
+PROJETO_FIREBASE = "clube-do-livro-16073"
+CHAVE_FIREBASE = "AIzaSyC13IYCYsIJohGhmEj-kCQixQsA49Dr4d8"
+# Chave PÚBLICA do par VAPID (a mesma que está em src/lib/push.js).
+VAPID_PUBLICA = ""
+# Endereço de contato exigido pelo padrão: é para onde a Apple ou o Google
+# escrevem se algo der errado com os seus envios.
+CONTATO = "mailto:guimota1@gmail.com"
+# Só o site da Patoteca pode chamar este worker pelo navegador.
+ORIGEM_DO_SITE = "https://clube-do-livro-16073.web.app,https://clube-do-livro-16073.firebaseapp.com"

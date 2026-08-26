@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { publicarRecado } from '../lib/db'
+import { anunciar, meuNome } from '../lib/push'
 import { formatarData, inicial } from '../lib/formato'
 import { IconePena, DivisoriaOrnamentada } from './Icones'
 import { useVerFoto } from './FotoContext'
@@ -18,7 +19,8 @@ export default function Mural({ recados, membrosPorId, userId }) {
     setEnviando(true)
     setErro('')
     try {
-      await publicarRecado(userId, limpo.slice(0, 999))
+      const recadoId = await publicarRecado(userId, limpo.slice(0, 999))
+      anunciar(`mural-${recadoId}`, `${meuNome()} deixou um recado no mural.`)
       setTexto('')
     } catch (err) {
       console.error(err)

@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <title>Patoteca</title>
+  <defs>
+    <linearGradient id="corpo" x1="0.2" y1="0" x2="0.8" y2="1">
+      <stop offset="0" stop-color="#ffe066" />
+      <stop offset="0.55" stop-color="#ffcf3d" />
+      <stop offset="1" stop-color="#f7b81f" />
+    </linearGradient>
+    <linearGradient id="bico" x1="0" y1="0" x2="0.4" y2="1">
+      <stop offset="0" stop-color="#fb9235" />
+      <stop offset="1" stop-color="#ef6f18" />
+    </linearGradient>
+    <radialGradient id="fundo" cx="0.5" cy="0.42" r="0.62">
+      <stop offset="0" stop-color="#9fc9da" />
+      <stop offset="1" stop-color="#7fb1c7" />
+    </radialGradient>
+  </defs>
+
+  <!-- Fundo do distintivo -->
+  <circle cx="256" cy="256" r="256" fill="#eef4f8" />
+  <circle cx="256" cy="256" r="232" fill="url(#fundo)" stroke="#2e5a7d" stroke-width="26" />
+
+  <g transform="translate(256 250) scale(0.86) translate(-256 -256)">
+  <g stroke="#e09a12" stroke-width="7" stroke-linejoin="round" stroke-linecap="round">
+    <!-- Rabo -->
+    <path d="M126 300 q-42 -22 -46 -58 q34 8 58 30 z" fill="url(#corpo)" />
+    <!-- Corpo -->
+    <ellipse cx="232" cy="312" rx="128" ry="106" fill="url(#corpo)" />
+    <!-- Cabeça -->
+    <circle cx="264" cy="182" r="88" fill="url(#corpo)" />
+    <!-- Topete -->
+    <path d="M272 96 q6 -34 34 -46 q-8 22 4 32 q-18 2 -26 16 z" fill="url(#corpo)" />
+  </g>
+
+  <!-- Bico -->
+  <g stroke="#d15e0e" stroke-width="6" stroke-linejoin="round">
+    <path d="M322 152 q76 -12 102 26 q8 18 -16 24 l-86 8 z" fill="url(#bico)" />
+    <path d="M320 210 q68 0 90 14 q-18 28 -62 24 q-30 -4 -34 -20 z" fill="#e8721b" />
+  </g>
+
+  <!-- Bochecha -->
+  <ellipse cx="214" cy="212" rx="26" ry="16" fill="#ffb07c" opacity="0.55" />
+
+  <!-- Sobrancelha e olho -->
+  <path d="M232 136 q18 -10 34 -2" fill="none" stroke="#c98a10" stroke-width="8" stroke-linecap="round" />
+  <ellipse cx="248" cy="168" rx="12" ry="15" fill="#2b2118" />
+  <circle cx="252" cy="162" r="4" fill="#fff" opacity="0.85" />
+
+  <!-- Óculos -->
+  <g fill="#cfe6f2" fill-opacity="0.42" stroke="#3a3229" stroke-width="7">
+    <circle cx="248" cy="168" r="38" />
+    <circle cx="336" cy="176" r="38" />
+    <path d="M286 170 q25 -8 50 -2" fill="none" />
+    <path d="M210 168 q-24 4 -34 18" fill="none" stroke-linecap="round" />
+  </g>
+
+  <!-- Livro -->
+  <g stroke="#233b52" stroke-width="6" stroke-linejoin="round">
+    <path d="M250 302 q56 -22 108 -8 l0 130 q-52 -14 -108 8 z" fill="#33506d" />
+    <path d="M358 294 q52 -14 106 10 l-8 128 q-50 -22 -98 -8 z" fill="#3d5e7d" />
+    <path d="M262 314 q48 -18 92 -6 l0 104 q-44 -12 -92 6 z" fill="#f6f3ea" stroke-width="4" />
+    <path d="M366 306 q44 -12 88 8 l-6 102 q-42 -18 -82 -6 z" fill="#fbf8f0" stroke-width="4" />
+  </g>
+  <g stroke="#9aa7b4" stroke-width="5" stroke-linecap="round" opacity="0.8">
+    <path d="M280 340 h56" /><path d="M280 362 h56" /><path d="M280 384 h40" />
+    <path d="M384 334 h52" /><path d="M384 356 h52" /><path d="M384 378 h36" />
+  </g>
+
+  <!-- Asa segurando o livro -->
+  <g stroke="#e09a12" stroke-width="7" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M150 292 q64 -26 118 4 q30 16 12 40 q-22 28 -74 26 q-52 -2 -62 -34 q-4 -24 6 -36 z" fill="url(#corpo)" />
+  </g>
+  <g fill="none" stroke="#e0a521" stroke-width="6" stroke-linecap="round" opacity="0.75">
+    <path d="M176 322 q40 -14 74 2" />
+    <path d="M180 344 q36 -12 66 0" />
+  </g>
+
+  <!-- Pés -->
+  <g fill="#ef7c1e" stroke="#d15e0e" stroke-width="6" stroke-linejoin="round">
+    <path d="M196 394 q-4 20 -40 32 q40 18 80 4 q6 -22 0 -38 z" />
+    <path d="M268 396 q-4 20 -40 32 q40 18 80 4 q6 -22 0 -38 z" />
+  </g>
+  <g fill="none" stroke="#c9550a" stroke-width="5" stroke-linecap="round" opacity="0.7">
+    <path d="M170 420 q14 10 22 16" /><path d="M196 428 q10 6 18 8" />
+    <path d="M242 422 q14 10 22 16" /><path d="M268 430 q10 6 18 8" />
+  </g>
+  </g>
+</svg>

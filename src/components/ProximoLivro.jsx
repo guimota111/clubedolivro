@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { promoverProximoLivro, tirarProximoLivroDaFila } from '../lib/db'
+import { anunciar } from '../lib/push'
 import { pctDoProgresso, inicial } from '../lib/formato'
 import { corDoMembro } from '../lib/cores'
 import { faixasDeProgresso } from '../lib/progresso24h'
@@ -88,6 +89,7 @@ export default function ProximoLivro({
     setOcupado('promover')
     try {
       await promoverProximoLivro(proximo.id, { juntarASerie: entraNaSerie })
+      anunciar(`livro-${proximo.id}`, `A Patoteca começou a ler ${proximo.titulo}.`)
     } catch (err) {
       console.error(err)
       setErro('Não foi possível trocar o livro do clube. Tente novamente.')
