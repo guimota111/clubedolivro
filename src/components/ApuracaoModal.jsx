@@ -8,7 +8,6 @@ import {
 import { anunciar } from '../lib/push'
 import { textoNovoTurno, textoResultado } from '../lib/atividades'
 import { conferirSenhaDaUrna } from '../lib/urna'
-import { podeEntrarJunto } from '../lib/series'
 import {
   apurar,
   indicacoesEmDisputa,
@@ -70,21 +69,18 @@ export default function ApuracaoModal({
   async function coroar(indicacao) {
     const ok = window.confirm(
       `Encerrar a eleição com “${indicacao.titulo}”?\n\n` +
-        'Ele vira o livro do clube agora mesmo' +
+        'Ele entra na fila do próximo livro: ' +
         (livrosAtuais.length
-          ? podeEntrarJunto(livrosAtuais, indicacao.serie)
-            ? ', ao lado dos livros da série em leitura.'
-            : `; o que está em leitura é encerrado e vai para o histórico com o vencedor da rodada.`
-          : '.')
+          ? 'o clube continua no que está lendo, quem já terminou pode começar o eleito, ' +
+            'e "Tornar o livro do clube" vira a página quando o clube decidir.'
+          : 'como não há livro em leitura, basta promovê-lo na área do próximo livro.')
     )
     if (!ok) return
     setOcupado('coroar')
     setErro('')
     try {
       await garantirRegistro()
-      const livroId = await encerrarEleicaoComVencedor(eleicao.id, indicacao, {
-        juntarASerie: podeEntrarJunto(livrosAtuais, indicacao.serie),
-      })
+      const livroId = await encerrarEleicaoComVencedor(eleicao.id, indicacao)
       anunciar(
         `resultado-${eleicao.id}`,
         textoResultado(indicacao.titulo, membrosPorId[indicacao.userId]?.nome)
@@ -133,7 +129,7 @@ export default function ApuracaoModal({
         <p className="texto-suave" style={{ marginTop: 0 }}>
           {registrada
             ? 'A apuração deste turno deu empate e está à espera de uma decisão. Com a senha, escolha entre um novo turno e o desempate manual.'
-            : 'A contagem aparece só depois da senha — ninguém a viu até agora, nem você. Com um vencedor, a eleição termina e ele vira o livro do clube na hora.'}
+            : 'A contagem aparece só depois da senha — ninguém a viu até agora, nem você. Com um vencedor, a eleição termina e ele entra na fila do próximo livro; o clube segue no que está lendo até decidir virar a página.'}
         </p>
         <form onSubmit={abrirUrna}>
           <CampoSenha valor={senha} aoMudar={setSenha} id="apuracao-senha" />
@@ -204,8 +200,8 @@ export default function ApuracaoModal({
         <>
           <div className="aviso aviso-bom">
             <strong>{vencedor.titulo}</strong> venceu com {maior}{' '}
-            {maior === 1 ? 'voto' : 'votos'}. Ao confirmar, ele vira o livro do
-            clube agora mesmo.
+            {maior === 1 ? 'voto' : 'votos'}. Ao confirmar, ele entra na fila do
+            próximo livro — ninguém é tirado do que está lendo.
           </div>
           <button
             className="btn"

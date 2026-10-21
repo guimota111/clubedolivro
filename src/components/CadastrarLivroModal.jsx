@@ -72,6 +72,17 @@ export default function CadastrarLivroModal({
       setErro('Informe o título do livro.')
       return
     }
+    // Trocar o livro do clube encerra TUDO o que está aberto — uma série
+    // inteira, se for o caso. Grande demais para acontecer num clique só.
+    if (!paraFila && temLivroAtual && !juntarASerie) {
+      const ok = window.confirm(
+        `Encerrar ${listarTitulos(livrosAtuais)} e começar “${tituloLimpo}”?\n\n` +
+          'O que está em leitura vai para o histórico e o progresso de todos ' +
+          'recomeça do zero. Se a ideia era só INDICAR um livro para a eleição, ' +
+          'cancele e use a aba Eleição.'
+      )
+      if (!ok) return
+    }
     setEnviando(true)
     setErro('')
     try {

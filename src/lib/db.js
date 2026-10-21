@@ -175,6 +175,14 @@ export async function encerrarLivroAtivo() {
   }
 }
 
+// Tira um livro da leitura SEM arquivá-lo: é o desfazer de um "Trocar o livro
+// do clube" feito por engano. Ele some da tela, nada é apagado (progresso,
+// notas e resenhas continuam gravados pelo id), e os livros que foram
+// encerrados no engano podem ser reabertos no histórico.
+export async function retirarLivroDaLeitura(livroId) {
+  await updateDoc(doc(db, 'livroAtual', livroId), { ativo: false, naFila: false })
+}
+
 // Devolve à leitura um volume que havia sido encerrado. É o desfazer de
 // `encerrarLivro`: o livro volta ao lado dos outros da série e sai do
 // histórico, porque a rodada dele não acabou de verdade — encerrar um volume
@@ -200,6 +208,7 @@ export async function cadastrarProximoLivro({
   titulo,
   autor,
   capaUrl,
+  totalPaginas,
   dataLimite,
   dataInicio,
   serie,
@@ -210,6 +219,7 @@ export async function cadastrarProximoLivro({
     titulo,
     autor: autor || '',
     capaUrl: capaUrl || '',
+    totalPaginas: paginasValidas(totalPaginas),
     dataLimite: dataLimite || null,
     dataInicio: dataInicio || null,
     ...camposDeSerie({ serie, serieOrdem }),
@@ -492,24 +502,22 @@ export async function abrirNovoTurno(eleicaoId, turnoAtual, finalistasIds, { pra
   })
 }
 
-// Encerra a eleição com o livro vencedor, que vira o livro do clube NA HORA:
-// o que estava em leitura é arquivado no histórico com o vencedor da rodada
-// (ou, sendo o eleito outro volume da mesma série, entra ao lado). Devolve o
-// id do livro criado.
-export async function encerrarEleicaoComVencedor(eleicaoId, indicacao, { juntarASerie = false } = {}) {
-  const livroId = await cadastrarLivro(
-    {
-      titulo: indicacao.titulo,
-      autor: indicacao.autor,
-      capaUrl: indicacao.capaUrl,
-      totalPaginas: indicacao.totalPaginas,
-      serie: indicacao.serie,
-      serieOrdem: indicacao.serieOrdem,
-      dataLimite: null,
-      dataInicio: null,
-    },
-    { juntarASerie }
-  )
+// Encerra a eleição com o livro vencedor, que entra na FILA do próximo livro
+// (`naFila`): nada do que está em leitura é encerrado, porque nem todo mundo
+// terminou. Quem já terminou pode começar a ler desde já, e quando o clube
+// decidir virar a página, "Tornar o livro do clube" promove o eleito — o
+// mesmo caminho de sempre. Devolve o id do livro criado.
+export async function encerrarEleicaoComVencedor(eleicaoId, indicacao) {
+  const livroId = await cadastrarProximoLivro({
+    titulo: indicacao.titulo,
+    autor: indicacao.autor,
+    capaUrl: indicacao.capaUrl,
+    totalPaginas: indicacao.totalPaginas,
+    serie: indicacao.serie,
+    serieOrdem: indicacao.serieOrdem,
+    dataLimite: null,
+    dataInicio: null,
+  })
   await updateDoc(doc(db, 'eleicoes', eleicaoId), {
     status: 'encerrada',
     vencedorIndicacaoId: indicacao.id,

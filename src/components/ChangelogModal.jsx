@@ -11,7 +11,7 @@ const NOVIDADES = [
     emoji: '🗳️',
     titulo: 'Eleição do próximo livro',
     texto:
-      'Chegou a aba Eleição. Cada membro indica até 2 livros (a busca puxa capa, autor e páginas) e defende cada um com um texto. Depois, vota em até 2 dos indicados — menos nos próprios. Ninguém vê quem indicou o quê nem a contagem até a apuração, feita com a senha da urna na frente de todo mundo. O vencedor vira o livro do clube na hora.',
+      'Chegou a aba Eleição. Cada membro indica até 2 livros (a busca puxa capa, autor e páginas) e defende cada um com um texto. Depois, vota em até 2 dos indicados — menos nos próprios. Ninguém vê quem indicou o quê nem a contagem até a apuração, feita com a senha da urna na frente de todo mundo. O vencedor entra na fila do próximo livro: ninguém é tirado do que está lendo.',
   },
   {
     emoji: '🦆',

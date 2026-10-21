@@ -141,7 +141,8 @@ export default function Eleicao({
           </h2>
           <p className="texto-suave" style={{ marginTop: 0 }}>
             Nenhuma eleição aberta agora. Quando chegar a hora de escolher o
-            próximo livro, quem tem a senha da urna abre uma por aqui.
+            próximo livro, quem tem a senha da urna abre uma por aqui. O eleito
+            entra na fila do próximo livro, sem tirar ninguém do que está lendo.
           </p>
           <button className="btn" onClick={aoAbrirEleicao}>
             <IconeUrna size={18} />

@@ -3313,3 +3313,12 @@ input[type='file'].escondido {
 
 /* Aviso anônimo da eleição no feed: a urna no lugar do retrato. */
 .atividade-urna .atividade-inicial { color: var(--dourado-claro); }
+
+/* O caminho de volta no histórico: reabrir um livro encerrado por engano. */
+.historico-reabrir {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  padding-left: 0;
+  margin-top: 0.15rem;
+}

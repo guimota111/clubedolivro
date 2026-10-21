@@ -115,8 +115,11 @@ tipografia serifada e dourado como cor de destaque.
   aba **Eleição** é uma prateleira de capas, embaralhada de forma fixa: tocar
   numa capa abre a defesa e o botão de votar. **Ninguém vê quem indicou o quê
   nem a contagem** até a **apuração**, feita por quem tem a senha na frente do
-  clube: a urna revela os votos e quem indicou cada livro, e o vencedor **vira
-  o livro do clube na hora**. Empate no topo abre um **novo turno** só entre os
+  clube: a urna revela os votos e quem indicou cada livro, e o vencedor **entra
+  na fila do próximo livro** — nem todo mundo terminou o de agora, então
+  ninguém é tirado da leitura; quem já terminou começa o eleito, e "Tornar o
+  livro do clube" vira a página quando o clube decidir. Empate no topo abre um
+  **novo turno** só entre os
   empatados (1 voto por pessoa), ou é desempatado ali na conversa e registrado.
   As eleições encerradas ficam na mesma aba, com o resultado completo. A aba
   só aparece com eleição aberta ou encerrada há menos de 30 dias; depois, o
@@ -349,7 +352,12 @@ suas notas parciais (com o cadeado medindo a % *daquele* livro) e as suas
 resenhas. É também por isso que encerrar e reabrir um volume custa um
 booleano: `encerrarLivro` grava o arquivo em `historicoLivros` e põe
 `ativo: false`; `reabrirLivro` desfaz os dois. Nenhum documento de leitura é
-tocado nas duas operações.
+tocado nas duas operações. O histórico oferece **Reabrir** em cada livro
+(quando não há nada em leitura, ou o livro é da série em leitura), e a edição
+do livro atual tem **Tirar da leitura sem arquivar** (`retirarLivroDaLeitura`):
+juntos, são o desfazer de um "Trocar o livro do clube" feito por engano, que
+encerra a série inteira de uma vez — por isso essa troca agora pede
+confirmação.
 
 As coleções `livroAtual` e `progresso` são assinadas **inteiras** (um documento
 por livro que o clube já leu; um por membro por livro). São poucos, e ter todos
@@ -381,8 +389,8 @@ o próprio documento, e apagar os votos de uma indicação corrigida é um
 `lib/eleicao.js`, que também descarta voto no próprio livro, repetido ou fora
 da disputa) e grava em `apuracoes` os totais e os empatados daquele turno — é
 isso que a tela de resultado mostra para sempre. Com vencedor, a eleição fecha
-e `cadastrarLivro` faz dele o livro do clube (encerrando o atual, ou entrando
-ao lado dos volumes da mesma série); com empate, `turno` sobe, `finalistas`
+e `cadastrarProximoLivro` o coloca na fila (`naFila: true`), de onde o fluxo
+de sempre o promove; com empate, `turno` sobe, `finalistas`
 guarda os empatados e os votos recomeçam em documentos novos (o turno faz parte
 do id), com um voto por pessoa.
 
