@@ -112,7 +112,7 @@ export function textoNovoTurno(turno, titulos) {
 }
 
 export function textoResultado(titulo, nome) {
-  return `A Patoteca elegeu ${titulo} como o próximo livro${nome ? ` — indicação de ${nome}` : ''}!`
+  return `A Patoteca elegeu ${titulo} como o próximo livro${nome ? ` — indicação de ${nome}` : ''}! Ele já está na fila.`
 }
 
 export function montarAtividades({

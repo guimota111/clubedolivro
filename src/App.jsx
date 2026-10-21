@@ -746,6 +746,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
             <Historico
               membrosPorId={membrosPorId}
               progressoPorLivro={progressoPorLivro}
+              livrosAtuais={livrosAtuais}
               aoVerEleicoes={
                 eleicoesPassadas.length && !mostrarAbaEleicao
                   ? () => setAba('eleicao')

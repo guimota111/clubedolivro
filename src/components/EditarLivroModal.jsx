@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import Modal from './Modal'
-import { atualizarLivro, encerrarLivro } from '../lib/db'
+import { atualizarLivro, encerrarLivro, retirarLivroDaLeitura } from '../lib/db'
 import { enviarImagem } from '../lib/storage'
 import { chaveSerie, normalizarSerie, ordemValida, serieEmLeitura } from '../lib/series'
 import { IconeLivro } from './Icones'
@@ -41,6 +41,10 @@ export default function EditarLivroModal({
   const companheiros = livrosAtuais.filter((l) => l.id !== livro.id)
   const serieDaCasa = serieEmLeitura(livrosAtuais)
   const podeEncerrarSozinho = !naFila && companheiros.length > 0
+  // O desfazer de um "Trocar o livro do clube" por engano: este livro sai da
+  // leitura sem ir para o histórico, e os que foram encerrados no engano podem
+  // ser reabertos lá embaixo, em "Livros já lidos".
+  const podeRetirar = !naFila && livro.ativo === true
 
   function aoEscolherCapa(e) {
     const f = e.target.files?.[0]
@@ -96,6 +100,26 @@ export default function EditarLivroModal({
       console.error(err)
       setErro('Não foi possível salvar as alterações. Tente novamente.')
       setEnviando(false)
+    }
+  }
+
+  async function retirarDaLeitura() {
+    const ok = window.confirm(
+      `Tirar “${livro.titulo}” da leitura sem arquivar?\n\n` +
+        'Ele some da tela, mas nada é apagado — progresso, notas e resenhas ' +
+        'ficam guardados. Se este livro entrou por engano no lugar de outros, ' +
+        'reabra os anteriores em “Livros já lidos”, com o botão “Reabrir”.'
+    )
+    if (!ok) return
+    setErro('')
+    setEncerrando(true)
+    try {
+      await retirarLivroDaLeitura(livro.id)
+      onFechar()
+    } catch (err) {
+      console.error(err)
+      setErro('Não foi possível tirar este livro da leitura. Tente novamente.')
+      setEncerrando(false)
     }
   }
 
@@ -288,6 +312,23 @@ export default function EditarLivroModal({
             style={{ width: '100%' }}
           >
             {encerrando ? 'Encerrando…' : `Encerrar só “${livro.titulo}”`}
+          </button>
+        </div>
+      )}
+
+      {podeRetirar && (
+        <div className="encerrar-volume">
+          <p className="texto-tenue" style={{ margin: '0 0 0.5rem' }}>
+            Este livro entrou por engano? Dá para tirá-lo da leitura sem mandar
+            para o histórico — e reabrir os anteriores em “Livros já lidos”.
+          </p>
+          <button
+            type="button"
+            className="btn-texto"
+            onClick={retirarDaLeitura}
+            disabled={encerrando}
+          >
+            Tirar da leitura sem arquivar
           </button>
         </div>
       )}

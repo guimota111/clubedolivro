@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react'
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore'
 import { db } from '../firebase'
 import { formatarData, inicial } from '../lib/formato'
-import { rotuloSerie } from '../lib/series'
+import { rotuloSerie, mesmaSerie, serieEmLeitura } from '../lib/series'
 import { descobrirVencedor } from '../lib/vencedor'
-import { IconeLivro, IconeCoroa } from './Icones'
+import { reabrirLivro } from '../lib/db'
+import { IconeLivro, IconeCoroa, IconeLivroAberto } from './Icones'
 import { useVerFoto } from './FotoContext'
 
 // Histórico dos livros já lidos, com o vencedor de cada rodada.
@@ -15,9 +16,44 @@ import { useVerFoto } from './FotoContext'
 // coroa acabava indo para o primeiro documento que o banco devolvia. Quem
 // vence é quem chegou primeiro, e a trilha de marcações sabe disso. O campo
 // gravado fica como reserva, para rodada cujo progresso não esteja mais à mão.
-export default function Historico({ membrosPorId, progressoPorLivro = {}, aoVerEleicoes = null }) {
+//
+// Cada livro tem um "Reabrir": é o caminho de volta de um encerramento por
+// engano (um "Trocar o livro do clube" que não devia ter acontecido fecha a
+// série inteira de uma vez). Reabrir só é oferecido quando não quebra a regra
+// da casa — nada em leitura, ou o livro é da mesma série do que está aberto.
+export default function Historico({
+  membrosPorId,
+  progressoPorLivro = {},
+  livrosAtuais = [],
+  aoVerEleicoes = null,
+}) {
   const verFoto = useVerFoto()
   const [itens, setItens] = useState([])
+  const [reabrindo, setReabrindo] = useState('')
+  const serieDaCasa = serieEmLeitura(livrosAtuais)
+
+  function podeReabrir(livro) {
+    if (!livrosAtuais.length) return true
+    return !!serieDaCasa && mesmaSerie(livro, { serie: serieDaCasa })
+  }
+
+  async function reabrir(livro) {
+    const ok = window.confirm(
+      `Reabrir “${livro.titulo}”?\n\n` +
+        'Ele volta para a leitura do clube e sai do histórico. Progresso, notas ' +
+        'e resenhas continuam exatamente como estão.'
+    )
+    if (!ok) return
+    setReabrindo(livro.id)
+    try {
+      await reabrirLivro(livro.id)
+    } catch (err) {
+      console.error(err)
+      window.alert('Não foi possível reabrir este livro. Tente de novo.')
+    } finally {
+      setReabrindo('')
+    }
+  }
 
   useEffect(() => {
     const q = query(collection(db, 'historicoLivros'), orderBy('encerradoEm', 'desc'))
@@ -68,6 +104,17 @@ export default function Historico({ membrosPorId, progressoPorLivro = {}, aoVerE
                   {livro.autor ? `${livro.autor} · ` : ''}
                   encerrado {formatarData(livro.encerradoEm)}
                 </div>
+                {podeReabrir(livro) && (
+                  <button
+                    type="button"
+                    className="btn-texto historico-reabrir"
+                    onClick={() => reabrir(livro)}
+                    disabled={!!reabrindo}
+                  >
+                    <IconeLivroAberto size={13} />
+                    {reabrindo === livro.id ? 'Reabrindo…' : 'Reabrir'}
+                  </button>
+                )}
               </div>
               {vencedor && (
                 <div className="vencedor" title={`Venceu: ${vencedor.nome}`}>
