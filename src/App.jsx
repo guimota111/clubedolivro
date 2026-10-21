@@ -11,6 +11,8 @@ import {
   useResenhas,
   useComentarios,
   useHistorico,
+  useEleicoes,
+  useIndicacoes,
 } from './hooks/useDadosClube'
 import { inicial, pctDoProgresso, emMilissegundos } from './lib/formato'
 import { corDoMembro } from './lib/cores'
@@ -21,6 +23,7 @@ import {
   serieEmLeitura,
 } from './lib/series'
 import { montarAtividades, contarNaoVistas } from './lib/atividades'
+import { separarEleicoes, eleicaoEmCartaz } from './lib/eleicao'
 import { useFoco } from './hooks/useFoco'
 import { definirAutor } from './lib/push'
 
@@ -37,6 +40,8 @@ import Atividades from './components/Atividades'
 import ProximoLivro from './components/ProximoLivro'
 import SeletorLivros from './components/SeletorLivros'
 import MinhaEstante from './components/MinhaEstante'
+import Eleicao from './components/Eleicao'
+import AbrirEleicaoModal from './components/AbrirEleicaoModal'
 import CadastrarLivroModal from './components/CadastrarLivroModal'
 import EditarLivroModal from './components/EditarLivroModal'
 import EditarPerfilModal from './components/EditarPerfilModal'
@@ -51,6 +56,7 @@ import {
   IconeSino,
   IconePilha,
   IconeMais,
+  IconeUrna,
   DivisoriaOrnamentada,
 } from './components/Icones'
 
@@ -137,7 +143,9 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
   const [modalProximo, setModalProximo] = useState(false)
   const [modalEditarProximo, setModalEditarProximo] = useState(false)
   const [modalProgressoProximo, setModalProgressoProximo] = useState(false)
-  // 'leitura' | 'novidades' | 'resenhas' | 'estante'
+  // Abrir a eleição do próximo livro (pede a senha da urna).
+  const [modalEleicao, setModalEleicao] = useState(false)
+  // 'leitura' | 'novidades' | 'resenhas' | 'estante' | 'eleicao'
   const [aba, setAba] = useState('leitura')
   const verFoto = useVerFoto()
 
@@ -215,6 +223,8 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
   const { resenhas, porLivro: resenhasPorLivro } = useResenhas()
   const { comentarios, porAlvo: comentariosPorAlvo } = useComentarios()
   const { historico } = useHistorico()
+  const { eleicoes } = useEleicoes()
+  const { indicacoes } = useIndicacoes()
   const { porLivro: progressoPorLivro, porMembro } = useProgresso()
   const meuProgressoPorLivro = porMembro[userId] || VAZIO
 
@@ -384,6 +394,8 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
         resenhas,
         comentarios,
         progresso: progressoDosAbertos,
+        eleicoes,
+        indicacoes,
         membrosPorId,
         tituloPorLivroId,
         livrosResenhaveis,
@@ -394,6 +406,8 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
       resenhas,
       comentarios,
       progressoDosAbertos,
+      eleicoes,
+      indicacoes,
       membrosPorId,
       tituloPorLivroId,
       livrosResenhaveis,
@@ -402,6 +416,15 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
   )
 
   const naoVistas = contarNaoVistas(atividades, vistoAte)
+
+  // A eleição do próximo livro. A aba só aparece com eleição aberta ou
+  // encerrada há pouco — e sempre que alguém já está nela, para não sumir a
+  // tela debaixo da pessoa.
+  const { atual: eleicaoAtual, passadas: eleicoesPassadas } = useMemo(
+    () => separarEleicoes(eleicoes),
+    [eleicoes]
+  )
+  const mostrarAbaEleicao = aba === 'eleicao' || eleicaoEmCartaz(eleicoes)
 
   // Ao entrar na aba, guarda o que ERA novo para continuar destacado durante a
   // visita — e só então zera o contador.
@@ -590,6 +613,16 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
           >
             <IconePilha size={18} /> Já li
           </button>
+          {mostrarAbaEleicao && (
+            <button
+              role="tab"
+              aria-selected={aba === 'eleicao'}
+              className={`aba${aba === 'eleicao' ? ' ativa' : ''}`}
+              onClick={() => setAba('eleicao')}
+            >
+              <IconeUrna size={18} /> Eleição
+            </button>
+          )}
         </nav>
 
         {aba === 'leitura' ? (
@@ -664,6 +697,19 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
                   <button className="btn btn-fantasma" onClick={() => setModalLivro(true)}>
                     Trocar o livro do clube
                   </button>
+                  {/* O caminho democrático: em vez de alguém trocar o livro,
+                      o clube elege o próximo. */}
+                  {eleicaoAtual ? (
+                    <button className="btn btn-fantasma" onClick={() => setAba('eleicao')}>
+                      <IconeUrna size={16} />
+                      Ver a eleição do próximo livro
+                    </button>
+                  ) : (
+                    <button className="btn btn-fantasma" onClick={() => setModalEleicao(true)}>
+                      <IconeUrna size={16} />
+                      Abrir uma eleição
+                    </button>
+                  )}
                 </div>
               </section>
             )}
@@ -700,6 +746,11 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
             <Historico
               membrosPorId={membrosPorId}
               progressoPorLivro={progressoPorLivro}
+              aoVerEleicoes={
+                eleicoesPassadas.length && !mostrarAbaEleicao
+                  ? () => setAba('eleicao')
+                  : null
+              }
             />
           </>
         ) : aba === 'novidades' ? (
@@ -708,6 +759,20 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
             membrosPorId={membrosPorId}
             vistoAte={destaqueAte}
             aoIrPara={irPara}
+          />
+        ) : aba === 'eleicao' ? (
+          <Eleicao
+            userId={userId}
+            eleicoes={eleicoes}
+            indicacoes={indicacoes}
+            membros={membros}
+            membrosPorId={membrosPorId}
+            livrosAtuais={livrosAtuais}
+            historico={historico}
+            seriesConhecidas={seriesConhecidas}
+            foco={foco}
+            aoAbrirEleicao={() => setModalEleicao(true)}
+            aoLivroEleito={escolherLivro}
           />
         ) : aba === 'resenhas' ? (
           <Resenhas
@@ -832,6 +897,14 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
           porcentagemInicial={minhaPctProximo}
           progressoAtual={porUsuarioProximo[userId]}
           onFechar={() => setModalProgressoProximo(false)}
+        />
+      )}
+
+      {modalEleicao && (
+        <AbrirEleicaoModal
+          userId={userId}
+          onFechar={() => setModalEleicao(false)}
+          aoAbrir={() => setAba('eleicao')}
         />
       )}
 

@@ -211,6 +211,32 @@ export function IconeSeta({ size = 24, ...props }) {
   )
 }
 
+// Urna — a eleição do próximo livro.
+export function IconeUrna({ size = 24, ...props }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      {/* a caixa */}
+      <path d="M4 11.5h16v8a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 19.5v-8Z" />
+      <path d="M4 11.5 6 8.5h12l2 3" />
+      {/* a fenda */}
+      <path d="M9.5 11.5h5" strokeWidth="2.2" />
+      {/* a cédula entrando, com o voto marcado */}
+      <path d="M9 8.5V4.2a.7.7 0 0 1 .7-.7h4.6a.7.7 0 0 1 .7.7v4.3" />
+      <path d="m10.6 6 .9.9 1.9-2.1" />
+    </svg>
+  )
+}
+
 // Filigrana / ornamento de canto (decorativo).
 export function Filigrana({ size = 60, ...props }) {
   return (

@@ -1,7 +1,7 @@
 import { formatarData, inicial } from '../lib/formato'
 import { corDoMembro } from '../lib/cores'
 import { useVerFoto } from './FotoContext'
-import { IconeSino, IconeSeta, DivisoriaOrnamentada } from './Icones'
+import { IconeSino, IconeSeta, IconeUrna, DivisoriaOrnamentada } from './Icones'
 
 // Aba de novidades: o que o clube andou fazendo, do mais recente ao mais
 // antigo. A lista chega pronta de `montarAtividades` — aqui só se desenha.
@@ -37,11 +37,17 @@ export default function Atividades({ atividades, membrosPorId, vistoAte, aoIrPar
               <li className={`atividade${nova ? ' atividade-nova' : ''}`} key={a.id}>
                 {/* O retrato fica fora do botão: ele abre a foto grande, e um
                     clicável dentro de outro seria ambíguo (e HTML inválido). */}
+                {/* Aviso da eleição não tem rosto: quem indicou é segredo até
+                    a apuração, então a urna ocupa o lugar do retrato. */}
                 <span
-                  className="atividade-avatar"
-                  style={{ '--cor-membro': corDoMembro(autor || { id: a.userId }) }}
+                  className={`atividade-avatar${a.anonimo ? ' atividade-urna' : ''}`}
+                  style={{ '--cor-membro': a.anonimo ? 'var(--dourado)' : corDoMembro(autor || { id: a.userId }) }}
                 >
-                  {autor?.avatarUrl ? (
+                  {a.anonimo ? (
+                    <span className="atividade-inicial" aria-hidden="true">
+                      <IconeUrna size={18} />
+                    </span>
+                  ) : autor?.avatarUrl ? (
                     <img
                       src={autor.avatarUrl}
                       alt={autor.nome || ''}

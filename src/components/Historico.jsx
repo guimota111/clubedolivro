@@ -15,7 +15,7 @@ import { useVerFoto } from './FotoContext'
 // coroa acabava indo para o primeiro documento que o banco devolvia. Quem
 // vence é quem chegou primeiro, e a trilha de marcações sabe disso. O campo
 // gravado fica como reserva, para rodada cujo progresso não esteja mais à mão.
-export default function Historico({ membrosPorId, progressoPorLivro = {} }) {
+export default function Historico({ membrosPorId, progressoPorLivro = {}, aoVerEleicoes = null }) {
   const verFoto = useVerFoto()
   const [itens, setItens] = useState([])
 
@@ -29,13 +29,18 @@ export default function Historico({ membrosPorId, progressoPorLivro = {} }) {
     return unsub
   }, [])
 
-  if (!itens.length) return null
+  if (!itens.length && !aoVerEleicoes) return null
 
   return (
     <section className="painel">
       <h2 className="secao-titulo">
         <IconeLivro size={22} /> Livros já lidos
       </h2>
+      {!itens.length && (
+        <p className="texto-suave" style={{ marginTop: 0 }}>
+          O clube ainda não encerrou nenhum livro.
+        </p>
+      )}
       <div className="historico-lista">
         {itens.map((livro) => {
           const doLivro = Object.values(progressoPorLivro[livro.id] || {})
@@ -97,6 +102,15 @@ export default function Historico({ membrosPorId, progressoPorLivro = {} }) {
           )
         })}
       </div>
+      {/* A aba da eleição some um tempo depois de encerrada; as eleições
+          antigas continuam acessíveis por aqui. */}
+      {aoVerEleicoes && (
+        <div className="centro" style={{ marginTop: '1rem' }}>
+          <button type="button" className="btn-texto" onClick={aoVerEleicoes}>
+            Ver as eleições anteriores
+          </button>
+        </div>
+      )}
     </section>
   )
 }

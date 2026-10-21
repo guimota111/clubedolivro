@@ -183,6 +183,8 @@ img {
 .campo input[type='text'],
 .campo input[type='number'],
 .campo input[type='url'],
+.campo input[type='search'],
+.campo input[type='password'],
 .campo textarea {
   width: 100%;
   font-family: var(--fonte-corpo);

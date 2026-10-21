@@ -169,3 +169,47 @@ export function useComentarios() {
   // A lista plana alimenta a aba de novidades; o mapa, as threads.
   return { comentarios: docs, porAlvo, carregando }
 }
+
+// ---------- Eleição do próximo livro ----------
+
+// Assina todas as eleições (uma por vez em andamento; as outras são história).
+export function useEleicoes() {
+  const { docs, carregando } = useColecaoAoVivo(
+    () => collection(db, 'eleicoes'),
+    []
+  )
+  return { eleicoes: docs, carregando }
+}
+
+// Assina todas as indicações, de todas as eleições: são poucas (duas por
+// pessoa por eleição) e as das eleições passadas continuam aparecendo no
+// resultado delas.
+export function useIndicacoes() {
+  const { docs, carregando } = useColecaoAoVivo(
+    () => collection(db, 'indicacoes'),
+    []
+  )
+  const porEleicao = useMemo(() => {
+    const mapa = {}
+    docs.forEach((i) => {
+      ;(mapa[i.eleicaoId] = mapa[i.eleicaoId] || []).push(i)
+    })
+    return mapa
+  }, [docs])
+  return { indicacoes: docs, porEleicao, carregando }
+}
+
+// Assina os votos de UMA eleição (todos os turnos). A tela não mostra a
+// contagem antes da apuração — mas precisa dos documentos para dizer quantos
+// já votaram e para a própria apuração, que é feita no navegador de quem tem
+// a senha da urna.
+export function useVotos(eleicaoId) {
+  const { docs, carregando } = useColecaoAoVivo(
+    () =>
+      eleicaoId
+        ? query(collection(db, 'votos'), where('eleicaoId', '==', eleicaoId))
+        : null,
+    [eleicaoId]
+  )
+  return { votos: docs, carregando }
+}

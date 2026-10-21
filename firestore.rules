@@ -115,6 +115,47 @@ service cloud.firestore {
       allow write: if true;
     }
 
+    // Eleição do próximo livro. Três coleções:
+    //   eleicoes   — uma por eleição: situação, turno, prazos e as apurações
+    //   indicacoes — um livro indicado, com quem indicou e o texto de defesa
+    //   votos      — um documento por pessoa por turno, com até 2 indicações
+    //
+    // Quem indicou é segredo até a apuração, e a contagem também — mas isso é
+    // feito na tela: os documentos são legíveis, como todo o resto. A senha
+    // da urna (abrir, apurar, encerrar) é conferida no cliente.
+    match /eleicoes/{eleicaoId} {
+      allow read: if true;
+      allow write: if request.resource.data.nome is string
+                   && request.resource.data.nome.size() <= 80
+                   && request.resource.data.status in ['aberta', 'empatada', 'encerrada', 'cancelada']
+                   && request.resource.data.turno is int
+                   && request.resource.data.turno >= 1
+                   && request.resource.data.turno <= 20;
+    }
+
+    match /indicacoes/{indicacaoId} {
+      allow read: if true;
+      allow create, update: if request.resource.data.titulo is string
+                    && request.resource.data.titulo.size() > 0
+                    && request.resource.data.titulo.size() <= 140
+                    && request.resource.data.texto is string
+                    && request.resource.data.texto.size() <= 2000
+                    && request.resource.data.eleicaoId is string
+                    && request.resource.data.userId is string
+                    && serieValida(request.resource.data);
+      allow delete: if true;
+    }
+
+    match /votos/{votoId} {
+      allow read: if true;
+      allow write: if request.resource.data.eleicaoId is string
+                   && request.resource.data.userId is string
+                   && request.resource.data.turno is int
+                   && request.resource.data.indicacoes is list
+                   && request.resource.data.indicacoes.size() <= 2;
+      allow delete: if true;
+    }
+
     // Inscrições de aviso no celular: uma por aparelho que ligou as
     // notificações. O id do documento é o resumo do `endpoint`, então o mesmo
     // aparelho reinscrevendo sobrescreve o próprio registro.
