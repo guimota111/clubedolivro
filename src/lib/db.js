@@ -11,11 +11,14 @@ import {
   where,
   orderBy,
   serverTimestamp,
+  arrayUnion,
+  arrayRemove,
 } from 'firebase/firestore'
 import { db } from '../firebase'
 import { normalizarCor, sortearCoresFaltantes, sortearCorLivre } from './cores'
 import { normalizarSerie, ordemValida } from './series'
 import { vencedorUserId } from './vencedor'
+import { idDoVoto } from './eleicao'
 
 // ---------- Usuários ----------
 
@@ -69,6 +72,11 @@ export async function garantirCoresDosMembros(membros) {
 // corrida, as suas notas e as suas resenhas, e o membro escolhe na tela em
 // qual deles está.
 
+function paginasValidas(valor) {
+  const n = Math.round(Number(valor))
+  return Number.isFinite(n) && n > 0 ? n : null
+}
+
 // Campos de série, sempre gravados no mesmo formato: nome aparado e volume
 // inteiro (ou null quando o livro é avulso / não numerado).
 function camposDeSerie({ serie, serieOrdem }) {
@@ -86,7 +94,7 @@ function camposDeSerie({ serie, serieOrdem }) {
 // livros em leitura são encerrados e arquivados no histórico, e a rodada
 // recomeça do zero.
 export async function cadastrarLivro(
-  { titulo, autor, capaUrl, dataLimite, dataInicio, serie, serieOrdem },
+  { titulo, autor, capaUrl, totalPaginas, dataLimite, dataInicio, serie, serieOrdem },
   { juntarASerie = false } = {}
 ) {
   if (!juntarASerie) await encerrarLivroAtivo()
@@ -96,6 +104,10 @@ export async function cadastrarLivro(
     titulo,
     autor: autor || '',
     capaUrl: capaUrl || '',
+    // Páginas da edição de referência, quando se sabe (o livro eleito traz
+    // isso da indicação). Cada membro continua informando a edição DELE ao
+    // marcar progresso; este número é só informativo.
+    totalPaginas: paginasValidas(totalPaginas),
     // Prazo para terminar a leitura (string ISO 'YYYY-MM-DD') ou null.
     dataLimite: dataLimite || null,
     // Quando o ciclo começou. Em branco, vale `iniciadoEm` (agora) — é o caso
@@ -342,4 +354,175 @@ export async function listarHistorico() {
   )
   const snaps = await getDocs(q)
   return snaps.docs.map((d) => ({ id: d.id, ...d.data() }))
+}
+
+// ---------- Eleição do próximo livro ----------
+//
+// Três coleções: `eleicoes` (uma por eleição, com situação, turno e as
+// apurações), `indicacoes` (um livro indicado por documento, com quem indicou
+// e o texto de defesa) e `votos` (um documento por pessoa por turno, com até
+// dois ids de indicação). As regras do jogo estão em `lib/eleicao.js`; aqui só
+// se grava.
+
+// Abre uma eleição. Exige a senha da urna — conferida na tela, antes de
+// chegar aqui, como todo o resto do app.
+export async function abrirEleicao(userId, { nome, prazoIndicacoes, prazoVotacao }) {
+  const ref = doc(collection(db, 'eleicoes'))
+  await setDoc(ref, {
+    nome: (nome || '').trim() || 'Eleição do próximo livro',
+    status: 'aberta', // 'aberta' | 'empatada' | 'encerrada' | 'cancelada'
+    turno: 1,
+    finalistas: [],
+    prazoIndicacoes: prazoIndicacoes || null,
+    prazoVotacao: prazoVotacao || null,
+    apuracoes: [],
+    vencedorIndicacaoId: '',
+    livroId: '',
+    criadaPor: userId,
+    criadoEm: serverTimestamp(),
+    encerradaEm: null,
+  })
+  return ref.id
+}
+
+function camposDaIndicacao({ titulo, autor, capaUrl, totalPaginas, serie, serieOrdem, texto, fonteId }) {
+  const paginas = Math.round(Number(totalPaginas))
+  return {
+    titulo,
+    autor: autor || '',
+    capaUrl: capaUrl || '',
+    totalPaginas: Number.isFinite(paginas) && paginas > 0 ? paginas : null,
+    ...camposDeSerie({ serie, serieOrdem }),
+    texto: texto || '',
+    // Id do livro na fonte de onde os dados vieram (Google Books), para
+    // reconhecer o mesmo livro indicado duas vezes mesmo com título diferente.
+    fonteId: fonteId || '',
+  }
+}
+
+export async function indicarLivro(userId, eleicaoId, dados) {
+  const ref = await addDoc(collection(db, 'indicacoes'), {
+    eleicaoId,
+    userId,
+    ...camposDaIndicacao(dados),
+    criadoEm: serverTimestamp(),
+    atualizadoEm: serverTimestamp(),
+  })
+  return ref.id
+}
+
+// Corrige uma indicação. Quem votou nela votou no que viu, então os votos que
+// ela já recebeu são apagados — e o clube é avisado para votar de novo.
+export async function atualizarIndicacao(indicacaoId, dados) {
+  await updateDoc(doc(db, 'indicacoes', indicacaoId), {
+    ...camposDaIndicacao(dados),
+    atualizadoEm: serverTimestamp(),
+  })
+  await apagarVotosDaIndicacao(indicacaoId)
+}
+
+// Retira a indicação. Os votos nela vão junto — não há mais em que votar.
+export async function removerIndicacao(indicacaoId) {
+  await apagarVotosDaIndicacao(indicacaoId)
+  await deleteDoc(doc(db, 'indicacoes', indicacaoId))
+}
+
+// Tira um id de indicação de todos os documentos de voto que o carregam. O
+// id é único no clube inteiro, então não precisa filtrar por eleição.
+async function apagarVotosDaIndicacao(indicacaoId) {
+  const q = query(
+    collection(db, 'votos'),
+    where('indicacoes', 'array-contains', indicacaoId)
+  )
+  const snaps = await getDocs(q)
+  await Promise.all(
+    snaps.docs.map((d) =>
+      updateDoc(d.ref, {
+        indicacoes: arrayRemove(indicacaoId),
+        atualizadoEm: serverTimestamp(),
+      })
+    )
+  )
+}
+
+// Grava os votos de uma pessoa num turno: a lista inteira, sobrescrevendo a
+// anterior. Mudar de ideia é chamar de novo com outra lista; abster-se é não
+// chamar (ou chamar com a lista vazia).
+export async function votar(userId, eleicaoId, turno, indicacaoIds) {
+  await setDoc(doc(db, 'votos', idDoVoto(eleicaoId, turno, userId)), {
+    eleicaoId,
+    turno: turno || 1,
+    userId,
+    indicacoes: indicacaoIds,
+    atualizadoEm: serverTimestamp(),
+  })
+}
+
+// Registra a apuração de um turno na eleição. Com vencedor único, a eleição
+// termina e o livro vira o do clube; com empate, a eleição fica `empatada` à
+// espera de quem tem a senha decidir entre um novo turno e um desempate
+// manual.
+//
+// `apuracao` é o resultado de `apurar()` (lib/eleicao.js). Só os totais e os
+// empatados são gravados: é o que a tela de resultado mostra para sempre.
+export async function registrarApuracao(eleicaoId, turno, apuracao) {
+  const registro = {
+    turno: turno || 1,
+    totais: apuracao.totais,
+    votantes: apuracao.votantes,
+    empatados: apuracao.empatados.map((i) => i.id),
+    em: Date.now(),
+  }
+  await updateDoc(doc(db, 'eleicoes', eleicaoId), {
+    apuracoes: arrayUnion(registro),
+    status: apuracao.vencedor ? 'encerrada' : 'empatada',
+  })
+  return registro
+}
+
+// Abre o próximo turno só entre os empatados. Os votos do turno anterior
+// ficam gravados (são outro documento, pelo número do turno) e a prateleira
+// passa a mostrar só os finalistas.
+export async function abrirNovoTurno(eleicaoId, turnoAtual, finalistasIds, { prazoVotacao } = {}) {
+  await updateDoc(doc(db, 'eleicoes', eleicaoId), {
+    status: 'aberta',
+    turno: (turnoAtual || 1) + 1,
+    finalistas: finalistasIds,
+    prazoVotacao: prazoVotacao || null,
+  })
+}
+
+// Encerra a eleição com o livro vencedor, que vira o livro do clube NA HORA:
+// o que estava em leitura é arquivado no histórico com o vencedor da rodada
+// (ou, sendo o eleito outro volume da mesma série, entra ao lado). Devolve o
+// id do livro criado.
+export async function encerrarEleicaoComVencedor(eleicaoId, indicacao, { juntarASerie = false } = {}) {
+  const livroId = await cadastrarLivro(
+    {
+      titulo: indicacao.titulo,
+      autor: indicacao.autor,
+      capaUrl: indicacao.capaUrl,
+      totalPaginas: indicacao.totalPaginas,
+      serie: indicacao.serie,
+      serieOrdem: indicacao.serieOrdem,
+      dataLimite: null,
+      dataInicio: null,
+    },
+    { juntarASerie }
+  )
+  await updateDoc(doc(db, 'eleicoes', eleicaoId), {
+    status: 'encerrada',
+    vencedorIndicacaoId: indicacao.id,
+    livroId,
+    encerradaEm: serverTimestamp(),
+  })
+  return livroId
+}
+
+// Cancela a eleição. Indicações e votos ficam gravados, só saem de cena.
+export async function cancelarEleicao(eleicaoId) {
+  await updateDoc(doc(db, 'eleicoes', eleicaoId), {
+    status: 'cancelada',
+    encerradaEm: serverTimestamp(),
+  })
 }

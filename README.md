@@ -102,6 +102,26 @@ tipografia serifada e dourado como cor de destaque.
   uma leitura nova. O toque na notificação abre o app exatamente no que ela
   conta. Liga-se por aparelho, no "Editar perfil". Detalhes abaixo.
 
+- **Eleição do próximo livro:** em vez de alguém trocar o livro, o clube
+  elege. Com a **senha da urna**, abre-se uma eleição (com prazos opcionais
+  para indicar e para votar). Cada membro **indica até 2 livros** — a busca na
+  Google Books puxa capa, autor e número de páginas, tudo corrigível — e
+  escreve um texto defendendo cada um. Quem indica pode marcar que o livro
+  **faz parte de uma coleção**: se ele vencer, os próximos livros do clube
+  serão os da série. Indicar e votar acontecem **ao mesmo tempo**: cada membro
+  tem **2 votos** entre os indicados, nunca nos próprios, e muda indicações e
+  votos à vontade enquanto a eleição está aberta (corrigir uma indicação apaga
+  os votos que ela já tinha, e o clube é avisado). Abster-se é só não votar. A
+  aba **Eleição** é uma prateleira de capas, embaralhada de forma fixa: tocar
+  numa capa abre a defesa e o botão de votar. **Ninguém vê quem indicou o quê
+  nem a contagem** até a **apuração**, feita por quem tem a senha na frente do
+  clube: a urna revela os votos e quem indicou cada livro, e o vencedor **vira
+  o livro do clube na hora**. Empate no topo abre um **novo turno** só entre os
+  empatados (1 voto por pessoa), ou é desempatado ali na conversa e registrado.
+  As eleições encerradas ficam na mesma aba, com o resultado completo. A aba
+  só aparece com eleição aberta ou encerrada há menos de 30 dias; depois, o
+  histórico de livros leva até as eleições anteriores.
+
 ## Rodando localmente
 
 ```bash
@@ -248,10 +268,13 @@ src/
 │   ├── reacoes.js           # emojis e como descrevê-los por extenso
 │   ├── vencedor.js          # quem venceu a rodada: mais longe e, no empate, antes
 │   ├── series.js            # séries: chave, ordem dos volumes e quem entra junto
+│   ├── eleicao.js           # eleição: regras, apuração, turnos e a ordem das capas
+│   ├── urna.js              # a senha da urna (só o resumo SHA-256 fica no código)
+│   ├── livrosApi.js         # busca de livros na Google Books
 │   └── formato.js           # datas, % e utilidades
 ├── hooks/
 │   ├── useColecaoAoVivo.js  # wrapper de onSnapshot
-│   ├── useDadosClube.js     # membros, livros do clube, progresso, mural
+│   ├── useDadosClube.js     # membros, livros do clube, progresso, mural, eleição
 │   └── useFoco.js           # rola até o item apontado por um aviso
 ├── components/
 │   ├── Cadastro.jsx
@@ -264,6 +287,11 @@ src/
 │   ├── ProximoLivro.jsx     # o livro da fila, destravado a quem terminou
 │   ├── SeletorLivros.jsx    # o trilho que troca o volume da série em foco
 │   ├── MinhaEstante.jsx     # aba "Já li": os livros que EU terminei
+│   ├── Eleicao.jsx          # aba da eleição: prateleira, livro aberto, resultados
+│   ├── IndicarLivroModal.jsx # indicar um livro: busca + formulário + defesa
+│   ├── ApuracaoModal.jsx    # a urna: senha, contagem, vencedor ou novo turno
+│   ├── AbrirEleicaoModal.jsx # abre uma eleição (com a senha)
+│   ├── SenhaUrnaModal.jsx   # pede a senha antes de cancelar
 │   ├── SeletorCor.jsx       # escolha da cor do membro + prévia da barra
 │   ├── AtualizarProgressoModal.jsx
 │   ├── AvisosNoCelular.jsx  # o interruptor dos avisos, dentro do perfil
@@ -300,6 +328,9 @@ worker/                      # o carteiro dos avisos (Cloudflare Worker)
 | `resenhas`         | `{userId}_{livroId}`  | `userId`, `livroId`, `texto`, `nota`, `atualizadoEm`         |
 | `mural`            | `{mensagemId}`        | `userId`, `texto`, `criadoEm`                                 |
 | `historicoLivros`  | `{livroId}`           | `titulo`, `autor`, `capaUrl`, `serie`, `serieOrdem`, `vencedorUserId`, `encerradoEm` |
+| `eleicoes`         | `{eleicaoId}`         | `nome`, `status` (`aberta`/`empatada`/`encerrada`/`cancelada`), `turno`, `finalistas`, `prazoIndicacoes`, `prazoVotacao`, `apuracoes`, `vencedorIndicacaoId`, `livroId`, `criadoEm`, `encerradaEm` |
+| `indicacoes`       | `{indicacaoId}`       | `eleicaoId`, `userId`, `titulo`, `autor`, `capaUrl`, `totalPaginas`, `serie`, `serieOrdem`, `texto`, `fonteId`, `criadoEm`, `atualizadoEm` |
+| `votos`            | `{eleicaoId}_{turno}_{userId}` | `eleicaoId`, `turno`, `userId`, `indicacoes` (até 2 ids), `atualizadoEm` |
 
 A **série** é o que autoriza mais de um `ativo: true` ao mesmo tempo. `serie` é
 o nome dela (vazio = livro avulso) e `serieOrdem` o número do volume, usado só
@@ -337,6 +368,30 @@ outros. Documentos antigos não têm o campo `naFila`, e por
 isso ficam de fora da consulta `where('naFila', '==', true)`. Tirar da fila
 também só mexe no booleano: o livro some da tela, mas o que já foi escrito
 sobre ele continua gravado.
+
+A **eleição** mora em três coleções. `eleicoes` tem um documento por eleição,
+e só uma fica em andamento por vez (`aberta` ou `empatada`). `indicacoes` tem
+um livro por documento, com `userId` de quem indicou — o anonimato é feito na
+tela, que simplesmente não mostra o nome até a apuração; como todo o resto do
+app, é experiência, não segurança. `votos` tem **um documento por pessoa por
+turno**, com a lista de até dois ids de indicação: mudar o voto é sobrescrever
+o próprio documento, e apagar os votos de uma indicação corrigida é um
+`arrayRemove` em quem a carregava. A contagem nunca é gravada antes da hora: a
+**apuração** acontece no navegador de quem tem a senha (`apurar()` em
+`lib/eleicao.js`, que também descarta voto no próprio livro, repetido ou fora
+da disputa) e grava em `apuracoes` os totais e os empatados daquele turno — é
+isso que a tela de resultado mostra para sempre. Com vencedor, a eleição fecha
+e `cadastrarLivro` faz dele o livro do clube (encerrando o atual, ou entrando
+ao lado dos volumes da mesma série); com empate, `turno` sobe, `finalistas`
+guarda os empatados e os votos recomeçam em documentos novos (o turno faz parte
+do id), com um voto por pessoa.
+
+A **senha da urna** não está em lugar nenhum do repositório: `lib/urna.js`
+guarda só o resumo SHA-256 dela e compara com o que o membro digita. Para
+trocar, gere um novo resumo (a instrução está no arquivo) e substitua.
+
+A **busca de livros** (`lib/livrosApi.js`) usa a Google Books sem chave; se a
+cota por dia apertar, há uma constante para colar uma chave da API.
 
 Uma nota parcial pode ser **só a reação**, sem texto: o emoji já diz o que a
 pessoa sentiu, e o ponto do livro vem no selo ao lado. Nota assim não tranca —

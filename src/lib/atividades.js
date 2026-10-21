@@ -90,11 +90,38 @@ export function textoDoProgresso(nome, pct, { titulo = '', onde = '' } = {}) {
     : `${nome} chegou a ${pct}%${onde ? ` de ${onde}` : ' da leitura'}.`
 }
 
+// ---------- A eleição do próximo livro ----------
+//
+// Os avisos da eleição não dizem quem fez o quê: quem indicou é segredo até a
+// apuração, e um aviso "Fulano indicou…" entregaria tudo.
+
+export function textoEleicaoAberta(nome) {
+  return `A Patoteca abriu uma eleição para o próximo livro${nome ? ` (${nome})` : ''}. Indique até 2 livros e vote!`
+}
+
+export function textoIndicacaoNova(titulo) {
+  return `Um livro novo entrou na eleição: ${titulo}.`
+}
+
+export function textoIndicacaoAlterada(titulo) {
+  return `A indicação de ${titulo} foi corrigida. Quem tinha votado nela precisa votar de novo.`
+}
+
+export function textoNovoTurno(turno, titulos) {
+  return `Empate na eleição! ${turno}º turno aberto entre ${titulos}. Vote de novo.`
+}
+
+export function textoResultado(titulo, nome) {
+  return `A Patoteca elegeu ${titulo} como o próximo livro${nome ? ` — indicação de ${nome}` : ''}!`
+}
+
 export function montarAtividades({
   notas = [],
   resenhas = [],
   comentarios = [],
   progresso = [],
+  eleicoes = [],
+  indicacoes = [],
   membrosPorId = {},
   tituloPorLivroId = {},
   livrosResenhaveis = new Set(),
@@ -181,7 +208,98 @@ export function montarAtividades({
     })
   })
 
+  // A eleição: a abertura, cada livro indicado (sem dizer por quem), os turnos
+  // de desempate e o resultado. Nada disso tem autor à mostra — os eventos
+  // saem com `anonimo` e a aba desenha a urna no lugar do retrato.
+  const indicacoesPorId = {}
+  indicacoes.forEach((i) => {
+    indicacoesPorId[i.id] = i
+  })
+  // Uma eleição cancelada sai de cena por inteiro: os avisos dela levariam a
+  // uma tela que não existe mais.
+  const eleicoesVivas = eleicoes.filter((e) => e.status !== 'cancelada')
+  const eleicoesPorId = {}
+  eleicoesVivas.forEach((e) => {
+    eleicoesPorId[e.id] = e
+  })
+
+  eleicoesVivas.forEach((e) => {
+    const em = emMs(e.criadoEm)
+    if (em != null) {
+      eventos.push({
+        id: `eleicao-${e.id}`,
+        tipo: 'eleicao',
+        em,
+        anonimo: true,
+        emoji: '🗳️',
+        texto: textoEleicaoAberta(e.nome),
+        destino: { aba: 'eleicao', tipo: 'eleicao', id: e.id },
+      })
+    }
+
+    // Cada apuração vira um aviso: empate (com o turno que abriu) ou o
+    // resultado final.
+    ;(Array.isArray(e.apuracoes) ? e.apuracoes : []).forEach((ap) => {
+      if (typeof ap.em !== 'number') return
+      const empatados = (ap.empatados || []).map((id) => indicacoesPorId[id]).filter(Boolean)
+      if (empatados.length > 1) {
+        eventos.push({
+          id: `apuracao-${e.id}-${ap.turno}`,
+          tipo: 'eleicao',
+          em: ap.em,
+          anonimo: true,
+          emoji: '⚖️',
+          texto: textoNovoTurno((ap.turno || 1) + 1, listarTitulos(empatados)),
+          destino: { aba: 'eleicao', tipo: 'eleicao', id: e.id },
+        })
+      }
+    })
+
+    if (e.status === 'encerrada' && e.vencedorIndicacaoId) {
+      const vencedora = indicacoesPorId[e.vencedorIndicacaoId]
+      const em = emMs(e.encerradaEm)
+      if (vencedora && em != null) {
+        eventos.push({
+          id: `resultado-${e.id}`,
+          tipo: 'eleicao',
+          em,
+          anonimo: true,
+          emoji: '🏆',
+          texto: textoResultado(vencedora.titulo, nomeDe(membrosPorId, vencedora.userId)),
+          destino: { aba: 'eleicao', tipo: 'eleicao', id: e.id },
+        })
+      }
+    }
+  })
+
+  // Uma indicação é um documento só, reescrito a cada correção — então rende
+  // um aviso por livro: "entrou" ou, se foi mexida depois, "foi corrigida".
+  indicacoes.forEach((i) => {
+    if (!eleicoesPorId[i.eleicaoId]) return
+    const criada = emMs(i.criadoEm)
+    const mexida = emMs(i.atualizadoEm)
+    const em = mexida ?? criada
+    if (em == null) return
+    const corrigida = criada != null && mexida != null && mexida - criada > 60000
+    eventos.push({
+      id: `indicacao-${i.id}`,
+      tipo: 'indicacao',
+      em,
+      anonimo: true,
+      emoji: '📚',
+      texto: corrigida ? textoIndicacaoAlterada(i.titulo) : textoIndicacaoNova(i.titulo),
+      destino: { aba: 'eleicao', tipo: 'indicacao', id: i.id, eleicaoId: i.eleicaoId },
+    })
+  })
+
   return eventos.sort((a, b) => b.em - a.em).slice(0, TETO)
+}
+
+// "A Sombra do Vento e O Jogo do Anjo" — para caber numa frase.
+function listarTitulos(indicacoes) {
+  const titulos = indicacoes.map((i) => `“${i.titulo}”`)
+  if (titulos.length <= 1) return titulos[0] || ''
+  return `${titulos.slice(0, -1).join(', ')} e ${titulos[titulos.length - 1]}`
 }
 
 // Quantos avisos são mais novos que a última visita à aba.
