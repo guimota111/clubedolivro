@@ -4,17 +4,17 @@
 // Duas fontes, em ordem:
 //
 //   1. Google Books — melhor catálogo de edições brasileiras. A API exige uma
-//      chave: sem ela a Google recusa a consulta com "cota zero". Vale a
-//      chave web do próprio projeto Firebase (`firebaseConfig.apiKey`), desde
-//      que a "Books API" esteja ativada no projeto e liberada nas restrições
-//      da chave (Google Cloud → APIs e serviços → Credenciais). Ou cole aqui
-//      uma chave de outro projeto que já tenha a Books API ativa.
+//      chave: sem ela a Google recusa a consulta com "cota zero". A chave
+//      abaixo foi criada no projeto do clube só para a Books API e só aceita
+//      pedidos vindos do site (restrição por domínio), por isso pode ficar no
+//      código. Vazia, vale a chave web do Firebase (`firebaseConfig.apiKey`),
+//      que só funciona se a Books API estiver liberada nas restrições dela.
 //   2. Open Library — não precisa de chave. Entra quando a Google falha ou não
 //      acha nada. O catálogo em português é mais ralo e às vezes a capa é de
 //      outra edição, mas dá para corrigir no formulário.
 import { firebaseConfig } from '../firebase'
 
-const CHAVE_GOOGLE_BOOKS = ''
+const CHAVE_GOOGLE_BOOKS = 'AIzaSyDR_AIPJb7Lmp-1ZMMKrdR-9VjQSqhP3Cg'
 const chaveGoogle = () => CHAVE_GOOGLE_BOOKS || firebaseConfig.apiKey || ''
 
 const GOOGLE = 'https://www.googleapis.com/books/v1/volumes'
