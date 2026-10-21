@@ -2,7 +2,8 @@ import { initializeApp } from 'firebase/app'
 import { getFirestore } from 'firebase/firestore'
 import { getStorage } from 'firebase/storage'
 
-const firebaseConfig = {
+// Exportada porque a chave web também serve para a Google Books (`lib/livrosApi.js`).
+export const firebaseConfig = {
   apiKey: 'AIzaSyC13IYCYsIJohGhmEj-kCQixQsA49Dr4d8',
   authDomain: 'clube-do-livro-16073.firebaseapp.com',
   projectId: 'clube-do-livro-16073',

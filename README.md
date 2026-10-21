@@ -390,8 +390,14 @@ A **senha da urna** não está em lugar nenhum do repositório: `lib/urna.js`
 guarda só o resumo SHA-256 dela e compara com o que o membro digita. Para
 trocar, gere um novo resumo (a instrução está no arquivo) e substitua.
 
-A **busca de livros** (`lib/livrosApi.js`) usa a Google Books sem chave; se a
-cota por dia apertar, há uma constante para colar uma chave da API.
+A **busca de livros** (`lib/livrosApi.js`) tenta a Google Books e, se ela
+falhar ou não achar nada, a Open Library (que não precisa de chave). A Google
+Books **exige chave**: sem ela recusa a consulta com "cota zero". O código usa
+a chave web do próprio projeto Firebase, mas ela só vale depois de, no
+[Google Cloud](https://console.cloud.google.com/apis/library/books.googleapis.com?project=clube-do-livro-16073),
+**ativar a Books API** e, em *APIs e serviços → Credenciais*, liberá-la nas
+restrições de API da chave (ou deixar a chave sem restrição de API). Há também
+uma constante para colar a chave de outro projeto que já tenha a Books API.
 
 Uma nota parcial pode ser **só a reação**, sem texto: o emoji já diz o que a
 pessoa sentiu, e o ponto do livro vem no selo ao lado. Nota assim não tranca —
