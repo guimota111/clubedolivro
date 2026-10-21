@@ -68,7 +68,7 @@ export default function IndicarLivroModal({
     } catch (err) {
       console.error(err)
       setErroBusca(
-        'A busca não respondeu. Dá para tentar de novo ou preencher os dados na mão.'
+        'Nenhuma das fontes de busca respondeu. Dá para tentar de novo ou preencher os dados na mão.'
       )
       setResultados(null)
     } finally {
@@ -253,6 +253,7 @@ export default function IndicarLivroModal({
                         r.editora,
                         r.ano,
                         r.idioma && r.idioma !== 'pt' ? r.idioma.toUpperCase() : '',
+                        r.fonte === 'Open Library' ? 'Open Library' : '',
                       ]
                         .filter(Boolean)
                         .join(' · ')}
