@@ -4,7 +4,7 @@ import { abrirEleicao } from '../lib/db'
 import { anunciar } from '../lib/push'
 import { textoEleicaoAberta } from '../lib/atividades'
 import { conferirSenhaDaUrna } from '../lib/urna'
-import { INDICACOES_POR_PESSOA, votosPorPessoa } from '../lib/eleicao'
+import { INDICACOES_POR_PESSOA, VAGAS_PADRAO, VAGAS_MAXIMO, votosPorPessoa } from '../lib/eleicao'
 import { CampoSenha } from './SenhaUrnaModal'
 import { IconeUrna } from './Icones'
 
@@ -14,6 +14,7 @@ export default function AbrirEleicaoModal({ userId, onFechar, aoAbrir }) {
   const [nome, setNome] = useState('')
   const [prazoIndicacoes, setPrazoIndicacoes] = useState('')
   const [prazoVotacao, setPrazoVotacao] = useState('')
+  const [vagas, setVagas] = useState(VAGAS_PADRAO)
   const [senha, setSenha] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState('')
@@ -37,6 +38,7 @@ export default function AbrirEleicaoModal({ userId, onFechar, aoAbrir }) {
         nome: nomeLimpo,
         prazoIndicacoes: prazoIndicacoes || null,
         prazoVotacao: prazoVotacao || null,
+        vagas,
       })
       anunciar(`eleicao-${id}`, textoEleicaoAberta(nomeLimpo))
       aoAbrir?.(id)
@@ -54,7 +56,8 @@ export default function AbrirEleicaoModal({ userId, onFechar, aoAbrir }) {
         Cada membro indica até {INDICACOES_POR_PESSOA} livros, defende cada um
         com um texto, e vota em até {votosPorPessoa(1)} dos indicados — menos nos
         próprios. Ninguém vê quem indicou o quê nem a contagem: isso só aparece
-        na apuração, feita com a senha da urna.
+        na apuração, feita com a senha da urna — voto a voto, com o nome de
+        quem votou. Os mais votados entram na fila do próximo livro, na ordem.
       </p>
 
       <form onSubmit={aoEnviar} style={{ marginTop: '1rem' }}>
@@ -68,6 +71,30 @@ export default function AbrirEleicaoModal({ userId, onFechar, aoAbrir }) {
             onChange={(e) => setNome(e.target.value)}
             placeholder="Ex.: O livro de novembro"
           />
+        </div>
+
+        <div className="campo">
+          <label>Quantos livros serão eleitos?</label>
+          <div className="apuracao-vagas" role="radiogroup" aria-label="Livros a eleger">
+            {Array.from({ length: VAGAS_MAXIMO }, (_, k) => k + 1).map((n) => (
+              <label key={n} className={`campo-caixa${vagas === n ? ' marcada' : ''}`}>
+                <input
+                  type="radio"
+                  name="eleicao-vagas"
+                  value={n}
+                  checked={vagas === n}
+                  onChange={() => setVagas(n)}
+                />
+                <span>
+                  {n} {n === 1 ? 'livro' : 'livros'}
+                </span>
+              </label>
+            ))}
+          </div>
+          <span className="campo-dica">
+            Com mais de um, o 1º colocado é o próximo livro e o 2º vem logo atrás
+            na fila. Dá para mudar na hora de apurar só se a eleição for antiga.
+          </span>
         </div>
 
         <div className="campo">

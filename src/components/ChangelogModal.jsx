@@ -3,10 +3,16 @@ import { IconeLivroAberto } from './Icones'
 
 // Chave de versão do changelog. Ao lançar novidades futuras, troque a versão
 // para que o aviso apareça de novo uma única vez por navegador.
-export const CHANGELOG_VERSAO = 'clubedolivro:changelog:2026-10-v9'
+export const CHANGELOG_VERSAO = 'clubedolivro:changelog:2026-10-v10'
 
 // Cada item usa um ícone (Icone) OU um emoji literal (emoji).
 const NOVIDADES = [
+  {
+    emoji: '🥁',
+    titulo: 'Apuração voto a voto — e dois livros eleitos',
+    texto:
+      'A urna agora abre devagar: cada cédula sai com o nome de quem votou, o placar vai se mexendo na tela e as últimas chegam com rufar de tambores. No fim, pódio com confete. Uma eleição pode eleger mais de um livro: o 1º colocado é o próximo livro e o 2º entra logo atrás na fila.',
+  },
   {
     emoji: '🗳️',
     titulo: 'Eleição do próximo livro',

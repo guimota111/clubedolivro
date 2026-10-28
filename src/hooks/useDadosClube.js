@@ -43,16 +43,23 @@ export function useLivrosDoClube() {
     [docs]
   )
 
-  // Se houver mais de um na fila por acaso, vale o mais recente.
-  const proximo = useMemo(() => {
-    const naFila = docs.filter((l) => l.naFila === true)
-    if (!naFila.length) return null
-    return naFila.sort(
-      (a, b) => (b.iniciadoEm?.seconds || 0) - (a.iniciadoEm?.seconds || 0)
-    )[0]
-  }, [docs])
+  // A fila, por ordem de chegada: uma eleição que elege dois livros põe os
+  // dois aqui, o 1º colocado na frente (`filaOrdem` desempata os que entraram
+  // no mesmo instante). O próximo livro é o primeiro dela.
+  const fila = useMemo(
+    () =>
+      docs
+        .filter((l) => l.naFila === true)
+        .sort(
+          (a, b) =>
+            (a.iniciadoEm?.seconds || 0) - (b.iniciadoEm?.seconds || 0) ||
+            (a.filaOrdem || 0) - (b.filaOrdem || 0)
+        ),
+    [docs]
+  )
+  const proximo = fila[0] || null
 
-  return { livros: docs, abertos, encerrados, proximo, carregando }
+  return { livros: docs, abertos, encerrados, proximo, fila, carregando }
 }
 
 // Assina o progresso do clube inteiro: um documento por membro por livro. São

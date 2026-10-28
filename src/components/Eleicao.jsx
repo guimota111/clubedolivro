@@ -13,6 +13,10 @@ import {
   embaralharFixo,
   contarVotantes,
   listarTitulos,
+  vagasDaEleicao,
+  vagasRestantes,
+  eleitosAnteriores,
+  ordinal,
 } from '../lib/eleicao'
 import IndicarLivroModal from './IndicarLivroModal'
 import ApuracaoModal from './ApuracaoModal'
@@ -88,7 +92,9 @@ export default function Eleicao({
   const minhas = daEleicao.filter((i) => i.userId === userId)
 
   const turno = atual?.turno || 1
-  const limiteVotos = votosPorPessoa(turno)
+  const vagas = vagasDaEleicao(atual)
+  const restantes = vagasRestantes(atual)
+  const limiteVotos = votosPorPessoa(turno, restantes)
   const idsEmDisputa = useMemo(() => new Set(emDisputa.map((i) => i.id)), [emDisputa])
   const meuVoto = votos.find((v) => v.userId === userId && (v.turno || 1) === turno)
   const meusVotos = (meuVoto?.indicacoes || []).filter((id) => idsEmDisputa.has(id))
@@ -205,6 +211,14 @@ export default function Eleicao({
   const empatados = registroEmpate
     ? daEleicao.filter((i) => (registroEmpate.empatados || []).includes(i.id))
     : []
+  // Os livros que já garantiram vaga em turnos anteriores (e, numa apuração
+  // empatada, os que entraram neste).
+  const jaEleitos = [
+    ...eleitosAnteriores(atual),
+    ...((registroEmpate && registroEmpate.eleitos) || []),
+  ]
+    .map((id) => daEleicao.find((i) => i.id === id))
+    .filter(Boolean)
 
   return (
     <>
@@ -217,13 +231,17 @@ export default function Eleicao({
             <>Apuração com empate — à espera do desempate</>
           ) : turno > 1 ? (
             <>
-              {turno}º turno · desempate entre {emDisputa.length} livros ·{' '}
-              {limiteVotos} voto por pessoa
+              {turno}º turno · desempate entre {emDisputa.length} livros{' '}
+              {restantes === 1 ? 'pela vaga que falta' : `pelas ${restantes} vagas que faltam`} ·{' '}
+              {limiteVotos} {limiteVotos === 1 ? 'voto' : 'votos'} por pessoa
             </>
           ) : (
             <>
               Indicações e votação abertas · até {INDICACOES_POR_PESSOA} indicações e{' '}
               {limiteVotos} votos por pessoa
+              {Number.isInteger(atual.vagas) && (
+                <> · {vagas === 1 ? '1 livro será eleito' : `${vagas} livros serão eleitos`}</>
+              )}
             </>
           )}
         </p>
@@ -248,15 +266,28 @@ export default function Eleicao({
 
         <p className="texto-tenue eleicao-segredo">
           Ninguém vê quem indicou o quê nem quantos votos cada livro tem — isso
-          só aparece na apuração. Toque numa capa para ler a defesa e votar. Dá
-          para mudar o voto até lá.
+          só aparece na apuração, feita na frente do clube: as cédulas saem da
+          urna uma a uma, com o nome de quem votou. Toque numa capa para ler a
+          defesa e votar. Dá para mudar o voto até lá.
         </p>
 
         {empatada && (
           <div className="aviso aviso-bom">
-            A apuração deu <strong>empate</strong> entre {listarTitulos(empatados)}.
-            Quem tem a senha da urna decide: um novo turno só entre eles, ou o
-            desempate na conversa.
+            {jaEleitos.length > 0 && (
+              <>
+                {jaEleitos.length === 1 ? 'Já eleito' : 'Já eleitos'}:{' '}
+                <strong>{listarTitulos(jaEleitos)}</strong>.{' '}
+              </>
+            )}
+            A apuração deu <strong>empate</strong> entre {listarTitulos(empatados)}
+            {jaEleitos.length > 0 ? ' pelo que falta' : ''}. Quem tem a senha da
+            urna decide: um novo turno só entre eles, ou o desempate na conversa.
+          </div>
+        )}
+        {!empatada && turno > 1 && jaEleitos.length > 0 && (
+          <div className="aviso aviso-bom">
+            {jaEleitos.length === 1 ? 'Já eleito' : 'Já eleitos'}:{' '}
+            <strong>{listarTitulos(jaEleitos)}</strong>. Este turno decide o resto.
           </div>
         )}
 
@@ -547,7 +578,8 @@ function EleicoesPassadas({ eleicoes, indicacoes, membrosPorId, aberta, aoAbrir 
         {eleicoes.map((e) => {
           const expandida = aberta === e.id
           const daEleicao = indicacoes.filter((i) => i.eleicaoId === e.id)
-          const vencedora = daEleicao.find((i) => i.id === e.vencedorIndicacaoId)
+          const vencedoras = idsEleitos(e).map((id) => daEleicao.find((i) => i.id === id)).filter(Boolean)
+          const vencedora = vencedoras[0]
           return (
             <article key={e.id} className={`eleicao-passada${expandida ? ' aberta' : ''}`}>
               <button
@@ -568,8 +600,10 @@ function EleicoesPassadas({ eleicoes, indicacoes, membrosPorId, aberta, aoAbrir 
                   <span className="texto-tenue">
                     {e.status === 'cancelada'
                       ? `Cancelada ${formatarData(e.encerradaEm)}`
-                      : vencedora
-                        ? `Venceu “${vencedora.titulo}” · ${formatarData(e.encerradaEm)}`
+                      : vencedoras.length > 1
+                        ? `Eleitos ${listarTitulos(vencedoras)} · ${formatarData(e.encerradaEm)}`
+                        : vencedora
+                          ? `Venceu “${vencedora.titulo}” · ${formatarData(e.encerradaEm)}`
                         : `Encerrada ${formatarData(e.encerradaEm)}`}
                     {' · '}
                     {daEleicao.length} {daEleicao.length === 1 ? 'indicação' : 'indicações'}
@@ -594,6 +628,8 @@ function Resultado({ eleicao, indicacoes, membrosPorId }) {
   const [textoAberto, setTextoAberto] = useState(null)
   const apuracoes = [...(eleicao.apuracoes || [])].sort((a, b) => (a.turno || 1) - (b.turno || 1))
   const porId = Object.fromEntries(indicacoes.map((i) => [i.id, i]))
+  // Posição de cada eleito na fila (1º, 2º…), para a coroa dizer qual é qual.
+  const posicaoEleito = Object.fromEntries(idsEleitos(eleicao).map((id, k) => [id, k + 1]))
 
   if (eleicao.status === 'cancelada') {
     return (
@@ -646,7 +682,11 @@ function Resultado({ eleicao, indicacoes, membrosPorId }) {
             <ul className="resultado-lista">
               {lista.map((i) => {
                 const n = ap.totais?.[i.id] || 0
-                const coroado = ultimo && eleicao.vencedorIndicacaoId === i.id
+                // A coroa vai no turno em que o livro garantiu a vaga: o último
+                // para quem decidiu ali, o anterior para quem já tinha entrado.
+                const posicao = posicaoEleito[i.id]
+                const coroado =
+                  !!posicao && (ultimo || (ap.eleitos || []).includes(i.id))
                 const autor = membrosPorId[i.userId]
                 return (
                   <LinhaResultado
@@ -655,6 +695,7 @@ function Resultado({ eleicao, indicacoes, membrosPorId }) {
                     votos={n}
                     maior={maior}
                     coroado={coroado}
+                    posicao={coroado && idsEleitos(eleicao).length > 1 ? posicao : null}
                     autor={autor}
                     aberto={textoAberto === i.id}
                     aoAlternar={() => setTextoAberto(textoAberto === i.id ? null : i.id)}
@@ -669,7 +710,16 @@ function Resultado({ eleicao, indicacoes, membrosPorId }) {
   )
 }
 
-function LinhaResultado({ indicacao, votos, maior, coroado, autor, aberto, aoAlternar }) {
+// Os eleitos de uma eleição encerrada, na ordem da fila. As eleições antigas
+// só têm o campo no singular.
+function idsEleitos(eleicao) {
+  if (Array.isArray(eleicao.vencedoresIndicacaoIds) && eleicao.vencedoresIndicacaoIds.length) {
+    return eleicao.vencedoresIndicacaoIds
+  }
+  return eleicao.vencedorIndicacaoId ? [eleicao.vencedorIndicacaoId] : []
+}
+
+function LinhaResultado({ indicacao, votos, maior, coroado, posicao, autor, aberto, aoAlternar }) {
   const temVotos = typeof votos === 'number'
   return (
     <li className={`apuracao-item${coroado ? ' apuracao-vencedor' : ''}`}>
@@ -683,7 +733,9 @@ function LinhaResultado({ indicacao, votos, maior, coroado, autor, aberto, aoAlt
         )}
         <span className="apuracao-dados">
           <strong className="apuracao-titulo">
-            {coroado && <IconeCoroa size={16} />} {indicacao.titulo}
+            {coroado && <IconeCoroa size={16} />}
+            {posicao != null && <span className="apuracao-ordinal">{ordinal(posicao)}</span>}{' '}
+            {indicacao.titulo}
           </strong>
           {indicacao.autor && <span className="autor">{indicacao.autor}</span>}
           {autor !== undefined && (

@@ -104,26 +104,37 @@ tipografia serifada e dourado como cor de destaque.
 
 - **Eleição do próximo livro:** em vez de alguém trocar o livro, o clube
   elege. Com a **senha da urna**, abre-se uma eleição (com prazos opcionais
-  para indicar e para votar). Cada membro **indica até 2 livros** — a busca na
-  Google Books puxa capa, autor e número de páginas, tudo corrigível — e
-  escreve um texto defendendo cada um. Quem indica pode marcar que o livro
-  **faz parte de uma coleção**: se ele vencer, os próximos livros do clube
-  serão os da série. Indicar e votar acontecem **ao mesmo tempo**: cada membro
-  tem **2 votos** entre os indicados, nunca nos próprios, e muda indicações e
-  votos à vontade enquanto a eleição está aberta (corrigir uma indicação apaga
-  os votos que ela já tinha, e o clube é avisado). Abster-se é só não votar. A
-  aba **Eleição** é uma prateleira de capas, embaralhada de forma fixa: tocar
-  numa capa abre a defesa e o botão de votar. **Ninguém vê quem indicou o quê
-  nem a contagem** até a **apuração**, feita por quem tem a senha na frente do
-  clube: a urna revela os votos e quem indicou cada livro, e o vencedor **entra
-  na fila do próximo livro** — nem todo mundo terminou o de agora, então
-  ninguém é tirado da leitura; quem já terminou começa o eleito, e "Tornar o
-  livro do clube" vira a página quando o clube decidir. Empate no topo abre um
-  **novo turno** só entre os
-  empatados (1 voto por pessoa), ou é desempatado ali na conversa e registrado.
-  As eleições encerradas ficam na mesma aba, com o resultado completo. A aba
-  só aparece com eleição aberta ou encerrada há menos de 30 dias; depois, o
-  histórico de livros leva até as eleições anteriores.
+  para indicar e para votar, e **quantos livros ela elege** — um, dois ou
+  três). Cada membro **indica até 2 livros** — a busca na Google Books puxa
+  capa, autor e número de páginas, tudo corrigível — e escreve um texto
+  defendendo cada um. Quem indica pode marcar que o livro **faz parte de uma
+  coleção**: se ele vencer, os próximos livros do clube serão os da série.
+  Indicar e votar acontecem **ao mesmo tempo**: cada membro tem **2 votos**
+  entre os indicados, nunca nos próprios, e muda indicações e votos à vontade
+  enquanto a eleição está aberta (corrigir uma indicação apaga os votos que ela
+  já tinha, e o clube é avisado). Abster-se é só não votar. A aba **Eleição** é
+  uma prateleira de capas, embaralhada de forma fixa: tocar numa capa abre a
+  defesa e o botão de votar. **Ninguém vê quem indicou o quê nem a contagem**
+  até a **apuração**.
+- **A apuração é um espetáculo:** feita por quem tem a senha, na frente do
+  clube (projetando ou compartilhando a tela). As cédulas saem da urna **uma a
+  uma**, cada uma com **o nome de quem votou** e o livro; o placar reordena ao
+  vivo, com as vagas em dourado, e as três últimas cédulas chegam com **rufar
+  de tambores**. Espaço e seta para a direita puxam a próxima cédula; dá para
+  silenciar o som e para revelar tudo de uma vez. Fechar sem querer não perde
+  nada: a revelação retoma da mesma cédula. No fim, o **pódio** com confete
+  revela quem indicou cada eleito. Os eleitos **entram na fila do próximo
+  livro na ordem da votação** — o 1º é o próximo livro, o 2º vem logo atrás
+  (quando os dois empatam, quem apura pode inverter a ordem). Nem todo mundo
+  terminou o de agora, então ninguém é tirado da leitura; quem já terminou
+  começa o 1º da fila, e "Tornar o livro do clube" vira a página quando o
+  clube decidir — o seguinte assume a fila sozinho. Empate na beira do corte
+  (por exemplo, dois livros disputando a última vaga) abre um **novo turno** só
+  entre os empatados pelas vagas que faltam (1 voto por pessoa por vaga; os já
+  eleitos ficam guardados), ou é desempatado ali na conversa e registrado. As
+  eleições encerradas ficam na mesma aba, com o resultado completo e a posição
+  de cada eleito. A aba só aparece com eleição aberta ou encerrada há menos de
+  30 dias; depois, o histórico de livros leva até as eleições anteriores.
 
 ## Rodando localmente
 
@@ -271,7 +282,8 @@ src/
 │   ├── reacoes.js           # emojis e como descrevê-los por extenso
 │   ├── vencedor.js          # quem venceu a rodada: mais longe e, no empate, antes
 │   ├── series.js            # séries: chave, ordem dos volumes e quem entra junto
-│   ├── eleicao.js           # eleição: regras, apuração, turnos e a ordem das capas
+│   ├── eleicao.js           # eleição: regras, apuração por vaga, turnos, cédulas e a ordem das capas
+│   ├── som.js               # os sons da apuração, sintetizados na hora
 │   ├── urna.js              # a senha da urna (só o resumo SHA-256 fica no código)
 │   ├── livrosApi.js         # busca de livros na Google Books
 │   └── formato.js           # datas, % e utilidades
@@ -292,7 +304,8 @@ src/
 │   ├── MinhaEstante.jsx     # aba "Já li": os livros que EU terminei
 │   ├── Eleicao.jsx          # aba da eleição: prateleira, livro aberto, resultados
 │   ├── IndicarLivroModal.jsx # indicar um livro: busca + formulário + defesa
-│   ├── ApuracaoModal.jsx    # a urna: senha, contagem, vencedor ou novo turno
+│   ├── ApuracaoModal.jsx    # a urna: senha, revelação voto a voto, pódio ou novo turno
+│   ├── Confete.jsx          # a chuva de confete do pódio
 │   ├── AbrirEleicaoModal.jsx # abre uma eleição (com a senha)
 │   ├── SenhaUrnaModal.jsx   # pede a senha antes de cancelar
 │   ├── SeletorCor.jsx       # escolha da cor do membro + prévia da barra
@@ -324,14 +337,14 @@ worker/                      # o carteiro dos avisos (Cloudflare Worker)
 | Coleção            | Documento             | Campos principais                                             |
 | ------------------ | --------------------- | ------------------------------------------------------------- |
 | `users`            | `{userId}`            | `nome`, `avatarUrl`, `cor`, `criadoEm`                        |
-| `livroAtual`       | `{livroId}`           | `titulo`, `autor`, `capaUrl`, `dataLimite`, `dataInicio`, `serie`, `serieOrdem`, `ativo`, `naFila`, `iniciadoEm` |
+| `livroAtual`       | `{livroId}`           | `titulo`, `autor`, `capaUrl`, `dataLimite`, `dataInicio`, `serie`, `serieOrdem`, `ativo`, `naFila`, `filaOrdem`, `iniciadoEm` |
 | `progresso`        | `{userId}_{livroId}`  | `userId`, `livroId`, `porcentagem`, `paginaAtual`, `totalPaginas`, `modo`, `historico`, `atualizadoEm` |
 | `inscricoesPush`   | `{resumo do endpoint}` | `userId`, `endpoint`, `p256dh`, `auth`, `criadoEm` — um por aparelho que ligou os avisos |
 | `notas`            | `{notaId}`            | `userId`, `livroId`, `texto`, `desbloqueioPct`, `desbloqueioTipo`, `desbloqueioValor`, `totalPaginas`, `criadoEm` |
 | `resenhas`         | `{userId}_{livroId}`  | `userId`, `livroId`, `texto`, `nota`, `atualizadoEm`         |
 | `mural`            | `{mensagemId}`        | `userId`, `texto`, `criadoEm`                                 |
 | `historicoLivros`  | `{livroId}`           | `titulo`, `autor`, `capaUrl`, `serie`, `serieOrdem`, `vencedorUserId`, `encerradoEm` |
-| `eleicoes`         | `{eleicaoId}`         | `nome`, `status` (`aberta`/`empatada`/`encerrada`/`cancelada`), `turno`, `finalistas`, `prazoIndicacoes`, `prazoVotacao`, `apuracoes`, `vencedorIndicacaoId`, `livroId`, `criadoEm`, `encerradaEm` |
+| `eleicoes`         | `{eleicaoId}`         | `nome`, `status` (`aberta`/`empatada`/`encerrada`/`cancelada`), `turno`, `finalistas`, `vagas`, `eleitos`, `prazoIndicacoes`, `prazoVotacao`, `apuracoes`, `vencedorIndicacaoId`, `vencedoresIndicacaoIds`, `livroId`, `livrosIds`, `criadoEm`, `encerradaEm` |
 | `indicacoes`       | `{indicacaoId}`       | `eleicaoId`, `userId`, `titulo`, `autor`, `capaUrl`, `totalPaginas`, `serie`, `serieOrdem`, `texto`, `fonteId`, `criadoEm`, `atualizadoEm` |
 | `votos`            | `{eleicaoId}_{turno}_{userId}` | `eleicaoId`, `turno`, `userId`, `indicacoes` (até 2 ids), `atualizadoEm` |
 
@@ -375,7 +388,11 @@ arquivamento acontece: os booleanos viram e o livro passa a conviver com os
 outros. Documentos antigos não têm o campo `naFila`, e por
 isso ficam de fora da consulta `where('naFila', '==', true)`. Tirar da fila
 também só mexe no booleano: o livro some da tela, mas o que já foi escrito
-sobre ele continua gravado.
+sobre ele continua gravado. A fila pode ter **mais de um livro** — uma eleição
+que elege dois põe os dois ali — e é por ordem de chegada (`iniciadoEm`, com
+`filaOrdem` desempatando os que entraram no mesmo instante): o próximo livro é
+sempre o primeiro dela, e promovê-lo deixa o seguinte na frente, sem mexer em
+nada.
 
 A **eleição** mora em três coleções. `eleicoes` tem um documento por eleição,
 e só uma fica em andamento por vez (`aberta` ou `empatada`). `indicacoes` tem

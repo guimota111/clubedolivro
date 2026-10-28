@@ -2,7 +2,9 @@ import { useEffect } from 'react'
 import { Filigrana } from './Icones'
 
 // Modal genérico com estética de painel de biblioteca.
-export default function Modal({ titulo, onFechar, children }) {
+// `classe` acrescenta uma classe ao painel — para um modal mais largo, por
+// exemplo, como a apuração projetada.
+export default function Modal({ titulo, onFechar, classe = '', children }) {
   // Fecha com a tecla Esc.
   useEffect(() => {
     function aoTecla(e) {
@@ -24,7 +26,7 @@ export default function Modal({ titulo, onFechar, children }) {
       }}
     >
       <div
-        className="modal painel"
+        className={`modal painel${classe ? ` ${classe}` : ''}`}
         role="dialog"
         aria-modal="true"
         aria-label={titulo}
