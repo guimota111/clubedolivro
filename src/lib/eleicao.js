@@ -5,9 +5,11 @@
 // próprios. Indicar e votar acontecem ao mesmo tempo, e os dois podem ser
 // mudados à vontade enquanto a eleição está aberta. Ninguém vê quem indicou o
 // quê nem quantos votos cada livro tem: isso só aparece na apuração, feita por
-// quem tem a senha da urna, na frente do clube. Empate no topo abre um novo
-// turno só entre os empatados, com um voto por pessoa. O vencedor vira o
-// livro do clube na hora.
+// quem tem a senha da urna, na frente do clube — voto a voto, com o nome de
+// quem votou. Uma eleição elege uma ou mais VAGAS (hoje, dois livros): os mais
+// votados entram na fila na ordem da votação. Empate na beira do corte abre um
+// novo turno só entre os empatados, pelas vagas que sobraram. Os eleitos
+// entram na fila do próximo livro, um atrás do outro.
 
 import { prazoParaData } from './formato'
 
@@ -17,11 +19,33 @@ export const LIMITE_TEXTO_INDICACAO = 2000
 // o resultado não sumir no dia seguinte.
 export const DIAS_EM_CARTAZ = 30
 
+// Quantos livros uma eleição elege. As eleições abertas antes de existir a
+// escolha não têm o campo: vale 1, como sempre foi — a não ser que a urna
+// diga outra coisa na hora de apurar (`vagas` da apuração).
+export const VAGAS_PADRAO = 2
+export const VAGAS_MAXIMO = 3
+
+export function vagasDaEleicao(eleicao) {
+  const n = Number(eleicao?.vagas)
+  return Number.isInteger(n) && n >= 1 ? Math.min(n, VAGAS_MAXIMO) : 1
+}
+
+// Os livros já eleitos em turnos anteriores (ids de indicação), na ordem em
+// que entraram. Um turno de desempate disputa só as vagas que sobraram.
+export function eleitosAnteriores(eleicao) {
+  return Array.isArray(eleicao?.eleitos) ? eleicao.eleitos : []
+}
+
+export function vagasRestantes(eleicao) {
+  return Math.max(0, vagasDaEleicao(eleicao) - eleitosAnteriores(eleicao).length)
+}
+
 // Quantos votos cada pessoa tem num turno. No primeiro, dois; nos seguintes,
-// que só existem para desempatar, um — com dois votos e dois finalistas todo
-// mundo votaria nos dois e o empate nunca acabaria.
-export function votosPorPessoa(turno = 1) {
-  return turno > 1 ? 1 : 2
+// que só existem para desempatar, tantos quantas forem as vagas em jogo —
+// normalmente um: com dois votos e dois finalistas todo mundo votaria nos
+// dois e o empate nunca acabaria.
+export function votosPorPessoa(turno = 1, vagas = 1) {
+  return turno > 1 ? Math.max(1, vagas) : 2
 }
 
 // ---------- Situação ----------
@@ -141,7 +165,7 @@ export function votosValidos(votos = [], eleicao, indicacoes = []) {
   if (!eleicao) return []
   const turno = eleicao.turno || 1
   const emDisputa = new Map(indicacoesEmDisputa(eleicao, indicacoes).map((i) => [i.id, i]))
-  const limite = votosPorPessoa(turno)
+  const limite = votosPorPessoa(turno, vagasRestantes(eleicao))
   return votos
     .filter((v) => v.eleicaoId === eleicao.id && (v.turno || 1) === turno)
     .map((v) => {
@@ -155,9 +179,52 @@ export function votosValidos(votos = [], eleicao, indicacoes = []) {
     })
 }
 
+// As cédulas de um turno, na ordem em que saem da urna: uma por voto (uma
+// pessoa com dois votos rende duas cédulas, uma atrás da outra). A ordem das
+// pessoas é embaralhada — a MESMA em toda abertura da urna, porque sai de um
+// resumo do id da eleição com o turno — para a contagem não entregar quem
+// chegou primeiro e para a revelação poder ser retomada do ponto em que parou.
+export function cedulas(votos = [], eleicao, indicacoes = []) {
+  if (!eleicao) return []
+  const turno = eleicao.turno || 1
+  const validos = votosValidos(votos, eleicao, indicacoes).filter((v) => v.indicacoes.length)
+  const pessoas = [...validos]
+    .map((v) => ({ v, peso: resumoNumerico(`${eleicao.id}:${turno}:${v.userId}`) }))
+    .sort((a, b) => a.peso - b.peso || a.v.userId.localeCompare(b.v.userId))
+    .map(({ v }) => v)
+  const lista = []
+  pessoas.forEach((v) => {
+    v.indicacoes.forEach((indicacaoId, k) => {
+      lista.push({ userId: v.userId, indicacaoId, ultimaDaPessoa: k === v.indicacoes.length - 1 })
+    })
+  })
+  return lista
+}
+
+// A contagem parcial depois de reveladas as primeiras `reveladas` cédulas —
+// é o placar que vai se mexendo durante a apuração.
+export function contagemParcial(cedulasDoTurno = [], reveladas = 0, emDisputa = []) {
+  const totais = {}
+  emDisputa.forEach((i) => {
+    totais[i.id] = 0
+  })
+  cedulasDoTurno.slice(0, reveladas).forEach((c) => {
+    totais[c.indicacaoId] = (totais[c.indicacaoId] || 0) + 1
+  })
+  return totais
+}
+
 // A apuração de um turno: quantos votos cada livro recebeu, a lista ordenada
-// (do mais votado ao menos) e quem empatou no topo.
-export function apurar(votos = [], eleicao, indicacoes = []) {
+// (do mais votado ao menos), quem ficou eleito e quem empatou na beira do
+// corte.
+//
+// `vagas` é quantos livros ainda faltam eleger neste turno. Andando do mais
+// votado para o menos, cada grupo de livros com a mesma contagem entra inteiro
+// se couber nas vagas que sobram; o primeiro grupo que não cabe é o empate, e
+// a apuração para ali — o que vem abaixo dele não concorre mais. Livro sem
+// nenhum voto nunca é eleito sozinho: se ainda há vaga e só sobrou gente com
+// zero, eles ficam "empatados" para o clube decidir (ou abrir outro turno).
+export function apurar(votos = [], eleicao, indicacoes = [], vagas = vagasRestantes(eleicao)) {
   const emDisputa = indicacoesEmDisputa(eleicao, indicacoes)
   const totais = {}
   emDisputa.forEach((i) => {
@@ -172,15 +239,40 @@ export function apurar(votos = [], eleicao, indicacoes = []) {
       totais[id] = (totais[id] || 0) + 1
     })
   })
+  return classificar({ emDisputa, totais, votantes, vagas })
+}
 
+// A parte da apuração que não depende de contar: dada a contagem, quem entra
+// e quem empata. Separada para a tela remontar o mesmo resultado a partir de
+// uma apuração já gravada.
+export function classificar({ emDisputa = [], totais = {}, votantes = 0, vagas = 1 }) {
   const ordenados = [...emDisputa].sort(
     (a, b) => (totais[b.id] || 0) - (totais[a.id] || 0) || a.titulo.localeCompare(b.titulo, 'pt-BR')
   )
   const maior = ordenados.length ? totais[ordenados[0].id] || 0 : 0
-  const empatados = maior > 0 ? ordenados.filter((i) => (totais[i.id] || 0) === maior) : []
-  const vencedor = empatados.length === 1 ? empatados[0] : null
 
-  return { totais, ordenados, votantes, maior, empatados, vencedor }
+  const eleitos = []
+  let empatados = []
+  let restantes = Math.max(0, vagas)
+  let k = 0
+  while (k < ordenados.length && restantes > 0) {
+    const n = totais[ordenados[k].id] || 0
+    const grupo = []
+    while (k < ordenados.length && (totais[ordenados[k].id] || 0) === n) grupo.push(ordenados[k++])
+    if (n === 0 || grupo.length > restantes) {
+      empatados = grupo
+      break
+    }
+    eleitos.push(...grupo)
+    restantes -= grupo.length
+  }
+
+  // Completa quando não sobrou vaga, ou quando sobrou mas não há empate a
+  // resolver (menos livros do que vagas, por exemplo).
+  const completa = !empatados.length
+  const vencedor = completa && eleitos.length ? eleitos[0] : null
+
+  return { totais, ordenados, votantes, maior, eleitos, empatados, restantes, completa, vencedor }
 }
 
 // Quantas pessoas já votaram neste turno (gastando pelo menos um voto).
@@ -202,6 +294,11 @@ function ms(ts) {
   if (typeof ts.seconds === 'number') return ts.seconds * 1000
   if (typeof ts === 'number') return ts
   return 0
+}
+
+// "1º" / "2º" — a posição de um livro na fila dos eleitos.
+export function ordinal(n) {
+  return `${n}º`
 }
 
 // "A Sombra do Vento e O Jogo do Anjo" — para caber numa frase.

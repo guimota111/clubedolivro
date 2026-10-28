@@ -25,6 +25,7 @@ export default function ProximoLivro({
   membros,
   livroAtual,
   proximo,
+  fila = [],
   entraNaSerie = false,
   porUsuario,
   minhaPct,
@@ -164,9 +165,24 @@ export default function ProximoLivro({
             <div>
               <h3 style={{ margin: 0 }}>{proximo.titulo}</h3>
               {proximo.autor && <div className="autor">{proximo.autor}</div>}
-              <span className="resenha-selo selo-fila">Na fila</span>
+              <span className="resenha-selo selo-fila">
+                {fila.length > 1 ? '1º da fila' : 'Na fila'}
+              </span>
             </div>
           </div>
+
+          {fila.length > 1 && (
+            <p className="texto-tenue proximo-depois">
+              Depois dele {fila.length === 2 ? 'vem' : 'vêm'}{' '}
+              {fila.slice(1).map((l, k) => (
+                <span key={l.id}>
+                  {k > 0 && (k === fila.length - 2 ? ' e ' : ', ')}
+                  <strong>{l.titulo}</strong>
+                </span>
+              ))}
+              . Quando este virar o livro do clube, o seguinte assume a fila sozinho.
+            </p>
+          )}
 
           <LeitoresDoProximo
             membros={membros}

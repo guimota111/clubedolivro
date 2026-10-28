@@ -111,8 +111,18 @@ export function textoNovoTurno(turno, titulos) {
   return `Empate na eleição! ${turno}º turno aberto entre ${titulos}. Vote de novo.`
 }
 
-export function textoResultado(titulo, nome) {
-  return `A Patoteca elegeu ${titulo} como o próximo livro${nome ? ` — indicação de ${nome}` : ''}! Ele já está na fila.`
+// `eleitos`: [{ titulo, nome }], na ordem da fila. Aceita também o par antigo
+// (titulo, nome) de um eleito só.
+export function textoResultado(eleitos, nome) {
+  const lista = Array.isArray(eleitos) ? eleitos : [{ titulo: eleitos, nome }]
+  const descrever = (e) => `${e.titulo}${e.nome ? ` (indicação de ${e.nome})` : ''}`
+  if (lista.length <= 1) {
+    const e = lista[0] || { titulo: '' }
+    return `A Patoteca elegeu ${e.titulo} como o próximo livro${e.nome ? ` — indicação de ${e.nome}` : ''}! Ele já está na fila.`
+  }
+  const partes = lista.map(descrever)
+  const nomes = `${partes.slice(0, -1).join(', ')} e ${partes[partes.length - 1]}`
+  return `A Patoteca elegeu ${nomes}! Os ${lista.length} já estão na fila, nessa ordem.`
 }
 
 export function montarAtividades({
@@ -256,16 +266,21 @@ export function montarAtividades({
     })
 
     if (e.status === 'encerrada' && e.vencedorIndicacaoId) {
-      const vencedora = indicacoesPorId[e.vencedorIndicacaoId]
+      const ids = Array.isArray(e.vencedoresIndicacaoIds) && e.vencedoresIndicacaoIds.length
+        ? e.vencedoresIndicacaoIds
+        : [e.vencedorIndicacaoId]
+      const eleitas = ids.map((id) => indicacoesPorId[id]).filter(Boolean)
       const em = emMs(e.encerradaEm)
-      if (vencedora && em != null) {
+      if (eleitas.length && em != null) {
         eventos.push({
           id: `resultado-${e.id}`,
           tipo: 'eleicao',
           em,
           anonimo: true,
           emoji: '🏆',
-          texto: textoResultado(vencedora.titulo, nomeDe(membrosPorId, vencedora.userId)),
+          texto: textoResultado(
+            eleitas.map((i) => ({ titulo: i.titulo, nome: nomeDe(membrosPorId, i.userId) }))
+          ),
           destino: { aba: 'eleicao', tipo: 'eleicao', id: e.id },
         })
       }

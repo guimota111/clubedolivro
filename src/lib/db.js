@@ -203,7 +203,9 @@ export async function reabrirLivro(livroId) {
 // `ativo: false`: já tem id, então progresso, notas e resenhas dele funcionam
 // como as de qualquer livro — e no dia em que ele assume, nada se perde.
 
-// Coloca um livro na fila. O clube segue no livro de agora.
+// Coloca um livro na fila. O clube segue no livro de agora. A fila é por
+// ordem de chegada; `filaOrdem` só desempata livros que entraram juntos (os
+// eleitos de uma mesma eleição).
 export async function cadastrarProximoLivro({
   titulo,
   autor,
@@ -213,9 +215,11 @@ export async function cadastrarProximoLivro({
   dataInicio,
   serie,
   serieOrdem,
+  filaOrdem = 0,
 }) {
   const ref = doc(collection(db, 'livroAtual'))
   await setDoc(ref, {
+    filaOrdem,
     titulo,
     autor: autor || '',
     capaUrl: capaUrl || '',
@@ -376,13 +380,17 @@ export async function listarHistorico() {
 
 // Abre uma eleição. Exige a senha da urna — conferida na tela, antes de
 // chegar aqui, como todo o resto do app.
-export async function abrirEleicao(userId, { nome, prazoIndicacoes, prazoVotacao }) {
+export async function abrirEleicao(userId, { nome, prazoIndicacoes, prazoVotacao, vagas }) {
   const ref = doc(collection(db, 'eleicoes'))
   await setDoc(ref, {
     nome: (nome || '').trim() || 'Eleição do próximo livro',
     status: 'aberta', // 'aberta' | 'empatada' | 'encerrada' | 'cancelada'
     turno: 1,
     finalistas: [],
+    // Quantos livros esta eleição elege; os já eleitos em turnos anteriores
+    // ficam em `eleitos` enquanto um desempate decide as vagas que sobraram.
+    vagas: vagasValidas(vagas),
+    eleitos: [],
     prazoIndicacoes: prazoIndicacoes || null,
     prazoVotacao: prazoVotacao || null,
     apuracoes: [],
@@ -393,6 +401,11 @@ export async function abrirEleicao(userId, { nome, prazoIndicacoes, prazoVotacao
     encerradaEm: null,
   })
   return ref.id
+}
+
+function vagasValidas(n) {
+  const v = Math.round(Number(n))
+  return Number.isInteger(v) && v >= 1 ? Math.min(v, 3) : 1
 }
 
 function camposDaIndicacao({ titulo, autor, capaUrl, totalPaginas, serie, serieOrdem, texto, fonteId }) {
@@ -475,56 +488,84 @@ export async function votar(userId, eleicaoId, turno, indicacaoIds) {
 //
 // `apuracao` é o resultado de `apurar()` (lib/eleicao.js). Só os totais e os
 // empatados são gravados: é o que a tela de resultado mostra para sempre.
-export async function registrarApuracao(eleicaoId, turno, apuracao) {
+export async function registrarApuracao(eleicaoId, turno, apuracao, { vagas } = {}) {
   const registro = {
     turno: turno || 1,
     totais: apuracao.totais,
     votantes: apuracao.votantes,
+    eleitos: apuracao.eleitos.map((i) => i.id),
     empatados: apuracao.empatados.map((i) => i.id),
     em: Date.now(),
   }
-  await updateDoc(doc(db, 'eleicoes', eleicaoId), {
+  const dados = {
     apuracoes: arrayUnion(registro),
-    status: apuracao.vencedor ? 'encerrada' : 'empatada',
-  })
+    status: apuracao.completa ? 'encerrada' : 'empatada',
+  }
+  // A urna pode fixar na hora quantos livros a eleição elege (as eleições
+  // abertas antes dessa escolha não trazem o campo).
+  if (vagas) dados.vagas = vagasValidas(vagas)
+  await updateDoc(doc(db, 'eleicoes', eleicaoId), dados)
   return registro
 }
 
 // Abre o próximo turno só entre os empatados. Os votos do turno anterior
 // ficam gravados (são outro documento, pelo número do turno) e a prateleira
 // passa a mostrar só os finalistas.
-export async function abrirNovoTurno(eleicaoId, turnoAtual, finalistasIds, { prazoVotacao } = {}) {
+//
+// `eleitos` são os livros que já garantiram vaga nos turnos anteriores: ficam
+// guardados na eleição e o novo turno disputa só o que sobrou.
+export async function abrirNovoTurno(
+  eleicaoId,
+  turnoAtual,
+  finalistasIds,
+  { prazoVotacao, eleitos = [] } = {}
+) {
   await updateDoc(doc(db, 'eleicoes', eleicaoId), {
     status: 'aberta',
     turno: (turnoAtual || 1) + 1,
     finalistas: finalistasIds,
+    eleitos,
     prazoVotacao: prazoVotacao || null,
   })
 }
 
-// Encerra a eleição com o livro vencedor, que entra na FILA do próximo livro
-// (`naFila`): nada do que está em leitura é encerrado, porque nem todo mundo
-// terminou. Quem já terminou pode começar a ler desde já, e quando o clube
-// decidir virar a página, "Tornar o livro do clube" promove o eleito — o
-// mesmo caminho de sempre. Devolve o id do livro criado.
-export async function encerrarEleicaoComVencedor(eleicaoId, indicacao) {
-  const livroId = await cadastrarProximoLivro({
-    titulo: indicacao.titulo,
-    autor: indicacao.autor,
-    capaUrl: indicacao.capaUrl,
-    totalPaginas: indicacao.totalPaginas,
-    serie: indicacao.serie,
-    serieOrdem: indicacao.serieOrdem,
-    dataLimite: null,
-    dataInicio: null,
-  })
+// Encerra a eleição com os livros eleitos, que entram na FILA do próximo
+// livro (`naFila`) na ordem da votação — o 1º é o próximo, o 2º vem atrás
+// dele. Nada do que está em leitura é encerrado, porque nem todo mundo
+// terminou. Quem já terminou pode começar o primeiro da fila desde já, e
+// quando o clube decidir virar a página, "Tornar o livro do clube" promove o
+// primeiro — o mesmo caminho de sempre; o seguinte vira o próximo sozinho.
+// Devolve os ids dos livros criados, na mesma ordem.
+export async function encerrarEleicaoComEleitos(eleicaoId, indicacoes) {
+  const lista = Array.isArray(indicacoes) ? indicacoes : [indicacoes]
+  const livrosIds = []
+  for (let k = 0; k < lista.length; k++) {
+    const indicacao = lista[k]
+    livrosIds.push(
+      await cadastrarProximoLivro({
+        titulo: indicacao.titulo,
+        autor: indicacao.autor,
+        capaUrl: indicacao.capaUrl,
+        totalPaginas: indicacao.totalPaginas,
+        serie: indicacao.serie,
+        serieOrdem: indicacao.serieOrdem,
+        dataLimite: null,
+        dataInicio: null,
+        filaOrdem: k + 1,
+      })
+    )
+  }
   await updateDoc(doc(db, 'eleicoes', eleicaoId), {
     status: 'encerrada',
-    vencedorIndicacaoId: indicacao.id,
-    livroId,
+    // Os dois campos no singular continuam gravados para quem lê o primeiro
+    // eleito; as listas trazem todos, na ordem.
+    vencedorIndicacaoId: lista[0]?.id || '',
+    livroId: livrosIds[0] || '',
+    vencedoresIndicacaoIds: lista.map((i) => i.id),
+    livrosIds,
     encerradaEm: serverTimestamp(),
   })
-  return livroId
+  return livrosIds
 }
 
 // Cancela a eleição. Indicações e votos ficam gravados, só saem de cena.

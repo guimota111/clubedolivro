@@ -218,7 +218,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
 
   const { membros } = useMembros()
   // Normalmente um livro em leitura; numa série, vários abertos ao mesmo tempo.
-  const { abertos: livrosAtuais, encerrados, proximo } = useLivrosDoClube()
+  const { abertos: livrosAtuais, encerrados, proximo, fila } = useLivrosDoClube()
   const { recados } = useMural()
   const { resenhas, porLivro: resenhasPorLivro } = useResenhas()
   const { comentarios, porAlvo: comentariosPorAlvo } = useComentarios()
@@ -330,8 +330,8 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
 
   // As séries que o clube já conhece, para sugerir nos formulários.
   const seriesConhecidas = useMemo(
-    () => listarSeries(livrosAtuais, proximo ? [proximo] : [], historico),
-    [livrosAtuais, proximo, historico]
+    () => listarSeries(livrosAtuais, fila, historico),
+    [livrosAtuais, fila, historico]
   )
   // Promover o livro da fila encerra o que está aberto — a não ser que ele seja
   // outro volume da mesma série, e aí só se junta aos demais.
@@ -372,9 +372,11 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
     livrosAtuais.forEach((l) => {
       mapa[l.id] = l.titulo
     })
-    if (proximo) mapa[proximo.id] = proximo.titulo
+    fila.forEach((l) => {
+      mapa[l.id] = l.titulo
+    })
     return mapa
-  }, [historico, livrosAtuais, proximo])
+  }, [historico, livrosAtuais, fila])
 
   const livrosResenhaveis = useMemo(() => {
     const conjunto = new Set()
@@ -719,6 +721,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
               membros={membros}
               livroAtual={livro?.ativo === true ? livro : null}
               proximo={proximo}
+              fila={fila}
               entraNaSerie={proximoEntraNaSerie}
               porUsuario={porUsuarioProximo}
               minhaPct={minhaPorcentagem}
