@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import './styles/app.css'
+import './styles/menu.css'
 import { obterOuCriarUserId, limparIdentidade } from './lib/identity'
 import { buscarUsuario, garantirCoresDosMembros, reabrirLivro } from './lib/db'
 import {
@@ -23,23 +24,22 @@ import {
   serieEmLeitura,
 } from './lib/series'
 import { montarAtividades, contarNaoVistas } from './lib/atividades'
-import { separarEleicoes, eleicaoEmCartaz } from './lib/eleicao'
+import { separarEleicoes } from './lib/eleicao'
 import { useFoco } from './hooks/useFoco'
+import { useRota } from './hooks/useRota'
 import { definirAutor } from './lib/push'
 
 import Cadastro from './components/Cadastro'
+import Menu, { SinoNovidades } from './components/Menu'
 import LivroAtualCard from './components/LivroAtualCard'
-import Estante from './components/Estante'
-import PistaCorrida from './components/PistaCorrida'
-import RelogioCiclo from './components/RelogioCiclo'
-import NotasParciais from './components/NotasParciais'
-import Resenhas from './components/Resenhas'
+import PaginaLivro from './components/PaginaLivro'
+import LivrosAnteriores from './components/LivrosAnteriores'
+import LivrosLidos from './components/LivrosLidos'
+import Patos from './components/Patos'
 import Mural from './components/Mural'
-import Historico from './components/Historico'
 import Atividades from './components/Atividades'
 import ProximoLivro from './components/ProximoLivro'
 import SeletorLivros from './components/SeletorLivros'
-import MinhaEstante from './components/MinhaEstante'
 import Eleicao from './components/Eleicao'
 import AbrirEleicaoModal from './components/AbrirEleicaoModal'
 import CadastrarLivroModal from './components/CadastrarLivroModal'
@@ -52,9 +52,10 @@ import {
   IconeVela,
   IconeMarcador,
   IconeLivroAberto,
+  IconeLivro,
   IconePena,
-  IconeSino,
   IconePilha,
+  IconePato,
   IconeMais,
   IconeUrna,
   DivisoriaOrnamentada,
@@ -70,6 +71,18 @@ const CHAVE_LIVRO = 'clubedolivro:livro-escolhido'
 // Mapa vazio reaproveitado: um objeto novo a cada render reiniciaria os
 // `useMemo` que dependem dele à toa.
 const VAZIO = {}
+const NADA = []
+
+// Os itens do menu principal, na ordem em que aparecem.
+const ITENS_DO_MENU = [
+  { chave: 'atual', rotulo: 'Livro atual', Icone: IconeLivroAberto },
+  { chave: 'anteriores', rotulo: 'Anteriores', Icone: IconePilha },
+  { chave: 'lidos', rotulo: 'Livros lidos', Icone: IconeLivro },
+  { chave: 'patos', rotulo: 'Patos', Icone: IconePato },
+  { chave: 'mural', rotulo: 'Mural', Icone: IconePena },
+  { chave: 'proximo', rotulo: 'Próximo livro', Icone: IconeMarcador },
+  { chave: 'eleicao', rotulo: 'Eleição', Icone: IconeUrna },
+]
 
 export default function App() {
   const [userId] = useState(() => obterOuCriarUserId())
@@ -145,9 +158,13 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
   const [modalProgressoProximo, setModalProgressoProximo] = useState(false)
   // Abrir a eleição do próximo livro (pede a senha da urna).
   const [modalEleicao, setModalEleicao] = useState(false)
-  // 'leitura' | 'novidades' | 'resenhas' | 'estante' | 'eleicao'
-  const [aba, setAba] = useState('leitura')
   const verFoto = useVerFoto()
+
+  // A tela em que o membro está: vem do `#hash`, então o voltar do celular e
+  // um link direto funcionam. `pagina` é o item do menu; `id` é o livro ou o
+  // pato aberto; `sub` é a sub-aba de um livro (corrida, notas, resenhas).
+  const { rota, navegar } = useRota()
+  const { pagina, sub } = rota
 
   // Como o progresso aparece no celular: barras (a estante) ou a pista de
   // corrida. A escolha fica guardada neste navegador.
@@ -180,24 +197,11 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
     }
     return agora
   })
-  // O que estava por ver quando a aba foi aberta (para destacar na lista).
+  // O que estava por ver quando as novidades foram abertas (para destacar).
   const [destaqueAte, setDestaqueAte] = useState(null)
   // Para onde um aviso de novidades mandou ir. A `marca` muda a cada clique,
   // então clicar duas vezes no mesmo aviso funciona de novo.
   const [foco, setFoco] = useState(null)
-
-  function irPara(destino) {
-    if (!destino) return
-    // Um aviso pode ser de outro volume da série. Levar a tela até ele sem
-    // trocar o livro escolhido mostraria a corrida errada — ou nota nenhuma.
-    // Só troca para volume que está no trilho: guardar um id fora dele faria
-    // o site cair no palpite automático na próxima visita.
-    if (destino.livroId && idsDoTrilho.includes(destino.livroId)) {
-      escolherLivro(destino.livroId)
-    }
-    setAba(destino.aba)
-    setFoco({ ...destino, marca: Date.now() })
-  }
 
   // Changelog: mostra uma vez por navegador, logo após estar logado.
   const [modalChangelog, setModalChangelog] = useState(() => {
@@ -218,7 +222,8 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
 
   const { membros } = useMembros()
   // Normalmente um livro em leitura; numa série, vários abertos ao mesmo tempo.
-  const { abertos: livrosAtuais, encerrados, proximo, fila } = useLivrosDoClube()
+  // `livros` é a coleção inteira — abertos, fila e encerrados.
+  const { livros, abertos: livrosAtuais, encerrados, proximo, fila } = useLivrosDoClube()
   const { recados } = useMural()
   const { resenhas, porLivro: resenhasPorLivro } = useResenhas()
   const { comentarios, porAlvo: comentariosPorAlvo } = useComentarios()
@@ -246,10 +251,58 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
     () => volumesDaSerie.map((l) => l.id),
     [volumesDaSerie]
   )
-  // Notas dos volumes do trilho: são os únicos que a tela abre, e um aviso de
-  // novidades tem de ter para onde levar.
-  const { notas: notasDosAbertos, porLivro: notasPorLivro } =
-    useNotasDeLivros(idsDoTrilho)
+
+  // Os livros anteriores: só o que está no HISTÓRICO — é ele que diz que o
+  // clube leu e encerrou o livro. Um livro inativo que não está lá nunca foi
+  // do clube: saiu da fila antes da vez dele (`foraDaFila`, abaixo).
+  // Do encerrado mais recentemente ao mais antigo.
+  const anteriores = useMemo(() => {
+    const quando = {}
+    historico.forEach((h) => {
+      quando[h.id] = emMilissegundos(h.encerradoEm) || 0
+    })
+    return encerrados
+      .filter((l) => l.id in quando)
+      .sort(
+        (a, b) =>
+          (quando[b.id] || 0) - (quando[a.id] || 0) ||
+          (emMilissegundos(b.iniciadoEm) || 0) - (emMilissegundos(a.iniciadoEm) || 0)
+      )
+  }, [encerrados, historico])
+
+  const foraDaFila = useMemo(() => {
+    const noHistorico = new Set(historico.map((h) => h.id))
+    return encerrados.filter((l) => !noHistorico.has(l.id))
+  }, [encerrados, historico])
+
+  // O livro anterior aberto: o da rota ou, sem rota válida, o mais recente.
+  const livroAnterior = useMemo(() => {
+    if (!anteriores.length) return null
+    return anteriores.find((l) => l.id === rota.id) || anteriores[0]
+  }, [anteriores, rota.id])
+
+  // Quem abre "Anteriores" sem dizer qual cai no mais recente — e a rota
+  // passa a dizer qual é, para o voltar e o recarregar baterem com a tela.
+  useEffect(() => {
+    if (pagina !== 'anteriores' || !livroAnterior) return
+    if (rota.id !== livroAnterior.id) {
+      navegar({ pagina, id: livroAnterior.id, sub }, { substituir: true })
+    }
+  }, [pagina, rota.id, sub, livroAnterior, navegar])
+
+  // Notas dos livros que a tela pode abrir: os volumes do trilho e o livro
+  // anterior em foco. Um aviso de novidades tem de ter para onde levar.
+  const idsComNotas = useMemo(() => {
+    const ids = [...idsDoTrilho]
+    if (livroAnterior && !ids.includes(livroAnterior.id)) ids.push(livroAnterior.id)
+    return ids
+  }, [idsDoTrilho, livroAnterior])
+  const { notas: notasCarregadas, porLivro: notasPorLivro } = useNotasDeLivros(idsComNotas)
+  // Para as novidades só contam as notas dos livros em leitura.
+  const notasDosAbertos = useMemo(
+    () => notasCarregadas.filter((n) => idsDoTrilho.includes(n.livroId)),
+    [notasCarregadas, idsDoTrilho]
+  )
 
   // Qual dos livros abertos ESTE membro está lendo. A escolha fica no
   // navegador; sem escolha, o site adivinha pelo lugar onde ele mexeu por
@@ -289,10 +342,9 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
 
   const porUsuario = progressoPorLivro[livro?.id] || VAZIO
   const porUsuarioProximo = progressoPorLivro[proximo?.id] || VAZIO
-  const notas = useMemo(
-    () => (livro ? notasPorLivro[livro.id] || [] : []),
-    [notasPorLivro, livro]
-  )
+  const porUsuarioAnterior = progressoPorLivro[livroAnterior?.id] || VAZIO
+  const notas = livro ? notasPorLivro[livro.id] || NADA : NADA
+  const notasDoAnterior = livroAnterior ? notasPorLivro[livroAnterior.id] || NADA : NADA
 
   // As novidades cobrem o que a tela abre: os volumes do trilho. O livro da
   // fila fica de fora — um aviso sobre ele não teria para onde levar.
@@ -307,21 +359,24 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
   // Reabrir só faz sentido para um volume da MESMA série do que está em
   // leitura (ou quando não há nada em leitura): é a regra que mantém a estante
   // do clube coerente.
-  const podeReabrir =
-    !!livro &&
-    livro.ativo !== true &&
-    (!livrosAtuais.length || mesmaSerie(livro, { serie: serieDoClube }))
+  function podeReabrir(alvo) {
+    return (
+      !!alvo &&
+      alvo.ativo !== true &&
+      (!livrosAtuais.length || mesmaSerie(alvo, { serie: serieDoClube }))
+    )
+  }
 
-  async function reabrirVolume() {
+  async function reabrirVolume(alvo) {
     const ok = window.confirm(
-      `Reabrir “${livro.titulo}”?\n\n` +
+      `Reabrir “${alvo.titulo}”?\n\n` +
         'Ele volta para a leitura do clube, ao lado dos outros volumes da série, ' +
         'e sai do histórico. Progresso, notas e resenhas continuam exatamente ' +
         'como estão — nada foi apagado quando ele foi encerrado.'
     )
     if (!ok) return
     try {
-      await reabrirLivro(livro.id)
+      await reabrirLivro(alvo.id)
     } catch (err) {
       console.error(err)
       window.alert('Não foi possível reabrir este volume. Tente de novo.')
@@ -419,18 +474,16 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
 
   const naoVistas = contarNaoVistas(atividades, vistoAte)
 
-  // A eleição do próximo livro. A aba só aparece com eleição aberta ou
-  // encerrada há pouco — e sempre que alguém já está nela, para não sumir a
-  // tela debaixo da pessoa.
-  const { atual: eleicaoAtual, passadas: eleicoesPassadas } = useMemo(
+  const { passadas: eleicoesPassadas } = useMemo(
     () => separarEleicoes(eleicoes),
     [eleicoes]
   )
-  const mostrarAbaEleicao = aba === 'eleicao' || eleicaoEmCartaz(eleicoes)
 
-  // Ao entrar na aba, guarda o que ERA novo para continuar destacado durante a
-  // visita — e só então zera o contador.
-  function abrirNovidades() {
+  // Ao entrar nas novidades — pelo sino, por um aviso ou pelo voltar —,
+  // guarda o que ERA novo para continuar destacado durante a visita, e só
+  // então zera o contador.
+  useEffect(() => {
+    if (pagina !== 'novidades') return
     setDestaqueAte(vistoAte)
     const agora = Date.now()
     setVistoAte(agora)
@@ -439,7 +492,44 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
     } catch {
       // navegador sem localStorage: o contador só não sobrevive ao recarregar
     }
-    setAba('novidades')
+  }, [pagina]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Um aviso de novidades diz "a nota X do livro Y"; a rota é quem sabe se o
+  // livro Y está em leitura (página do livro atual) ou já foi encerrado
+  // (anteriores / lidos). A tradução mora aqui, perto das duas listas.
+  function rotaDoDestino(destino) {
+    const { aba, tipo, livroId } = destino
+    if (aba === 'eleicao') return { pagina: 'eleicao' }
+    if (aba === 'novidades') return { pagina: 'novidades' }
+
+    const noTrilho = !!livroId && idsDoTrilho.includes(livroId)
+    const encerrado = !!livroId && anteriores.some((l) => l.id === livroId)
+
+    if (aba === 'resenhas') {
+      const alvo = livroId || (tipo === 'livro' ? destino.id : '')
+      if (alvo && idsDoTrilho.includes(alvo)) return { pagina: 'atual', sub: 'resenhas' }
+      if (alvo) return { pagina: 'lidos', id: alvo }
+      return { pagina: 'lidos' }
+    }
+
+    // aba 'leitura': nota ou corrida de um livro.
+    const subDoTipo = tipo === 'nota' ? 'notas' : 'corrida'
+    if (noTrilho || !livroId) return { pagina: 'atual', sub: subDoTipo }
+    if (encerrado) return { pagina: 'anteriores', id: livroId, sub: subDoTipo }
+    return { pagina: 'atual', sub: subDoTipo }
+  }
+
+  function irPara(destino) {
+    if (!destino) return
+    // Um aviso pode ser de outro volume da série. Levar a tela até ele sem
+    // trocar o livro escolhido mostraria a corrida errada — ou nota nenhuma.
+    // Só troca para volume que está no trilho: guardar um id fora dele faria
+    // o site cair no palpite automático na próxima visita.
+    if (destino.livroId && idsDoTrilho.includes(destino.livroId)) {
+      escolherLivro(destino.livroId)
+    }
+    navegar(rotaDoDestino(destino))
+    setFoco({ ...destino, marca: Date.now() })
   }
 
   // O toque numa notificação do celular chega de dois jeitos: com o app
@@ -450,7 +540,9 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
     const id = new URLSearchParams(window.location.search).get('aviso')
     // Tira o `?aviso=` da barra de endereço: recarregar a página não deve
     // fazer a tela pular de novo para a mesma nota.
-    if (id) window.history.replaceState({}, '', window.location.pathname)
+    if (id) {
+      window.history.replaceState({}, '', window.location.pathname + window.location.hash)
+    }
     return id || null
   })
 
@@ -470,9 +562,9 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
     const evento = atividades.find((a) => a.id === avisoTocado)
     setAvisoTocado(null)
     if (evento?.destino) irPara(evento.destino)
-    // Recado do mural não é um evento do feed; ele mora na aba de leitura.
-    else if (avisoTocado.startsWith('mural-')) setAba('leitura')
-    else setAba('novidades')
+    // Recado do mural não é um evento do feed; ele tem página própria.
+    else if (avisoTocado.startsWith('mural-')) navegar({ pagina: 'mural' })
+    else navegar({ pagina: 'novidades' })
   }, [avisoTocado, atividades]) // eslint-disable-line react-hooks/exhaustive-deps
 
   useFoco(foco, 'corrida')
@@ -482,6 +574,9 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
     : 0
   const minhaPctProximo = proximo
     ? pctDoProgresso(porUsuarioProximo[userId], 0)
+    : 0
+  const minhaPctAnterior = livroAnterior
+    ? pctDoProgresso(porUsuarioAnterior[userId], livroAnterior.totalPaginas)
     : 0
 
   // Quantos já cruzaram os 100% do livro de agora — é esse número que diz ao
@@ -506,10 +601,44 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
     definirAutor(userId, meuPerfil.nome)
   }, [userId, meuPerfil.nome])
 
+  // O livro em que o botão "Meu progresso" mexe: o atual, ou o anterior que
+  // está aberto — é assim que um retardatário termina um livro encerrado.
+  const livroDoProgresso = pagina === 'anteriores' ? livroAnterior : livro
+  const porUsuarioDoProgresso = pagina === 'anteriores' ? porUsuarioAnterior : porUsuario
+  const minhaPctDoProgresso = pagina === 'anteriores' ? minhaPctAnterior : minhaPorcentagem
+  const mostrarFab =
+    !!livroDoProgresso && (pagina === 'atual' || pagina === 'anteriores')
+
+  // Os botões de trocar o livro, no pé da corrida do livro atual.
+  const acoesDaCorrida = (
+    <div className="centro trocar-livro" style={{ marginTop: '2rem' }}>
+      {serieDoClube && (
+        <button className="btn btn-fantasma" onClick={() => setModalLivroNaSerie(true)}>
+          <IconeMais size={16} />
+          Abrir outro livro da série
+        </button>
+      )}
+      <button className="btn btn-fantasma" onClick={() => setModalLivro(true)}>
+        Trocar o livro do clube
+      </button>
+      {/* O caminho democrático: em vez de alguém trocar o livro, o clube
+          elege o próximo. */}
+      <button className="btn btn-fantasma" onClick={() => navegar({ pagina: 'eleicao' })}>
+        <IconeUrna size={16} />
+        Eleição do próximo livro
+      </button>
+    </div>
+  )
+
   return (
     <div className="app">
       <header className="cabecalho">
-        <div className="container">
+        <div className="container cabecalho-conteudo">
+          <SinoNovidades
+            naoVistas={naoVistas}
+            ativo={pagina === 'novidades'}
+            onClick={() => navegar({ pagina: 'novidades' })}
+          />
           <h1 className="titulo-clube">Patoteca</h1>
           <p className="subtitulo-clube">A estante viva onde lemos juntos</p>
           <DivisoriaOrnamentada className="divisoria" />
@@ -541,6 +670,10 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
             <span>
               Bem-vindo(a), <strong>{meuPerfil.nome}</strong>
             </span>
+            <button className="btn-texto" onClick={() => navegar({ pagina: 'patos', id: userId })}>
+              Meu perfil
+            </button>
+            <span className="texto-tenue" aria-hidden="true">·</span>
             <button className="btn-texto" onClick={() => setModalPerfil(true)}>
               Editar perfil
             </button>
@@ -552,219 +685,188 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
         </div>
       </header>
 
+      <Menu
+        itens={ITENS_DO_MENU}
+        ativo={pagina}
+        aoEscolher={(chave) => navegar({ pagina: chave })}
+      />
+
       <main className="conteudo container">
-        <LivroAtualCard
-          livro={livro}
-          quantosAbertos={livrosAtuais.length}
-          aoAbrirCadastro={() => setModalLivro(true)}
-          aoEditar={() => setModalEditar(true)}
-          aoAdicionarNaSerie={() => setModalLivroNaSerie(true)}
-          aoReabrir={podeReabrir ? reabrirVolume : null}
-        />
-
-        <SeletorLivros
-          livros={volumesDaSerie}
-          selecionadoId={livro?.id}
-          meuProgressoPorLivro={meuProgressoPorLivro}
-          progressoPorLivro={progressoPorLivro}
-          minhaCor={minhaCor}
-          serie={serieDoClube}
-          aoSelecionar={escolherLivro}
-          aoAdicionar={serieDoClube ? () => setModalLivroNaSerie(true) : null}
-        />
-
-        {livro && <RelogioCiclo livro={livro} />}
-
-        {/* Abas: leitura (pista/estante + notas), novidades, resenhas e a
-            estante pessoal de quem já leu. */}
-        <nav className="abas" role="tablist" aria-label="Seções do clube">
-          <button
-            role="tab"
-            aria-selected={aba === 'leitura'}
-            className={`aba${aba === 'leitura' ? ' ativa' : ''}`}
-            onClick={() => setAba('leitura')}
-          >
-            <IconeLivroAberto size={18} /> Leitura
-          </button>
-          <button
-            role="tab"
-            aria-selected={aba === 'novidades'}
-            className={`aba${aba === 'novidades' ? ' ativa' : ''}`}
-            onClick={abrirNovidades}
-          >
-            <IconeSino size={18} /> Novidades
-            {naoVistas > 0 && (
-              <span className="aba-selo" aria-label={`${naoVistas} novidades`}>
-                {naoVistas > 9 ? '9+' : naoVistas}
-              </span>
-            )}
-          </button>
-          <button
-            role="tab"
-            aria-selected={aba === 'resenhas'}
-            className={`aba${aba === 'resenhas' ? ' ativa' : ''}`}
-            onClick={() => setAba('resenhas')}
-          >
-            <IconePena size={18} /> Resenhas
-          </button>
-          <button
-            role="tab"
-            aria-selected={aba === 'estante'}
-            className={`aba${aba === 'estante' ? ' ativa' : ''}`}
-            onClick={() => setAba('estante')}
-          >
-            <IconePilha size={18} /> Já li
-          </button>
-          {mostrarAbaEleicao && (
-            <button
-              role="tab"
-              aria-selected={aba === 'eleicao'}
-              className={`aba${aba === 'eleicao' ? ' ativa' : ''}`}
-              onClick={() => setAba('eleicao')}
-            >
-              <IconeUrna size={18} /> Eleição
-            </button>
-          )}
-        </nav>
-
-        {aba === 'leitura' ? (
+        {pagina === 'atual' && (
           <>
-            {livro && (
-              <section id="foco-corrida-corrida">
-                <h2 className="secao-titulo">
-                  <IconeLivroAberto size={22} /> A corrida da leitura
-                </h2>
-                {/* No desktop a pista sempre cabe. No celular o membro escolhe
-                    entre as barras (estante) e a pista de corrida. */}
-                <div className="so-desktop">
-                  <PistaCorrida
-                    membros={membros}
-                    porUsuario={porUsuario}
-                    livro={livro}
-                    notas={notas}
-                    meuUserId={userId}
-                  />
-                </div>
-                <div className="so-mobile">
-                  <div
-                    className="seletor-modo seletor-vista"
-                    role="tablist"
-                    aria-label="Como ver o progresso"
-                  >
-                    <button
-                      role="tab"
-                      aria-selected={vista === 'barras'}
-                      className={`seletor-opcao${vista === 'barras' ? ' ativo' : ''}`}
-                      onClick={() => trocarVista('barras')}
-                    >
-                      Barras
-                    </button>
-                    <button
-                      role="tab"
-                      aria-selected={vista === 'corrida'}
-                      className={`seletor-opcao${vista === 'corrida' ? ' ativo' : ''}`}
-                      onClick={() => trocarVista('corrida')}
-                    >
-                      Corrida
-                    </button>
-                  </div>
+            <LivroAtualCard
+              livro={livro}
+              quantosAbertos={livrosAtuais.length}
+              aoAbrirCadastro={() => setModalLivro(true)}
+              aoEditar={() => setModalEditar(true)}
+              aoAdicionarNaSerie={() => setModalLivroNaSerie(true)}
+              aoReabrir={podeReabrir(livro) ? () => reabrirVolume(livro) : null}
+            />
 
-                  {vista === 'corrida' ? (
-                    <PistaCorrida
-                      membros={membros}
-                      porUsuario={porUsuario}
-                      livro={livro}
-                      notas={notas}
-                      meuUserId={userId}
-                    />
-                  ) : (
-                    <Estante
-                      membros={membros}
-                      porUsuario={porUsuario}
-                      livro={livro}
-                      meuUserId={userId}
-                    />
-                  )}
-                </div>
-                <div className="centro trocar-livro" style={{ marginTop: '2rem' }}>
-                  {serieDoClube && (
-                    <button
-                      className="btn btn-fantasma"
-                      onClick={() => setModalLivroNaSerie(true)}
-                    >
-                      <IconeMais size={16} />
-                      Abrir outro livro da série
-                    </button>
-                  )}
-                  <button className="btn btn-fantasma" onClick={() => setModalLivro(true)}>
-                    Trocar o livro do clube
-                  </button>
-                  {/* O caminho democrático: em vez de alguém trocar o livro,
-                      o clube elege o próximo. */}
-                  {eleicaoAtual ? (
-                    <button className="btn btn-fantasma" onClick={() => setAba('eleicao')}>
-                      <IconeUrna size={16} />
-                      Ver a eleição do próximo livro
-                    </button>
-                  ) : (
-                    <button className="btn btn-fantasma" onClick={() => setModalEleicao(true)}>
-                      <IconeUrna size={16} />
-                      Abrir uma eleição
-                    </button>
-                  )}
-                </div>
-              </section>
-            )}
+            <SeletorLivros
+              livros={volumesDaSerie}
+              selecionadoId={livro?.id}
+              meuProgressoPorLivro={meuProgressoPorLivro}
+              progressoPorLivro={progressoPorLivro}
+              minhaCor={minhaCor}
+              serie={serieDoClube}
+              aoSelecionar={escolherLivro}
+              aoAdicionar={serieDoClube ? () => setModalLivroNaSerie(true) : null}
+            />
 
-            <ProximoLivro
+            <PaginaLivro
+              livro={livro}
+              sub={sub}
+              aoTrocarSub={(nova) => navegar({ pagina, sub: nova })}
               userId={userId}
               membros={membros}
-              livroAtual={livro?.ativo === true ? livro : null}
-              proximo={proximo}
-              fila={fila}
-              entraNaSerie={proximoEntraNaSerie}
-              porUsuario={porUsuarioProximo}
-              minhaPct={minhaPorcentagem}
-              quantosTerminaram={quantosTerminaram}
-              aoEscolher={() => setModalProximo(true)}
-              aoEditar={() => setModalEditarProximo(true)}
-              aoAtualizarProgresso={() => setModalProgressoProximo(true)}
-            />
-
-            {livro && (
-              <NotasParciais
-                userId={userId}
-                livro={livro}
-                quantosAbertos={livrosAtuais.length}
-                notas={notas}
-                comentariosPorAlvo={comentariosPorAlvo}
-                membrosPorId={membrosPorId}
-                minhaPct={minhaPorcentagem}
-                foco={foco}
-              />
-            )}
-
-            <Mural recados={recados} membrosPorId={membrosPorId} userId={userId} />
-
-            <Historico
+              porUsuario={porUsuario}
+              notas={notas}
+              quantosAbertos={livrosAtuais.length}
               membrosPorId={membrosPorId}
-              progressoPorLivro={progressoPorLivro}
-              livrosAtuais={livrosAtuais}
-              aoVerEleicoes={
-                eleicoesPassadas.length && !mostrarAbaEleicao
-                  ? () => setAba('eleicao')
-                  : null
-              }
+              comentariosPorAlvo={comentariosPorAlvo}
+              resenhas={livro ? resenhasPorLivro[livro.id] || NADA : NADA}
+              minhaPct={minhaPorcentagem}
+              foco={foco}
+              vista={vista}
+              aoTrocarVista={trocarVista}
+              mostrarRelogio
+              situacao={livro?.ativo === true ? 'atual' : 'encerrado'}
+              acoesDaCorrida={acoesDaCorrida}
             />
           </>
-        ) : aba === 'novidades' ? (
-          <Atividades
-            atividades={atividades}
+        )}
+
+        {pagina === 'anteriores' && (
+          <>
+            <LivrosAnteriores
+              livros={anteriores}
+              selecionadoId={livroAnterior?.id}
+              meuProgressoPorLivro={meuProgressoPorLivro}
+              progressoPorLivro={progressoPorLivro}
+              minhaCor={minhaCor}
+              aoSelecionar={(id) => navegar({ pagina, id, sub })}
+            />
+            {livroAnterior && (
+              <>
+                <LivroAtualCard
+                  livro={livroAnterior}
+                  aoReabrir={podeReabrir(livroAnterior) ? () => reabrirVolume(livroAnterior) : null}
+                />
+                <PaginaLivro
+                  livro={livroAnterior}
+                  sub={sub}
+                  aoTrocarSub={(nova) => navegar({ pagina, id: livroAnterior.id, sub: nova })}
+                  userId={userId}
+                  membros={membros}
+                  porUsuario={porUsuarioAnterior}
+                  notas={notasDoAnterior}
+                  membrosPorId={membrosPorId}
+                  comentariosPorAlvo={comentariosPorAlvo}
+                  resenhas={resenhasPorLivro[livroAnterior.id] || NADA}
+                  minhaPct={minhaPctAnterior}
+                  foco={foco}
+                  vista={vista}
+                  aoTrocarVista={trocarVista}
+                  situacao="encerrado"
+                />
+              </>
+            )}
+          </>
+        )}
+
+        {pagina === 'lidos' && (
+          <LivrosLidos
+            userId={userId}
+            livrosAtuais={livrosAtuais}
+            historico={historico}
+            livros={livros}
+            membros={membros}
             membrosPorId={membrosPorId}
-            vistoAte={destaqueAte}
-            aoIrPara={irPara}
+            progressoPorLivro={progressoPorLivro}
+            meuProgressoPorLivro={meuProgressoPorLivro}
+            resenhasPorLivro={resenhasPorLivro}
+            comentariosPorAlvo={comentariosPorAlvo}
+            foco={foco}
+            livroAbertoId={rota.id}
+            aoAbrirResenhas={(id) => navegar({ pagina, id })}
+            aoFecharResenhas={() => navegar({ pagina })}
+            aoVerCorrida={(id, situacao) => {
+              if (situacao === 'atual' || idsDoTrilho.includes(id)) {
+                if (idsDoTrilho.includes(id)) escolherLivro(id)
+                navegar({ pagina: 'atual', sub: 'corrida' })
+              } else {
+                navegar({ pagina: 'anteriores', id, sub: 'corrida' })
+              }
+            }}
+            aoVerEleicoes={eleicoesPassadas.length ? () => navegar({ pagina: 'eleicao' }) : null}
           />
-        ) : aba === 'eleicao' ? (
+        )}
+
+        {pagina === 'patos' && (
+          <Patos
+            userId={userId}
+            membros={membros}
+            membrosPorId={membrosPorId}
+            livros={livros}
+            progressoPorLivro={progressoPorLivro}
+            resenhasPorLivro={resenhasPorLivro}
+            patoId={rota.id}
+            aoAbrir={(id) => navegar({ pagina, id })}
+            aoFechar={() => navegar({ pagina })}
+            aoEditarPerfil={() => setModalPerfil(true)}
+            aoVerResenhas={(id) =>
+              irPara({ aba: 'resenhas', tipo: 'livro', id, livroId: id })
+            }
+            aoVerLivro={(id) =>
+              irPara({ aba: 'leitura', tipo: 'corrida', id: 'corrida', livroId: id })
+            }
+          />
+        )}
+
+        {pagina === 'mural' && (
+          <Mural recados={recados} membrosPorId={membrosPorId} userId={userId} />
+        )}
+
+        {pagina === 'proximo' && (
+          <>
+            {livro?.ativo === true ? (
+              <ProximoLivro
+                userId={userId}
+                membros={membros}
+                livroAtual={livro}
+                proximo={proximo}
+                fila={fila}
+                foraDaFila={foraDaFila}
+                entraNaSerie={proximoEntraNaSerie}
+                porUsuario={porUsuarioProximo}
+                minhaPct={minhaPorcentagem}
+                quantosTerminaram={quantosTerminaram}
+                aoEscolher={() => setModalProximo(true)}
+                aoEditar={() => setModalEditarProximo(true)}
+                aoAtualizarProgresso={() => setModalProgressoProximo(true)}
+              />
+            ) : (
+              <section className="painel centro estante-pessoal-vazia">
+                <div className="selo-secao" style={{ justifyContent: 'center' }}>
+                  <IconeMarcador size={40} />
+                </div>
+                <p className="texto-suave">
+                  Sem livro em leitura não existe "próximo": cadastre o livro do
+                  clube na página do livro atual.
+                </p>
+              </section>
+            )}
+            <div className="centro trocar-livro">
+              <button className="btn btn-fantasma" onClick={() => navegar({ pagina: 'eleicao' })}>
+                <IconeUrna size={16} />
+                Ver a eleição do próximo livro
+              </button>
+            </div>
+          </>
+        )}
+
+        {pagina === 'eleicao' && (
           <Eleicao
             userId={userId}
             eleicoes={eleicoes}
@@ -778,29 +880,14 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
             aoAbrirEleicao={() => setModalEleicao(true)}
             aoLivroEleito={escolherLivro}
           />
-        ) : aba === 'resenhas' ? (
-          <Resenhas
-            userId={userId}
-            livrosAtuais={livrosAtuais}
-            proximo={proximo}
-            historico={historico}
-            meuProgressoPorLivro={meuProgressoPorLivro}
-            resenhasPorLivro={resenhasPorLivro}
-            comentariosPorAlvo={comentariosPorAlvo}
+        )}
+
+        {pagina === 'novidades' && (
+          <Atividades
+            atividades={atividades}
             membrosPorId={membrosPorId}
-            foco={foco}
-          />
-        ) : (
-          <MinhaEstante
-            userId={userId}
-            livrosAtuais={livrosAtuais}
-            proximo={proximo}
-            historico={historico}
-            meuProgressoPorLivro={meuProgressoPorLivro}
-            resenhasPorLivro={resenhasPorLivro}
-            aoVerResenhas={(livroId) =>
-              irPara({ aba: 'resenhas', tipo: 'livro', id: livroId })
-            }
+            vistoAte={destaqueAte}
+            aoIrPara={irPara}
           />
         )}
       </main>
@@ -817,7 +904,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
       </footer>
 
       {/* Botão flutuante para atualizar progresso (acessível no celular). */}
-      {livro && (
+      {mostrarFab && (
         <button className="fab-progresso" onClick={() => setModalProgresso(true)}>
           <IconeMarcador size={18} />
           Meu progresso
@@ -830,7 +917,10 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
           proximoNaFila={proximo}
           seriesConhecidas={seriesConhecidas}
           onFechar={() => setModalLivro(false)}
-          aoCadastrar={escolherLivro}
+          aoCadastrar={(id) => {
+            escolherLivro(id)
+            navegar({ pagina: 'atual', sub: 'corrida' })
+          }}
         />
       )}
 
@@ -884,12 +974,12 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
         />
       )}
 
-      {modalProgresso && livro && (
+      {modalProgresso && livroDoProgresso && (
         <AtualizarProgressoModal
           userId={userId}
-          livro={livro}
-          porcentagemInicial={minhaPorcentagem}
-          progressoAtual={porUsuario[userId]}
+          livro={livroDoProgresso}
+          porcentagemInicial={minhaPctDoProgresso}
+          progressoAtual={porUsuarioDoProgresso[userId]}
           onFechar={() => setModalProgresso(false)}
         />
       )}
@@ -908,7 +998,7 @@ function ClubeLogado({ userId, usuario, onTrocar }) {
         <AbrirEleicaoModal
           userId={userId}
           onFechar={() => setModalEleicao(false)}
-          aoAbrir={() => setAba('eleicao')}
+          aoAbrir={() => navegar({ pagina: 'eleicao' })}
         />
       )}
 

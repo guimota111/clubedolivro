@@ -4,7 +4,7 @@ import { salvarProgresso } from '../lib/db'
 import { anunciar, meuNome } from '../lib/push'
 import { textoDoProgresso } from '../lib/atividades'
 import { limitarPct, calcularPct, pctDoProgresso } from '../lib/formato'
-import { montarHistorico, faixasDeProgresso } from '../lib/progresso24h'
+import { montarHistorico, faixasDeProgresso, ordenarHistorico } from '../lib/progresso24h'
 import { IconeMarcador } from './Icones'
 
 // Modal para o membro informar quanto já leu. Ele escolhe entre:
@@ -78,6 +78,16 @@ export default function AtualizarProgressoModal({
       progressoAtual ? pctSalva : null,
       dados.porcentagem
     )
+
+    // Quando este leitor abriu o livro. A trilha acima é podada e perde a
+    // primeira marcação; este campo fica para sempre e alimenta as
+    // estatísticas dos patos ("quem começa mais tarde"). Progresso antigo
+    // sem o campo herda a marcação mais antiga que ainda sobrou na trilha.
+    const comecadoEm =
+      progressoAtual?.comecadoEm ??
+      ordenarHistorico(progressoAtual?.historico)[0]?.em ??
+      (progressoAtual ? null : Date.now())
+    if (comecadoEm != null) dados.comecadoEm = comecadoEm
 
     setSalvando(true)
     try {
