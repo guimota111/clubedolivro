@@ -66,22 +66,51 @@ tipografia serifada e dourado como cor de destaque.
   agora não muda. Quando o clube decide virar a página, "Tornar o livro do
   clube" arquiva o atual no histórico com o vencedor e promove o da fila —
   quem se adiantou **mantém** o que já andou, porque o progresso está gravado
-  pelo id do livro, que não muda na promoção. Quem ainda não terminou vê a
-  área trancada, com quanto falta.
-- **Aba "Já li":** a estante pessoal de cada membro — os livros do clube que
-  **ele** levou até o fim, do mais recente ao mais antigo, com a data em que
-  terminou (tirada da trilha de marcações do progresso), a nota que deu e um
-  atalho para a resenha. É pessoal por definição: quem nunca terminou um livro
-  encerrado não o vê ali. O histórico coletivo do clube continua na aba de
-  leitura.
+  pelo id do livro, que não muda na promoção. A fila é de todo mundo — ver,
+  corrigir e "Tornar o livro do clube" não exigem ter terminado o atual; só
+  **adiantar a leitura** do próximo (marcar progresso nele) fica trancado, com
+  quanto falta. A fila inteira aparece com setas para **trocar a ordem**: isso
+  grava `filaPosicao` (1, 2, 3…) em cada livro, e a partir daí vale essa
+  ordem — quem entra depois sem posição (um eleito, um cadastro) fica atrás de
+  todos. Um livro tirado da fila sem ter sido lido não vira "anterior":
+  ele aparece em "Fora da fila" na mesma página, com um botão para voltar (ao
+  fim da fila).
+- **Um menu, uma página por assunto.** O site se organiza num menu fixo no
+  topo — **Livro atual · Anteriores · Livros lidos · Patos · Mural · Próximo
+  livro · Eleição** — e as novidades moram num **sininho** no cabeçalho. A
+  página fica no `#hash` da barra de endereço (`src/lib/rotas.js`), então o
+  botão voltar do celular desfaz o último passo, recarregar volta para onde a
+  pessoa estava e um link para `#/patos/<id>` abre direto no perfil certo.
+- **Livro atual** em três sub-abas: **Corrida** (com o relógio do ciclo),
+  **Notas** parciais e **Resenhas**. É a mesma `PaginaLivro` que serve aos
+  **Anteriores**: um trilho de capas escolhe um livro encerrado e ele abre no
+  mesmo formato — corrida, notas e resenhas —, e o botão "Meu progresso" marca
+  a leitura **nele**. Quem ficou para trás continua a sua corrida ali, em vez
+  de olhar uma lista morta.
+- **Livros lidos:** todos os livros que passaram pelo clube, com o placar de
+  cada um — quem terminou primeiro, quantos terminaram, quantos começaram e
+  pararam, quantos nem abriram (`src/lib/estatisticas.js`) — e as resenhas de
+  cada um a um toque. "Reabrir" devolve um encerrado à leitura, quando não
+  quebra a regra da série.
+- **Patos:** o ranking do clube e o perfil de cada leitor — na Patoteca desde
+  quando, livros terminados, vezes que terminou em primeiro, tempo médio por
+  livro, se costuma começar cedo ou tarde em relação ao clube, o ritmo (% por
+  dia) e o que está lendo agora — mais a **estante pessoal** do que ele já leu
+  (a antiga aba "Já li"), com a data em que terminou, a nota e a resenha. As
+  contas saem do progresso gravado; o "quando começou" de cada livro vem do
+  campo `comecadoEm`, gravado na primeira marcação de progresso (a trilha de
+  24 h é podada e perderia essa data) — para progresso anterior ao campo vale
+  a marcação mais antiga que sobrou, e o perfil avisa quando não dá para medir.
 - **Atualizar progresso:** o membro informa apenas a página atual; a % é
   calculada. Botão flutuante fixo, acessível no celular.
-- **Novidades:** aba que reúne o que o clube andou fazendo — reações em pontos
-  do livro ("Monique se surpreendeu na página 200"), resenhas, comentários e
-  avanços de leitura. A lista é montada no cliente a partir do que o app já
-  assina ao vivo; não há coleção de eventos no Firestore. Um selo na aba conta
-  o que chegou desde a última visita (marco no `localStorage`). Cada aviso leva
-  ao que ele conta — a nota (já expandida), a resenha ou a corrida —, com a
+- **Novidades:** o sininho no cabeçalho reúne o que o clube andou fazendo —
+  reações em pontos do livro ("Monique se surpreendeu na página 200"),
+  resenhas, comentários e avanços de leitura. A lista é montada no cliente a
+  partir do que o app já assina ao vivo; não há coleção de eventos no
+  Firestore. Um selo no sino conta o que chegou desde a última visita (marco
+  no `localStorage`). Cada aviso leva ao que ele conta — a nota (já
+  expandida), a resenha ou a corrida, na página do livro atual ou na dos
+  anteriores, conforme onde o livro estiver —, com a
   conversa aberta quando o aviso é de comentário. Aviso cujo destino não existe
   para quem está olhando (resenha de livro que essa pessoa não terminou) vira
   texto simples, em vez de um clique que não faz nada.
@@ -89,7 +118,7 @@ tipografia serifada e dourado como cor de destaque.
   há quanto tempo a leitura começou. O começo vem de `dataInicio` (informável
   ao cadastrar/editar o livro) ou, na falta dele, de `iniciadoEm`.
 - **Mural de recados:** post-its que qualquer membro pode deixar.
-- **Histórico:** livros já lidos e quem venceu cada rodada. **Vence quem
+- **Vencedor de cada rodada** (na página de livros lidos). **Vence quem
   chegou primeiro:** só a maior porcentagem não decide nada quando o clube
   inteiro termina o livro — empatados em 100%, ganha quem cruzou a linha antes,
   segundo a trilha de marcações do progresso (`src/lib/vencedor.js`). O
@@ -133,8 +162,8 @@ tipografia serifada e dourado como cor de destaque.
   entre os empatados pelas vagas que faltam (1 voto por pessoa por vaga; os já
   eleitos ficam guardados), ou é desempatado ali na conversa e registrado. As
   eleições encerradas ficam na mesma aba, com o resultado completo e a posição
-  de cada eleito. A aba só aparece com eleição aberta ou encerrada há menos de
-  30 dias; depois, o histórico de livros leva até as eleições anteriores.
+  de cada eleito. A página Eleição está sempre no menu; sem eleição aberta ela
+  mostra a última encerrada e as anteriores recolhidas.
 
 ## Rodando localmente
 
@@ -270,8 +299,10 @@ avisa que as notificações ainda não foram configuradas.
 ```
 src/
 ├── firebase.js              # inicialização do Firebase (Firestore + Storage)
-├── App.jsx                  # roteamento entre cadastro e clube
+├── App.jsx                  # cadastro ou clube; monta cada página do menu pela rota
 ├── lib/
+│   ├── rotas.js             # a página no #hash: ler e escrever { pagina, id, sub }
+│   ├── estatisticas.js      # placar de cada livro e as contas de cada pato
 │   ├── identity.js          # UUID no localStorage (sessão sem login)
 │   ├── db.js                # operações no Firestore
 │   ├── storage.js           # upload de imagens
@@ -290,19 +321,25 @@ src/
 ├── hooks/
 │   ├── useColecaoAoVivo.js  # wrapper de onSnapshot
 │   ├── useDadosClube.js     # membros, livros do clube, progresso, mural, eleição
+│   ├── useRota.js           # a rota atual (hashchange) e `navegar`
 │   └── useFoco.js           # rola até o item apontado por um aviso
 ├── components/
 │   ├── Cadastro.jsx
+│   ├── Menu.jsx             # o menu principal, o sininho e as sub-abas
+│   ├── PaginaLivro.jsx      # um livro em três sub-abas: corrida, notas, resenhas
+│   ├── LivrosAnteriores.jsx # o trilho dos livros encerrados
+│   ├── LivrosLidos.jsx      # todos os livros do clube, com placar e resenhas
+│   ├── Patos.jsx            # ranking dos leitores e o perfil de cada um
 │   ├── LivroAtualCard.jsx
 │   ├── CadastrarLivroModal.jsx
 │   ├── Estante.jsx / MembroLivro.jsx
 │   ├── PistaCorrida.jsx
 │   ├── RelogioCiclo.jsx     # relógio restante / decorrido
-│   ├── Atividades.jsx       # aba de novidades
+│   ├── Atividades.jsx       # a página de novidades (atrás do sininho)
 │   ├── ProximoLivro.jsx     # o livro da fila, destravado a quem terminou
 │   ├── SeletorLivros.jsx    # o trilho que troca o volume da série em foco
-│   ├── MinhaEstante.jsx     # aba "Já li": os livros que EU terminei
-│   ├── Eleicao.jsx          # aba da eleição: prateleira, livro aberto, resultados
+│   ├── Resenhas.jsx         # as resenhas de um livro (formulário + lista)
+│   ├── Eleicao.jsx          # página da eleição: prateleira, livro aberto, resultados
 │   ├── IndicarLivroModal.jsx # indicar um livro: busca + formulário + defesa
 │   ├── ApuracaoModal.jsx    # a urna: senha, revelação voto a voto, pódio ou novo turno
 │   ├── Confete.jsx          # a chuva de confete do pódio
@@ -312,12 +349,12 @@ src/
 │   ├── AtualizarProgressoModal.jsx
 │   ├── AvisosNoCelular.jsx  # o interruptor dos avisos, dentro do perfil
 │   ├── Mural.jsx
-│   ├── Historico.jsx
 │   ├── Modal.jsx
 │   └── Icones.jsx           # ícones SVG customizados
 └── styles/
     ├── index.css            # tema/base
-    └── app.css              # layout e componentes
+    ├── app.css              # layout e componentes
+    └── menu.css             # o menu, o sino, as sub-abas, livros lidos e patos
 
 public/
 ├── icone.svg                # o pato: fonte de todos os ícones
@@ -337,8 +374,8 @@ worker/                      # o carteiro dos avisos (Cloudflare Worker)
 | Coleção            | Documento             | Campos principais                                             |
 | ------------------ | --------------------- | ------------------------------------------------------------- |
 | `users`            | `{userId}`            | `nome`, `avatarUrl`, `cor`, `criadoEm`                        |
-| `livroAtual`       | `{livroId}`           | `titulo`, `autor`, `capaUrl`, `dataLimite`, `dataInicio`, `serie`, `serieOrdem`, `ativo`, `naFila`, `filaOrdem`, `iniciadoEm` |
-| `progresso`        | `{userId}_{livroId}`  | `userId`, `livroId`, `porcentagem`, `paginaAtual`, `totalPaginas`, `modo`, `historico`, `atualizadoEm` |
+| `livroAtual`       | `{livroId}`           | `titulo`, `autor`, `capaUrl`, `dataLimite`, `dataInicio`, `serie`, `serieOrdem`, `ativo`, `naFila`, `filaOrdem`, `filaPosicao`, `iniciadoEm` |
+| `progresso`        | `{userId}_{livroId}`  | `userId`, `livroId`, `porcentagem`, `paginaAtual`, `totalPaginas`, `modo`, `historico`, `comecadoEm`, `atualizadoEm` |
 | `inscricoesPush`   | `{resumo do endpoint}` | `userId`, `endpoint`, `p256dh`, `auth`, `criadoEm` — um por aparelho que ligou os avisos |
 | `notas`            | `{notaId}`            | `userId`, `livroId`, `texto`, `desbloqueioPct`, `desbloqueioTipo`, `desbloqueioValor`, `totalPaginas`, `criadoEm` |
 | `resenhas`         | `{userId}_{livroId}`  | `userId`, `livroId`, `texto`, `nota`, `atualizadoEm`         |

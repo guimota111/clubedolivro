@@ -237,6 +237,52 @@ export function IconeUrna({ size = 24, ...props }) {
   )
 }
 
+// O pato — os leitores da Patoteca.
+export function IconePato({ size = 24, ...props }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      {/* cabeça e bico */}
+      <circle cx="14.8" cy="7.4" r="3.2" />
+      <path d="M18 6.9 21.4 8l-3.3 1.1" />
+      <circle cx="15.7" cy="6.7" r="0.7" fill="currentColor" stroke="none" />
+      {/* corpo, flutuando */}
+      <path d="M12.1 9.6c-3.4.3-6 2.2-7 4.6-.9-.9-1.8-1.2-2.6-1 .4 3.9 3.6 6.6 8.1 6.6h4.6c3.3 0 5.6-2.2 5.6-5.3 0-1.2-.3-2.2-.9-3" />
+      <path d="M3 21.4h18" opacity="0.45" />
+    </svg>
+  )
+}
+
+// Troféu — quem termina em primeiro.
+export function IconeTrofeu({ size = 24, ...props }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.4"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      {...props}
+    >
+      <path d="M7 4h10v5a5 5 0 0 1-10 0V4Z" />
+      <path d="M7 6H4.5a2.5 2.5 0 0 0 2.6 2.9M17 6h2.5a2.5 2.5 0 0 1-2.6 2.9" />
+      <path d="M12 14v3M9 20h6M10 17h4" />
+    </svg>
+  )
+}
+
 // Filigrana / ornamento de canto (decorativo).
 export function Filigrana({ size = 60, ...props }) {
   return (

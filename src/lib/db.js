@@ -253,6 +253,29 @@ export async function tirarProximoLivroDaFila(livroId) {
   await updateDoc(doc(db, 'livroAtual', livroId), { naFila: false })
 }
 
+// Reordena a fila: recebe os ids na ordem desejada e grava a posição (1, 2,
+// 3…) em cada um. A partir daí a ordem é essa, e não a de chegada — quem
+// entrar depois sem posição fica atrás de todos.
+export async function reordenarFila(idsNaOrdem) {
+  await Promise.all(
+    idsNaOrdem.map((id, k) =>
+      updateDoc(doc(db, 'livroAtual', id), { filaPosicao: k + 1 })
+    )
+  )
+}
+
+// Devolve à fila um livro que havia saído dela (e que nunca foi encerrado).
+// Entra no FIM: a fila ordena por `iniciadoEm`, então o carimbo é renovado —
+// senão um livro cadastrado meses atrás passaria na frente dos eleitos.
+export async function devolverParaFila(livroId) {
+  await updateDoc(doc(db, 'livroAtual', livroId), {
+    naFila: true,
+    ativo: false,
+    filaOrdem: 99,
+    iniciadoEm: serverTimestamp(),
+  })
+}
+
 // ---------- Progresso ----------
 
 // Salva o progresso do membro. `dados` sempre traz `porcentagem` (0-100), que

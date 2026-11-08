@@ -3,10 +3,34 @@ import { IconeLivroAberto } from './Icones'
 
 // Chave de versão do changelog. Ao lançar novidades futuras, troque a versão
 // para que o aviso apareça de novo uma única vez por navegador.
-export const CHANGELOG_VERSAO = 'clubedolivro:changelog:2026-10-v10'
+export const CHANGELOG_VERSAO = 'clubedolivro:changelog:2026-11-v11'
 
 // Cada item usa um ícone (Icone) OU um emoji literal (emoji).
 const NOVIDADES = [
+  {
+    emoji: '🧭',
+    titulo: 'A Patoteca ganhou um menu',
+    texto:
+      'Cada assunto tem a sua página: Livro atual (corrida, notas e resenhas em sub-abas), Anteriores, Livros lidos, Patos, Mural, Próximo livro e Eleição. As novidades foram para o sininho no alto. O botão voltar do celular funciona entre as páginas.',
+  },
+  {
+    emoji: '🏃',
+    titulo: 'Ficou para trás? O livro continua lá',
+    texto:
+      'Em "Anteriores", cada livro encerrado abre no mesmo formato do atual — a corrida, as notas e as resenhas —, e o botão "Meu progresso" marca a sua leitura nele. Ninguém mais perde a corrida por terminar depois.',
+  },
+  {
+    emoji: '🦆',
+    titulo: 'Os patos e as contas de cada um',
+    texto:
+      'A página Patos é o ranking do clube e o perfil de cada leitor: quantos livros terminou, quantas vezes chegou primeiro, quanto tempo leva por livro, se costuma começar cedo ou tarde, o ritmo — e a estante do que já leu (a antiga aba "Já li" mora aqui agora).',
+  },
+  {
+    emoji: '🏁',
+    titulo: 'Livros lidos, com placar',
+    texto:
+      'Todos os livros que passaram pelo clube, com quem terminou primeiro, quantos terminaram, quantos começaram e pararam e quantos nem abriram — e as resenhas de cada um a um toque.',
+  },
   {
     emoji: '🥁',
     titulo: 'Apuração voto a voto — e dois livros eleitos',

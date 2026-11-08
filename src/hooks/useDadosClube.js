@@ -8,6 +8,12 @@ import { ordenarSerie } from '../lib/series'
 // sobra para uma série, mas o corte fica explícito para não virar erro mudo.
 const TETO_IN = 30
 
+// Sem posição marcada, o livro fica atrás de todos os que têm.
+function posicaoNaFila(livro) {
+  const n = Number(livro.filaPosicao)
+  return Number.isInteger(n) && n > 0 ? n : Number.POSITIVE_INFINITY
+}
+
 // Assina todos os membros do clube.
 export function useMembros() {
   const { docs, carregando } = useColecaoAoVivo(
@@ -43,15 +49,18 @@ export function useLivrosDoClube() {
     [docs]
   )
 
-  // A fila, por ordem de chegada: uma eleição que elege dois livros põe os
-  // dois aqui, o 1º colocado na frente (`filaOrdem` desempata os que entraram
-  // no mesmo instante). O próximo livro é o primeiro dela.
+  // A fila. Quem já foi reordenado na mão tem `filaPosicao` (1, 2, 3…) e vem
+  // primeiro, nessa ordem; o resto entra atrás, por ordem de chegada — uma
+  // eleição que elege dois livros põe os dois aqui, o 1º colocado na frente
+  // (`filaOrdem` desempata os que entraram no mesmo instante). O próximo
+  // livro é o primeiro dela.
   const fila = useMemo(
     () =>
       docs
         .filter((l) => l.naFila === true)
         .sort(
           (a, b) =>
+            posicaoNaFila(a) - posicaoNaFila(b) ||
             (a.iniciadoEm?.seconds || 0) - (b.iniciadoEm?.seconds || 0) ||
             (a.filaOrdem || 0) - (b.filaOrdem || 0)
         ),
